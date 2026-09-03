@@ -1,0 +1,2279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>測量DB カンバンボード</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hidden {
+      display: none !important;
+    }
+    .dragging {
+      opacity: 0.4;
+    }
+    .drag-over {
+      background-color: #eff6ff !important;
+      border-color: #3b82f6 !important;
+    }
+    .writing-vertical {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+    @keyframes fadeInDown {
+      0% { opacity: 0; transform: translateY(-10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-down {
+      animation: fadeInDown 0.2s ease-out;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* マルチセレクト用スタイル */
+    .multi-select-dropdown {
+      position: relative;
+    }
+    .multi-select-button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background-color: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.375rem;
+      padding: 0.375rem 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #1e293b;
+      cursor: pointer;
+      text-align: left;
+      min-height: 36px;
+    }
+    .multi-select-button:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    .multi-select-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      max-height: 250px;
+      overflow-y: auto;
+      background-color: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.375rem;
+      margin-top: 0.25rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      z-index: 9999;
+    }
+    .multi-select-menu.open-up {
+      top: auto;
+      bottom: 100%;
+      margin-top: 0;
+      margin-bottom: 0.25rem;
+      box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    .multi-select-menu.open {
+      display: block;
+    }
+    .multi-select-item {
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: #334155;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .multi-select-item:hover {
+      background-color: #f8fafc;
+      color: #0f172a;
+      font-weight: bold;
+    }
+    .multi-select-item input[type="checkbox"] {
+      margin-right: 0.5rem;
+      cursor: pointer;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans h-screen flex flex-col overflow-hidden text-slate-800">
+
+  <!-- ================= ログイン画面 ================= -->
+  <section id="login-screen" class="fixed inset-0 bg-slate-200 flex items-center justify-center p-4 z-50">
+    <article class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border border-slate-100">
+      <header class="flex justify-center mb-4 text-5xl">🔒</header>
+      <h2 class="text-xl font-bold text-center mb-6 text-slate-800 tracking-wider">測量DB 管理システム</h2>
+      <form id="login-form" class="space-y-4">
+        <label class="block">
+          <span class="block text-sm font-bold text-slate-600 mb-1">ログインID</span>
+          <input type="text" id="username" class="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-base focus:border-blue-500 outline-none transition-colors" required>
+        </label>
+        <label class="block">
+          <span class="block text-sm font-bold text-slate-600 mb-1">パスワード</span>
+          <input type="password" id="password" class="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-base focus:border-blue-500 outline-none transition-colors" required>
+        </label>
+        <footer>
+          <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-lg text-base mt-4 shadow-md transition-colors">ログイン</button>
+        </footer>
+      </form>
+    </article>
+  </section>
+
+  <!-- ================= メインアプリ画面 ================= -->
+  <div id="main-app" class="hidden flex flex-col h-full w-full relative">
+    
+    <header class="bg-slate-800 text-white p-3 shadow-lg flex justify-between items-center shrink-0 z-20 select-none">
+      <h1 class="text-lg font-bold flex items-center gap-2">
+        <span id="sync-icon" class="inline-block">🔄</span> 測量DB カンバンボード
+      </h1>
+      <nav class="flex items-center gap-3">
+        <button id="btn-new-task" class="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded text-sm font-bold border border-emerald-500 text-white mr-1 shadow-sm transition-colors">➕ 新規作成</button>
+        <button id="btn-toggle-search" class="flex items-center gap-1 bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-sm font-bold border border-slate-600 text-blue-200 transition-colors">🔍 検索・絞り</button>
+        <select id="font-size-selector" class="bg-slate-700 text-amber-300 text-xs font-bold rounded border border-slate-600 px-2 py-1.5 outline-none cursor-pointer">
+          <option value="small">文字: 小</option>
+          <option value="medium" selected>文字: 中 (標準)</option>
+          <option value="large">文字: 大</option>
+        </select>
+        <select id="sort-order" class="bg-slate-700 text-white text-xs font-medium rounded border border-slate-600 px-2 py-1.5 outline-none cursor-pointer">
+          <option value="asc">📅 測量日: 古い順</option>
+          <option value="desc">📅 測量日: 新しい順</option>
+        </select>
+        <button id="btn-settings" class="flex items-center gap-1 hover:bg-slate-700 px-3 py-1.5 rounded text-xs relative font-medium border border-slate-600 transition-colors">
+          ⚙️ 設定<span id="setting-badge" class="hidden w-2 h-2 rounded-full bg-red-500 absolute -top-1 -right-1 border border-slate-800"></span>
+        </button>
+        <button id="btn-logout" class="flex items-center gap-1 hover:bg-slate-700 px-3 py-1.5 rounded text-xs font-medium border border-slate-600 transition-colors">🚪 ログアウト</button>
+      </nav>
+    </header>
+
+    <section class="bg-slate-100 border-b border-slate-200 px-4 py-2 text-xs flex flex-wrap gap-4 items-center shrink-0 shadow-sm z-10 text-slate-700 select-none">
+      <span class="font-bold text-slate-800 bg-slate-200 px-2 py-1 rounded">💡 アイコンの見方</span>
+      <div class="flex items-center gap-2 border-r border-slate-300 pr-4">
+        <span class="font-bold text-slate-500">色(測量):</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></span>起工</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span>出来形</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm"></span>その他</span>
+      </div>
+      <div class="flex items-center gap-2 border-r border-slate-300 pr-4">
+        <span class="font-bold text-slate-500">形(機器):</span>
+        <span class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,1 15,5 15,11 8,15 1,11 1,5" fill="#64748b" /></svg>ULS</span>
+        <span class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,1.5 14.5,5.25 14.5,10.75 8,14.5 1.5,10.75 1.5,5.25" fill="none" stroke="#64748b" stroke-width="2" /></svg>TLS</span>
+        <span class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,13 2,13" fill="#64748b" /></svg>その他</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="font-bold text-slate-500">アラート:</span>
+        <span class="flex items-center gap-1 bg-yellow-100 border border-yellow-400 text-yellow-800 px-1.5 py-0.5 rounded shadow-sm font-bold text-[10px]">⚠️ 2週間超過</span>
+      </div>
+    </section>
+
+    <section id="search-bar-container" class="hidden bg-slate-200 border-b border-slate-300 px-4 py-3 flex flex-wrap gap-3 items-center shrink-0 shadow-inner z-10 animate-fade-in-down select-none">
+      <input type="search" id="search-text" placeholder="お客様名・現場名で検索..." class="border border-slate-300 rounded px-3 py-1.5 text-sm outline-none focus:border-blue-500 w-64 shadow-sm">
+      <div class="flex items-center gap-2 border-l border-slate-400 pl-3 ml-1">
+        <span class="text-sm font-bold text-slate-600">担当者:</span>
+        <select id="search-role" class="border border-slate-300 rounded px-2 py-1.5 text-sm outline-none shadow-sm">
+          <option value="all">すべて</option>
+          <option value="design">設計担当</option>
+          <option value="plan">施工計画</option>
+          <option value="survey">測量担当</option>
+          <option value="pointcloud">点群処理</option>
+          <option value="cross">現況横断</option>
+          <option value="earth">土量</option>
+          <option value="output">成果作成</option>
+          <option value="zeroyen">０円請求</option>
+        </select>
+        <span class="text-slate-400 font-bold px-1 text-sm">×</span>
+        <select id="search-assignee" class="border border-slate-300 rounded px-2 py-1.5 text-sm font-bold outline-none shadow-sm text-blue-700 bg-blue-50">
+          <option value="">（全員表示）</option>
+          <option value="-">- (未設定)</option>
+        </select>
+      </div>
+      <div class="ml-auto flex items-center gap-3">
+        <button id="btn-clear-search" class="text-sm text-slate-500 hover:text-red-600 font-bold transition-colors">✖ クリア</button>
+        <div class="font-bold text-slate-600 bg-white px-3 py-1 rounded border border-slate-300 shadow-sm flex items-center gap-1.5">該当: <span id="filtered-count" class="text-red-600 text-lg leading-none">0</span> <span class="text-xs">件</span></div>
+      </div>
+    </section>
+
+    <main class="flex-1 overflow-hidden p-3 bg-slate-50 min-h-0 select-none">
+      <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] grid-rows-2 gap-3 h-full pb-2 min-h-0">
+        
+        <section class="row-span-1 col-start-1 row-start-1 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="予定">
+          <div class="bg-slate-300 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-slate-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>予定</span>
+                <span class="status-desc text-xs font-medium text-slate-600 empty:hidden truncate" data-status-key="予定"></span>
+              </div>
+              <span class="count bg-white text-slate-600 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
+        
+        <section class="row-span-1 col-start-1 row-start-2 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="測量前準備">
+          <div class="bg-yellow-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-yellow-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>測量前準備</span>
+                <span class="status-desc text-xs font-medium text-yellow-700 empty:hidden truncate" data-status-key="測量前準備"></span>
+              </div>
+              <span class="count bg-white text-yellow-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
+
+        <section class="row-span-1 col-start-2 row-start-1 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="点群処理中">
+          <div class="bg-blue-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-blue-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>点群処理中</span>
+                <span class="status-desc text-xs font-medium text-blue-700 empty:hidden truncate" data-status-key="点群処理中"></span>
+              </div>
+              <span class="count bg-white text-blue-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
+
+        <section class="row-span-1 col-start-2 row-start-2 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="横断作成中">
+          <div class="bg-orange-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-orange-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>横断作成中</span>
+                <span class="status-desc text-xs font-medium text-orange-700 empty:hidden truncate" data-status-key="横断作成中"></span>
+              </div>
+              <span class="count bg-white text-orange-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
+
+        <section class="row-span-1 col-start-3 row-start-1 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="成果作成中">
+          <div class="bg-indigo-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-indigo-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>成果作成中</span>
+                <span class="status-desc text-xs font-medium text-indigo-700 empty:hidden truncate" data-status-key="成果作成中"></span>
+              </div>
+              <span class="count bg-white text-indigo-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
+
+        <section class="row-span-1 col-start-3 row-start-2 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="設計待">
+          <div class="bg-cyan-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-cyan-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>設計待</span>
+                <span class="status-desc text-xs font-medium text-cyan-700 empty:hidden truncate" data-status-key="設計待"></span>
+              </div>
+              <span class="count bg-white text-cyan-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
+
+        <section class="row-span-1 col-start-4 row-start-1 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="確認待">
+          <div class="bg-purple-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-purple-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>確認待</span>
+                <span class="status-desc text-xs font-medium text-purple-700 empty:hidden truncate" data-status-key="確認待"></span>
+              </div>
+              <span class="count bg-white text-purple-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
+
+        <section class="row-span-1 col-start-4 row-start-2 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="０円請求未">
+          <div class="bg-red-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-red-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>０円請求未</span>
+                <span class="status-desc text-xs font-medium text-red-700 empty:hidden truncate" data-status-key="０円請求未"></span>
+              </div>
+              <span class="count bg-white text-red-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
+
+        <aside id="collapsed-sidebar" class="hidden row-span-2 col-start-5 row-start-1 flex flex-col bg-slate-700 text-slate-300 hover:text-white hover:bg-slate-600 rounded-xl w-10 cursor-pointer transition-all duration-300 items-center py-4 shadow-md min-h-0" onclick="toggleSidebar()">
+          <span class="writing-vertical font-bold tracking-widest text-xs flex items-center gap-3"><span>◀</span> <span>その他・保管庫</span></span>
+        </aside>
+
+        <aside id="expanded-sidebar" class="row-span-2 col-start-5 row-start-1 flex flex-col w-[260px] bg-slate-200 rounded-xl overflow-hidden transition-all duration-300 shadow-xl border border-slate-300 min-h-0">
+          <header class="flex justify-between items-center bg-slate-700 text-white px-3 py-2 shrink-0 cursor-pointer hover:bg-slate-600" onclick="toggleSidebar()">
+            <span class="font-bold text-sm">その他・保管庫</span>
+            <span class="text-base leading-none">▶</span>
+          </header>
+          <div class="flex-1 overflow-hidden flex flex-col gap-2 p-2 bg-slate-300 min-h-0">
+            
+            <section style="flex: 1;" class="min-h-0 bg-gray-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm shrink-0" data-status="まとめて提出">
+              <div class="bg-gray-200 shrink-0">
+                <header class="text-sm font-bold text-gray-800 px-2.5 py-2 flex justify-between items-center">
+                  <div class="flex items-baseline gap-2 truncate">
+                    <span>まとめて提出</span>
+                    <span class="status-desc text-[11px] font-medium text-gray-600 empty:hidden truncate" data-status-key="まとめて提出"></span>
+                  </div>
+                  <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
+                </header>
+              </div>
+              <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1.5 task-list min-h-0"></div>
+            </section>
+            
+            <section style="flex: 2;" class="min-h-0 bg-pink-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm shrink-0" data-status="共有移動未">
+              <div class="bg-pink-200 shrink-0">
+                <header class="text-sm font-bold text-pink-800 px-2.5 py-2 flex justify-between items-center">
+                  <div class="flex items-baseline gap-2 truncate">
+                    <span>共有移動未</span>
+                    <span class="status-desc text-[11px] font-medium text-pink-700 empty:hidden truncate" data-status-key="共有移動未"></span>
+                  </div>
+                  <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
+                </header>
+              </div>
+              <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1.5 task-list min-h-0"></div>
+            </section>
+
+            <section style="flex: 3;" class="min-h-0 bg-green-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm shrink-0" data-status="共有に移動済">
+              <div class="bg-green-200 shrink-0">
+                <header class="text-sm font-bold text-green-800 px-2.5 py-2 flex justify-between items-center">
+                  <div class="flex items-baseline gap-2 truncate">
+                    <span>共有に移動済</span>
+                    <span class="status-desc text-[11px] font-medium text-green-700 empty:hidden truncate" data-status-key="共有に移動済"></span>
+                  </div>
+                  <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
+                </header>
+              </div>
+              <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1.5 task-list min-h-0"></div>
+            </section>
+
+            <section style="flex: 2;" class="min-h-0 bg-teal-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm shrink-0" data-status="新宮担当">
+              <div class="bg-teal-200 shrink-0">
+                <header class="text-sm font-bold text-teal-800 px-2.5 py-2 flex justify-between items-center">
+                  <div class="flex items-baseline gap-2 truncate">
+                    <span>新宮担当</span>
+                    <span class="status-desc text-[11px] font-medium text-teal-700 empty:hidden truncate" data-status-key="新宮担当"></span>
+                  </div>
+                  <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
+                </header>
+              </div>
+              <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1.5 task-list min-h-0"></div>
+            </section>
+
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= 案件詳細モーダル (画像アップロード機能付き) ================= -->
+  <section id="detail-modal" class="hidden fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <article id="detail-article" class="bg-white rounded-2xl w-full max-w-[1000px] shadow-2xl flex flex-col relative select-text overflow-hidden transition-all duration-300" style="max-height: 95vh;">
+      
+      <!-- ヘッダー（チェックリスト表示ボタンを右上に移動） -->
+      <header class="flex justify-between items-center px-6 py-3 border-b border-slate-100 shrink-0 select-none z-30 bg-white relative shadow-sm">
+        <div class="flex gap-3">
+          <button onclick="openEditFromDetail()" class="text-sm text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm">
+            ✏️ 編集
+          </button>
+        </div>
+        <div class="flex items-center gap-4">
+          <button id="btn-toggle-check" onclick="toggleDeliverableCheck()" class="hidden text-sm text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-1.5 rounded-lg transition-colors items-center gap-2 font-bold shadow-sm">
+            📋 成果物チェックを開く
+          </button>
+          <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-800 text-3xl leading-none px-2 font-bold transition-colors">&times;</button>
+        </div>
+      </header>
+
+      <!-- コンテンツエリア（スライド用にflexを設定） -->
+      <div class="flex flex-1 overflow-hidden relative">
+        
+        <!-- 左側：メインコンテンツ -->
+        <div class="flex-1 overflow-y-auto p-5 md:p-6 flex flex-col gap-4 bg-white min-w-[600px]">
+          <section class="flex flex-col md:flex-row justify-between items-start gap-6">
+            <div class="flex-1 flex flex-col gap-3">
+              <div class="flex gap-3 items-center">
+                <div id="detail-title-icon" class="flex-shrink-0 pt-1"></div>
+                <div class="flex flex-col">
+                  <h2 id="detail-title-main" class="text-2xl md:text-3xl font-bold text-slate-800 mb-1 leading-tight">お客様名</h2>
+                  <p id="detail-subtitle" class="text-sm text-slate-500 mb-0.5 font-bold">現場名未設定</p>
+                </div>
+              </div>
+              <div class="text-sm text-slate-600 font-medium bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center gap-6 w-max select-none">
+                <p class="flex items-center gap-3"><span class="w-12 text-slate-500">測量日</span><span id="detail-date" class="font-bold text-slate-800"></span></p>
+                <p class="flex items-center gap-3"><span class="w-16 text-slate-500">ステータス</span><span id="detail-status" class="font-bold px-2 py-0.5 rounded shadow-sm"></span></p>
+              </div>
+            </div>
+            
+            <div class="flex gap-2 shrink-0 select-none">
+               <div class="w-[150px] h-[105px] bg-slate-50 flex items-center justify-center text-slate-500 text-xs overflow-hidden rounded-lg shadow-sm border-2 border-dashed border-slate-400 relative group cursor-pointer" onclick="document.getElementById('upload-img-1').click()" oncontextmenu="handleContextMenu(event, 1)">
+                 <img id="detail-img-1" src="" class="hidden w-full h-full object-cover absolute inset-0 z-0">
+                 <div id="detail-img-ph-1" class="flex flex-col items-center gap-1 z-10">
+                   <span class="text-2xl mb-1 text-slate-400">📷</span>
+                   <span class="font-bold">画像1</span>
+                 </div>
+                 <div class="hidden absolute inset-0 bg-slate-900/60 z-20 flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                   <span class="text-2xl mb-1">🔄</span>
+                   <span class="font-bold text-[10px]">変更する</span>
+                 </div>
+                 <input type="file" id="upload-img-1" accept="image/*" class="hidden" onchange="handleImageUpload(event, 1)">
+                 <div id="upload-overlay-1" class="hidden absolute inset-0 bg-slate-900/80 z-30 flex flex-col items-center justify-center text-white">
+                   <span class="animate-spin text-3xl mb-1">⏳</span>
+                   <span class="font-bold text-[10px]">保存中...</span>
+                 </div>
+               </div>
+               <div class="w-[150px] h-[105px] bg-slate-50 flex items-center justify-center text-slate-500 text-xs overflow-hidden rounded-lg shadow-sm border-2 border-dashed border-slate-400 relative group cursor-pointer" onclick="document.getElementById('upload-img-2').click()" oncontextmenu="handleContextMenu(event, 2)">
+                 <img id="detail-img-2" src="" class="hidden w-full h-full object-cover absolute inset-0 z-0">
+                 <div id="detail-img-ph-2" class="flex flex-col items-center gap-1 z-10">
+                   <span class="text-2xl mb-1 text-slate-400">📷</span>
+                   <span class="font-bold">画像2</span>
+                 </div>
+                 <div class="hidden absolute inset-0 bg-slate-900/60 z-20 flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                   <span class="text-2xl mb-1">🔄</span>
+                   <span class="font-bold text-[10px]">変更する</span>
+                 </div>
+                 <input type="file" id="upload-img-2" accept="image/*" class="hidden" onchange="handleImageUpload(event, 2)">
+                 <div id="upload-overlay-2" class="hidden absolute inset-0 bg-slate-900/80 z-30 flex flex-col items-center justify-center text-white">
+                   <span class="animate-spin text-3xl mb-1">⏳</span>
+                   <span class="font-bold text-[10px]">保存中...</span>
+                 </div>
+               </div>
+               <div class="w-[150px] h-[105px] bg-emerald-50 flex items-center justify-center text-emerald-600 text-xs overflow-hidden rounded-lg shadow-sm border-2 border-dashed border-emerald-400 relative group cursor-pointer" onclick="document.getElementById('upload-img-3').click()" oncontextmenu="handleContextMenu(event, 3)">
+                 <img id="detail-img-3" src="" class="hidden w-full h-full object-cover absolute inset-0 z-0">
+                 <div id="detail-img-ph-3" class="flex flex-col items-center gap-1 z-10">
+                   <span class="text-2xl mb-1 text-emerald-400">🧾</span>
+                   <span class="font-bold">伝票画像</span>
+                 </div>
+                 <div class="hidden absolute inset-0 bg-slate-900/60 z-20 flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                   <span class="text-2xl mb-1">🔄</span>
+                   <span class="font-bold text-[10px]">変更する</span>
+                 </div>
+                 <input type="file" id="upload-img-3" accept="image/*" class="hidden" onchange="handleImageUpload(event, 3)">
+                 <div id="upload-overlay-3" class="hidden absolute inset-0 bg-slate-900/80 z-30 flex flex-col items-center justify-center text-white">
+                   <span class="animate-spin text-3xl mb-1">⏳</span>
+                   <span class="font-bold text-[10px]">保存中...</span>
+                 </div>
+               </div>
+            </div>
+          </section>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm flex flex-col gap-3 md:col-span-3">
+              <div class="flex items-center">
+                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">測量種別</span>
+                <span id="detail-type" class="flex-1 min-w-0 text-sm font-bold text-indigo-700 truncate"></span>
+              </div>
+              <div class="flex items-center">
+                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">使用機器</span>
+                <span id="detail-equipment" class="flex-1 min-w-0 text-sm font-bold text-amber-700 truncate"></span>
+              </div>
+              <div class="flex items-center">
+                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">営業所</span>
+                <span id="detail-office" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+              </div>
+              <div class="flex items-center">
+                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">営業マン</span>
+                <span id="detail-sales" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+              </div>
+              <div class="flex items-center">
+                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">請求先名</span>
+                <span id="detail-billing" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+              </div>
+            </section>
+            
+            <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm flex flex-col gap-3 md:col-span-4">
+              <div class="flex items-center">
+                <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">現場地区名</span>
+                <span id="detail-district" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+              </div>
+              <div class="flex items-center">
+                <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">電子基準点</span>
+                <span id="detail-ref-point" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+              </div>
+              <div class="flex items-center">
+                <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">飛行ルート</span>
+                <span id="detail-route" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+              </div>
+              <div class="pt-2 border-t border-slate-200 mt-1 space-y-3">
+                <div>
+                  <span class="text-slate-500 font-bold text-[11px] block mb-1.5 select-none">DIPS2.0登録</span>
+                  <div id="detail-dips-container" class="select-none"></div>
+                </div>
+                <div>
+                  <span class="text-slate-500 font-bold text-[11px] block mb-1.5 select-none">管轄省庁</span>
+                  <div id="detail-ministry-container" class="select-none"></div>
+                </div>
+                <div>
+                  <span class="text-slate-500 font-bold text-[11px] block mb-1.5 select-none">社内規格値</span>
+                  <div id="detail-standard-container" class="select-none"></div>
+                </div>
+              </div>
+            </section>
+            
+            <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm md:col-span-5 flex flex-col justify-between">
+              <div class="flex flex-1">
+                <!-- 左列 -->
+                <div class="flex flex-col gap-4 w-[50%] pr-3 border-r border-slate-200">
+                  <div id="detail-map" class="text-sm"></div>
+                  <div id="detail-meet-map" class="text-sm"></div>
+                  <div id="detail-office-loc" class="text-sm"></div>
+                </div>
+                <!-- 右列 -->
+                <div class="flex flex-col gap-4 w-[50%] pl-3">
+                  <div id="detail-pj-link" class="text-sm"></div>
+                  <div id="detail-chat-link" class="text-sm"></div>
+                </div>
+              </div>
+              <div class="pt-3 border-t border-slate-200 mt-4 flex flex-col">
+                <div class="text-xs font-bold text-slate-500 mb-1.5 flex items-center gap-1 select-none">📁 共有パス</div>
+                <div id="detail-share-path" class="text-sm bg-white p-2 border border-slate-300 rounded break-all text-slate-700 shadow-inner font-mono selection:bg-blue-200"></div>
+              </div>
+            </section>
+          </div>
+
+          <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm mt-1 select-none">
+            <h3 class="text-slate-500 font-bold text-sm mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2">
+              👥 各担当者 <span class="text-[11px] font-normal ml-2 opacity-80">(クリックして変更できます)</span>
+            </h3>
+            <div id="assignees-container" class="grid grid-cols-1 md:grid-cols-4 gap-y-3 gap-x-0"></div>
+          </section>
+          
+          <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm mt-3 select-none">
+            <h3 class="text-slate-500 font-bold text-sm mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2">☁️ データアップロード状況</h3>
+            <div id="upload-status-container" class="grid grid-cols-1 md:grid-cols-3 gap-y-3 gap-x-0"></div>
+          </section>
+        </div>
+
+        <!-- 右側：スライドパネル -->
+        <aside id="deliverable-check-panel" class="w-0 opacity-0 shrink-0 bg-slate-50 border-l border-slate-200 transition-all duration-300 relative z-20">
+          <div class="absolute top-0 left-0 w-[420px] h-full flex flex-col shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.1)]">
+            <header class="px-5 py-3.5 border-b border-slate-200 bg-slate-100 flex justify-between items-center shrink-0">
+              <h3 id="deliverable-check-title" class="text-slate-700 font-bold text-sm flex items-center gap-2">📋 成果物納品前チェック</h3>
+            </header>
+            <div id="deliverable-check-container" class="px-5 py-2 overflow-y-auto flex-1 space-y-1 pb-10"></div>
+          </div>
+        </aside>
+
+      </div>
+    </article>
+  </section>
+
+  <!-- ================= フル編集・新規作成モーダル ================= -->
+  <section id="task-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <article class="bg-white rounded-2xl w-full max-w-[1000px] shadow-2xl flex flex-col relative select-text" style="max-height: 95vh;">
+      
+      <header class="p-4 px-6 bg-slate-800 text-white flex justify-between items-center rounded-t-2xl shrink-0 select-none">
+        <h2 id="modal-title" class="font-bold text-lg flex items-center gap-2 tracking-wide">📝 案件情報の編集</h2>
+        <button onclick="closeTaskModal()" class="text-slate-400 hover:text-white text-3xl leading-none font-bold transition-colors">&times;</button>
+      </header>
+      
+      <form id="task-form" class="flex flex-col bg-slate-50 rounded-b-2xl overflow-hidden h-full">
+        <div class="p-5 md:p-6 flex-1 overflow-y-auto">
+          <div class="border border-slate-300 rounded-xl p-5 flex flex-col gap-5 bg-white shadow-sm">
+            
+            <section class="flex flex-col md:flex-row justify-between gap-6 mb-1">
+              <div class="flex-1 flex gap-3">
+                <div id="edit-title-icon" class="pt-3 flex-shrink-0"></div>
+                <div class="flex flex-col justify-center space-y-4 w-full">
+                  <label class="block">
+                    <span class="text-xs font-bold text-slate-500 block mb-1 select-none">お客様名 <span class="text-red-500">*</span></span>
+                    <input type="text" id="fm-client" class="w-full border border-slate-300 rounded p-2 text-xl font-bold focus:border-blue-500 outline-none transition-colors" required>
+                  </label>
+                  <label class="block">
+                    <span class="text-xs font-bold text-slate-500 block mb-1 select-none">現場名</span>
+                    <input type="text" id="fm-site" class="w-full border border-slate-300 rounded p-2 text-base font-bold focus:border-blue-500 outline-none transition-colors">
+                  </label>
+                  <div class="flex gap-4">
+                    <label class="block flex-1">
+                      <span class="text-xs font-bold text-slate-500 block mb-1 select-none">測量日</span>
+                      <input type="date" id="fm-date" class="w-full border border-slate-300 rounded p-2 text-sm focus:border-blue-500 outline-none">
+                    </label>
+                    <label class="block flex-1">
+                      <span class="text-xs font-bold text-slate-500 block mb-1 select-none">ステータス</span>
+                      <select id="fm-status" class="w-full border border-slate-300 rounded p-2 text-sm font-bold bg-white focus:border-blue-500 outline-none cursor-pointer">
+                        <option value="予定">予定</option>
+                        <option value="測量前準備">測量前準備</option>
+                        <option value="点群処理中">点群処理中</option>
+                        <option value="横断作成中">横断作成中</option>
+                        <option value="成果作成中">成果作成中</option>
+                        <option value="設計待">設計待</option>
+                        <option value="確認待">確認待</option>
+                        <option value="０円請求未">０円請求未</option>
+                        <option value="新宮担当">新宮担当</option>
+                        <option value="共有移動未">共有移動未</option>
+                        <option value="共有に移動済">共有に移動済</option>
+                        <option value="まとめて提出">まとめて提出</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="hidden md:flex gap-2 shrink-0 opacity-70 items-center select-none">
+                 <div class="w-[150px] h-[105px] bg-slate-50 flex items-center justify-center text-slate-400 text-[10px] rounded-lg border-2 border-dashed border-slate-300">
+                   <span class="flex flex-col items-center gap-1 font-bold"><span class="text-xl text-slate-300">📷</span><span>画像設定は詳細画面から</span></span>
+                 </div>
+                 <div class="w-[150px] h-[105px] bg-slate-50 flex items-center justify-center text-slate-400 text-[10px] rounded-lg border-2 border-dashed border-slate-300">
+                   <span class="flex flex-col items-center gap-1 font-bold"><span class="text-xl text-slate-300">📷</span><span>画像設定は詳細画面から</span></span>
+                 </div>
+                 <div class="w-[150px] h-[105px] bg-emerald-50 flex items-center justify-center text-emerald-500 text-[10px] rounded-lg border-2 border-dashed border-emerald-300">
+                   <span class="flex flex-col items-center gap-1 font-bold"><span class="text-xl text-emerald-300">🧾</span><span>伝票設定は詳細画面から</span></span>
+                 </div>
+              </div>
+            </section>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm space-y-4 md:col-span-3">
+                <div class="flex items-center">
+                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">測量種別</label>
+                  <select id="fm-type" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                    <option value="">ー</option>
+                    <option value="起工">起工</option>
+                    <option value="出来形">出来形</option>
+                    <option value="その他">その他</option>
+                  </select>
+                </div>
+                <div class="flex items-center">
+                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">使用機器</label>
+                  <select id="fm-equipment" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                    <option value="">（未選択）</option>
+                  </select>
+                </div>
+                <div class="flex items-center">
+                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">営業所</label>
+                  <select id="fm-office" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                    <option value="">（未選択）</option>
+                  </select>
+                </div>
+                <div class="flex items-center">
+                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">営業マン</label>
+                  <select id="fm-sales" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                    <option value="">（未選択）</option>
+                  </select>
+                </div>
+                <div class="flex items-center">
+                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">請求先名</label>
+                  <input type="text" id="fm-billing" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold">
+                </div>
+              </section>
+              
+              <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm space-y-3 md:col-span-4">
+                <div class="flex flex-col gap-1">
+                  <label class="text-slate-500 font-bold text-xs select-none">現場地区名</label>
+                  <input type="text" id="fm-district" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold">
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-slate-500 font-bold text-xs select-none">電子基準点</label>
+                  <input type="text" id="fm-ref-point" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold">
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-slate-500 font-bold text-xs select-none">飛行ルート</label>
+                  <input type="text" id="fm-route" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold">
+                </div>
+                
+                <div class="pt-2 border-t border-slate-300 mt-1 space-y-3">
+                  <div class="flex flex-col gap-1">
+                    <label class="text-slate-500 font-bold text-xs select-none">DIPS2.0登録</label>
+                    <select id="fm-dips" class="w-full border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                      <option value="">ー</option>
+                      <option value="未登録">未登録</option>
+                      <option value="登録済">登録済</option>
+                    </select>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="text-slate-500 font-bold text-xs select-none">管轄省庁</label>
+                    <select id="fm-ministry" class="w-full border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                      <option value="">ー</option>
+                    </select>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="text-slate-500 font-bold text-xs select-none">社内規格値</label>
+                    <select id="fm-standard" class="w-full border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                      <option value="">ー</option>
+                      <option value="なし">なし</option>
+                      <option value="80％">80％</option>
+                      <option value="50％">50％</option>
+                    </select>
+                  </div>
+                </div>
+              </section>
+              
+              <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm md:col-span-5 flex flex-col justify-between">
+                <div>
+                  <h3 class="text-slate-500 font-bold text-sm mb-3 flex items-center gap-1 select-none">🔗 リンク・パス (URL入力)</h3>
+                  <div class="flex flex-1">
+                    <!-- 左列 -->
+                    <div class="flex flex-col gap-3 w-[50%] pr-3 border-r border-slate-200">
+                      <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">📍 現場位置 URL</label>
+                        <input type="text" id="fm-mapUrl" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
+                      </div>
+                      <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">📍 集合場所 URL</label>
+                        <input type="text" id="fm-meetUrl" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
+                      </div>
+                      <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">🏢 事務所位置 URL</label>
+                        <input type="text" id="fm-office-loc" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
+                      </div>
+                    </div>
+                    <!-- 右列 -->
+                    <div class="flex flex-col gap-3 w-[50%] pl-3">
+                      <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">📁 PJ URL</label>
+                        <input type="text" id="fm-pjUrl" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
+                      </div>
+                      <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">💬 Chat URL</label>
+                        <input type="text" id="fm-chatUrl" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="pt-3 border-t border-slate-200 mt-4 flex flex-col">
+                  <label class="block text-xs font-bold text-slate-500 mb-1 select-none">📁 共有パス (フォルダパス等)</label>
+                  <input type="text" id="fm-sharePath" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner">
+                </div>
+              </section>
+            </div>
+            
+            <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm mt-4 flex items-center justify-center text-center select-none">
+              <p class="text-sm font-bold text-slate-400">※ 各担当者の変更は「詳細画面」のリストから行ってください</p>
+            </section>
+
+          </div>
+        </div>
+
+        <footer class="flex justify-between items-center px-6 py-4 border-t-2 border-slate-200 shrink-0 bg-white rounded-b-2xl select-none">
+          <div>
+            <button type="button" id="btn-delete-task" class="hidden px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors shadow-sm">
+              🗑️ この案件を削除する
+            </button>
+          </div>
+          <div class="flex gap-4">
+            <button type="button" onclick="closeTaskModal()" class="px-6 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">キャンセル</button>
+            <button type="submit" id="btn-save-task" class="px-8 py-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-colors">内容を保存する</button>
+          </div>
+        </footer>
+      </form>
+    </article>
+  </section>
+
+  <!-- ================= 設定モーダル ================= -->
+  <section id="settings-modal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[60]">
+    <article class="bg-white p-8 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+      <header class="text-lg font-bold mb-4 flex items-center gap-2 shrink-0">⚙️ システム設定</header>
+      
+      <div class="flex-1 overflow-y-auto pr-2 space-y-6">
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-2">Webアプリ URL (GAS連携)</label>
+          <input type="text" id="gas-url" class="w-full border border-slate-300 rounded p-2 text-sm outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-2">自動更新（リロード）間隔</label>
+          <select id="auto-reload-interval" class="w-full border border-slate-300 rounded p-2 text-sm outline-none focus:border-blue-500 cursor-pointer font-bold">
+            <option value="5">5分ごとに更新</option>
+            <option value="15">15分ごとに更新</option>
+            <option value="30">30分ごとに更新</option>
+          </select>
+        </div>
+        
+        <div>
+          <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">各ボードの説明文設定</h3>
+          <p class="text-xs text-slate-500 mb-4">ボードタイトルの横に表示する説明文を自由に設定できます。</p>
+          <div id="status-desc-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3"></div>
+        </div>
+      </div>
+
+      <footer class="flex justify-end gap-3 shrink-0 pt-5 mt-2 border-t border-slate-100">
+        <button id="btn-cancel-settings" class="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded transition-colors">キャンセル</button>
+        <button id="btn-save-settings" class="px-5 py-2 text-sm font-bold bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors shadow-sm">設定を保存</button>
+      </footer>
+    </article>
+  </section>
+
+  <!-- ================= 画像拡大モーダル ================= -->
+  <section id="image-viewer-modal" class="hidden fixed inset-0 z-[80] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeImageViewer()">
+    <img id="viewer-img" src="" class="max-w-full max-h-full object-contain shadow-2xl rounded" onclick="event.stopPropagation()">
+    <button onclick="closeImageViewer()" class="absolute top-4 right-6 text-white text-4xl font-bold hover:text-slate-300 transition-colors">&times;</button>
+  </section>
+
+  <!-- ================= 右クリックメニュー ================= -->
+  <menu id="image-context-menu" class="hidden fixed z-[90] bg-white border border-slate-200 shadow-xl rounded-lg py-1 w-32 text-sm text-slate-800">
+    <li class="px-4 py-2 hover:bg-blue-50 cursor-pointer font-bold flex items-center gap-2" onclick="viewImageFullscreen()">🔍 拡大表示</li>
+    <li class="px-4 py-2 hover:bg-red-50 text-red-600 cursor-pointer font-bold flex items-center gap-2" onclick="deleteTargetImage()">🗑️ 削除</li>
+  </menu>
+  
+  <!-- ================= トースト ================= -->
+  <aside id="toast" class="hidden fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-2xl text-white flex items-center gap-3 z-[70] transition-all duration-300 transform translate-y-20 opacity-0">
+    <span id="toast-icon" class="text-xl">✅</span>
+    <span id="toast-msg" class="text-sm font-bold tracking-wide"></span>
+  </aside>
+
+  <!-- ================= JavaScript ================= -->
+  <script>
+    const ASSIGNEES = {
+      design: ['ー', '桒名', '丸岡', '鈴木', '西山', '奥山', '平岡', '武井', '酒井', '金原'],
+      others: ['ー', '大林', '西山', '清水', '前田', '尾坂']
+    };
+
+    const STATUS_LIST = [
+      '予定', '測量前準備', '点群処理中', '横断作成中', '成果作成中', '設計待',
+      '確認待', '０円請求未', 'まとめて提出', '共有移動未', '共有に移動済', '新宮担当'
+    ];
+    
+    let tasks = [];
+    let masterData = { offices: {}, ministries: [], equipments: [] };
+    let gasUrl = '';
+    let isSidebarOpen = true;
+    let currentSort = 'asc';
+    let currentOpenTaskId = null;
+    let isEditMode = false;
+    let filterText = '';
+    let filterRole = 'all';
+    let filterAssignee = '';
+    let autoReloadTimer = null; 
+
+    const loginScreen = document.getElementById('login-screen');
+    const mainApp = document.getElementById('main-app');
+    const settingsModal = document.getElementById('settings-modal');
+    const settingBadge = document.getElementById('setting-badge');
+    const taskModal = document.getElementById('task-modal');
+    const detailModal = document.getElementById('detail-modal');
+    const fontSizeSelect = document.getElementById('font-size-selector');
+
+    fontSizeSelect.addEventListener('change', (e) => {
+      const size = e.target.value;
+      localStorage.setItem('appFontSize', size);
+      applyFontSize(size);
+    });
+
+    function applyFontSize(size) {
+      const root = document.documentElement;
+      if (size === 'small') {
+        root.style.fontSize = '12px';
+      } else if (size === 'large') {
+        root.style.fontSize = '16px';
+      } else {
+        root.style.fontSize = '14px';
+      }
+      document.getElementById('font-size-selector').value = size;
+    }
+
+    function init() {
+      applyFontSize(localStorage.getItem('appFontSize') || 'medium');
+      gasUrl = localStorage.getItem('gasUrl') || '';
+      
+      const savedSort = localStorage.getItem('sortOrder');
+      if (savedSort) {
+        currentSort = savedSort;
+        document.getElementById('sort-order').value = currentSort;
+      }
+      
+      initFilters();
+      updateSettingBadge();
+      setupDragAndDrop();
+      loadStatusDescriptions(); 
+
+      if (sessionStorage.getItem('isLoggedIn') === 'true' && gasUrl) {
+        showMainApp();
+        fetchTasksFromGas();
+        startAutoReload();
+      } else {
+        renderBoard();
+      }
+    }
+
+    function startAutoReload() { 
+      if (autoReloadTimer) {
+        clearInterval(autoReloadTimer);
+        autoReloadTimer = null;
+      }
+      const interval = parseInt(localStorage.getItem('autoReloadInterval') || '30', 10);
+      if (interval > 0) {
+        autoReloadTimer = setInterval(() => { 
+          if (sessionStorage.getItem('isLoggedIn') === 'true' && gasUrl) {
+            fetchTasksFromGas(true); 
+          }
+        }, interval * 60 * 1000); 
+      }
+    }
+
+    async function fetchTasksFromGas(isSilent = false) {
+      if (!gasUrl) return;
+      const syncIcon = document.getElementById('sync-icon');
+      
+      if (!isSilent) {
+        syncIcon.classList.add('animate-spin', 'text-blue-400');
+      }
+      
+      try {
+        const response = await fetch(gasUrl, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'fetchData' })
+        });
+        const result = await response.json();
+        
+        if (result.success) { 
+          tasks = result.tasks || []; 
+          if (result.masterData) {
+            masterData = result.masterData;
+            populateMasterDropdowns();
+          }
+          renderBoard();
+          
+          if (currentOpenTaskId && !detailModal.classList.contains('hidden')) { 
+             const updatedTask = tasks.find(t => t.id === currentOpenTaskId); 
+             if (updatedTask) {
+               openDetailModal(updatedTask); 
+             }
+          }
+        }
+      } catch (err) {
+        if (!isSilent) {
+          showToast('通信エラー', 'error');
+        }
+      } finally {
+        syncIcon.classList.remove('animate-spin', 'text-blue-400');
+      }
+    }
+
+    function populateMasterDropdowns() {
+      const officeSelect = document.getElementById('fm-office');
+      const eqSelect = document.getElementById('fm-equipment');
+      const minSelect = document.getElementById('fm-ministry');
+      
+      officeSelect.innerHTML = '<option value="">（未選択）</option>';
+      Object.keys(masterData.offices).forEach(o => {
+        officeSelect.innerHTML += `<option value="${o}">${o}</option>`;
+      });
+      
+      eqSelect.innerHTML = '<option value="">（未選択）</option>';
+      masterData.equipments.forEach(e => {
+        eqSelect.innerHTML += `<option value="${e}">${e}</option>`;
+      });
+      
+      minSelect.innerHTML = '<option value="">ー</option>';
+      masterData.ministries.forEach(m => {
+        minSelect.innerHTML += `<option value="${m}">${m}</option>`;
+      });
+    }
+
+    document.getElementById('fm-office').addEventListener('change', (e) => {
+      const salesSelect = document.getElementById('fm-sales');
+      salesSelect.innerHTML = '<option value="">（未選択）</option>';
+      const reps = masterData.offices[e.target.value] || [];
+      reps.forEach(r => {
+        salesSelect.innerHTML += `<option value="${r}">${r}</option>`;
+      });
+    });
+
+    document.getElementById('btn-toggle-search').addEventListener('click', () => {
+      const c = document.getElementById('search-bar-container');
+      c.classList.toggle('hidden');
+      if (!c.classList.contains('hidden')) {
+        document.getElementById('search-text').focus();
+      }
+    });
+
+    document.getElementById('search-text').addEventListener('input', (e) => {
+      filterText = e.target.value.toLowerCase();
+      renderBoard();
+    });
+
+    document.getElementById('search-role').addEventListener('change', (e) => {
+      filterRole = e.target.value;
+      renderBoard();
+    });
+
+    document.getElementById('search-assignee').addEventListener('change', (e) => {
+      filterAssignee = e.target.value;
+      renderBoard();
+    });
+
+    document.getElementById('btn-clear-search').addEventListener('click', () => {
+      document.getElementById('search-text').value = '';
+      document.getElementById('search-role').value = 'all';
+      document.getElementById('search-assignee').value = '';
+      filterText = '';
+      filterRole = 'all';
+      filterAssignee = '';
+      renderBoard();
+    });
+
+    document.getElementById('sort-order').addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      localStorage.setItem('sortOrder', currentSort);
+      renderBoard();
+    });
+    
+    function initFilters() { 
+      const sel = document.getElementById('search-assignee'); 
+      sel.innerHTML = '<option value="">（全員表示）</option><option value="-">- (未設定)</option>';
+      const all = new Set([...ASSIGNEES.design, ...ASSIGNEES.others]); 
+      all.delete('ー'); 
+      Array.from(all).sort().forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        sel.appendChild(opt);
+      }); 
+    }
+
+    function getFilteredAndSortedTasks() {
+      let f = tasks;
+      if (filterText) {
+        f = f.filter(t => (t.client && t.client.toLowerCase().includes(filterText)) || (t.site && t.site.toLowerCase().includes(filterText)));
+      }
+      
+      if (filterAssignee) {
+        f = f.filter(t => {
+          const isUnassigned = (v1, v2) => {
+            const s1 = String(v1 || '').trim();
+            const s2 = String(v2 || '').trim();
+            return (s1 === '' || s1 === 'ー') && (s2 === '' || s2 === 'ー');
+          };
+          
+          const hasAssignee = (v1, v2, target) => {
+            return (v1 && String(v1).includes(target)) || (v2 && String(v2).includes(target));
+          };
+          
+          const m = {
+            'design': ['designRep', '設計担当'],
+            'plan': ['planRep', '施工計画'],
+            'survey': ['surveyRep', '測量担当'],
+            'pointcloud': ['pointCloudRep', '点群処理'],
+            'cross': ['crossSectionRep', '現況横断'],
+            'output': ['outputRep', '成果作成'],
+            'zeroyen': ['zeroYenRep', '０円請求'],
+            'earth': ['earthRep', '土量']
+          };
+          
+          if (filterRole === 'all') { 
+            if (filterAssignee === '-') {
+              return Object.values(m).some(keys => isUnassigned(t[keys[0]], t[keys[1]]));
+            } else {
+              return Object.values(m).some(keys => hasAssignee(t[keys[0]], t[keys[1]], filterAssignee));
+            }
+          } else { 
+            const keys = m[filterRole];
+            if (filterAssignee === '-') {
+              return isUnassigned(t[keys[0]], t[keys[1]]);
+            } else {
+              return hasAssignee(t[keys[0]], t[keys[1]], filterAssignee);
+            }
+          }
+        });
+      }
+      
+      return f.sort((a, b) => {
+        if (!a.date && b.date) return -1;
+        if (a.date && !b.date) return 1;
+        if (!a.date && !b.date) return 0;
+        return currentSort === 'asc' 
+          ? new Date(a.date) - new Date(b.date) 
+          : new Date(b.date) - new Date(a.date);
+      });
+    }
+
+    function formatYYYYMMDD(dateStr) {
+      if (!dateStr || dateStr === "未定" || dateStr === "") return "未定";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatDateForInput(dateStr) {
+      if (!dateStr || dateStr === "未定" || dateStr === "") return "";
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "";
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    
+    function getIconSvg(type, eq, sizeClass="w-3.5 h-3.5") { 
+      let color = "#22c55e"; 
+      if (type && type.includes("起工")) {
+        color = "#f97316"; 
+      } else if (type && type.includes("出来形")) {
+        color = "#3b82f6"; 
+      }
+      
+      let shape = `<polygon points="8,2 14,13 2,13" fill="${color}" />`; 
+      if (eq && eq.includes("TLS")) {
+        shape = `<polygon points="8,1.5 14.5,5.25 14.5,10.75 8,14.5 1.5,10.75 1.5,5.25" fill="none" stroke="${color}" stroke-width="2" />`; 
+      } else if (eq && (eq.includes("ULS") || eq.includes("M4"))) {
+        shape = `<polygon points="8,1 15,5 15,11 8,15 1,11 1,5" fill="${color}" />`; 
+      }
+      return `<svg class="${sizeClass} shrink-0 mr-1" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">${shape}</svg>`; 
+    }
+    
+    function updateSearchButtonState() {
+      const btn = document.getElementById('btn-toggle-search');
+      const count = document.getElementById('filtered-count').textContent;
+      
+      if (filterText !== '' || filterAssignee !== '') {
+        btn.classList.add('bg-blue-600', 'text-white', 'border-blue-500');
+        btn.classList.remove('bg-slate-700', 'text-blue-200', 'border-slate-600');
+        btn.innerHTML = `🔍 検索中 (${count}件)`;
+      } else {
+        btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-500');
+        btn.classList.add('bg-slate-700', 'text-blue-200', 'border-slate-600');
+        btn.innerHTML = '🔍 検索・絞り';
+      }
+    }
+
+    function renderBoard() {
+      document.querySelectorAll('.task-list').forEach(list => list.innerHTML = '');
+      document.querySelectorAll('.count').forEach(el => el.textContent = '0');
+      
+      const filtered = getFilteredAndSortedTasks();
+      document.getElementById('filtered-count').textContent = filtered.length;
+      
+      filtered.forEach(task => {
+        const zone = document.querySelector(`.drop-zone[data-status="${task.status}"]`);
+        if (!zone) return;
+        
+        zone.querySelector('.count').textContent = parseInt(zone.querySelector('.count').textContent) + 1;
+        
+        const card = document.createElement('article');
+        card.draggable = true;
+        let isDelayed = false;
+        
+        if (task.date && ["点群処理中", "横断作成中", "成果作成中", "設計待", "確認待"].includes(task.status)) {
+          if ((new Date() - new Date(task.date)) / (1000 * 60 * 60 * 24) >= 14) {
+            isDelayed = true;
+          }
+        }
+        
+        const isSidebar = ["新宮担当", "共有移動未", "共有に移動済", "まとめて提出"].includes(task.status);
+        const fDate = formatYYYYMMDD(task.date);
+        const dIcon = isDelayed ? '<span title="測量日から2週間超過">⚠️</span> ' : '';
+        
+        if (isSidebar) { 
+          card.className = "bg-white p-2 rounded shadow border border-slate-200 cursor-pointer hover:border-blue-400 transition-all flex flex-col shrink-0 select-none"; 
+          card.innerHTML = `
+            <header class="flex justify-between items-center text-slate-500 mb-0.5 gap-1 shrink-0">
+              <div class="flex items-center shrink-0 min-w-0 text-slate-800">
+                ${getIconSvg(task.type, task.equipment)}
+                <span class="font-bold text-[11px] truncate leading-none">${task.client || '-'}</span>
+              </div>
+              <span class="font-bold text-slate-500 text-[10px] shrink-0">${fDate}</span>
+            </header>
+            <div class="truncate text-slate-600 text-[11px] leading-tight">${task.site || '-'}</div>
+          `; 
+        } else { 
+          card.className = `select-none ${isDelayed ? "bg-yellow-100 border-yellow-400 shadow-yellow-300" : "bg-white border-slate-200"} rounded-lg shadow-sm border cursor-pointer hover:shadow-md hover:border-blue-400 transition-all flex flex-row overflow-hidden shrink-0 min-h-[85px]`; 
+          
+          const thumbHtml = task.image1 
+            ? `<div class="w-20 shrink-0 bg-slate-200 border-r ${isDelayed ? 'border-yellow-300' : 'border-slate-200'}">
+                 <img src="${task.image1}" class="w-full h-full object-cover">
+               </div>` 
+            : ''; 
+
+          let footerCenterHtml = '';
+          if (task.status === '設計待') {
+            const designRep = task['設計担当'] || '未設定'; 
+            let daysPassedText = '-日'; 
+            
+            if (task.statusDate) {
+              const today = new Date();
+              const startDate = new Date(task.statusDate);
+              today.setHours(0,0,0,0);
+              startDate.setHours(0,0,0,0);
+              const diffTime = today.getTime() - startDate.getTime();
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              daysPassedText = `${diffDays}日`; 
+            }
+            
+            footerCenterHtml = `
+              <div class="flex items-center gap-1 min-w-0 shrink px-1 justify-center">
+                <span class="text-[10px] font-bold text-cyan-800 bg-cyan-100 border border-cyan-300 px-1 py-0.5 rounded truncate max-w-[60px]" title="${designRep}">📐${designRep}</span>
+                <span class="text-[10px] font-bold text-red-600 bg-white border border-red-200 px-1 py-0.5 rounded shadow-sm shrink-0 whitespace-nowrap">${daysPassedText}経過</span>
+              </div>
+            `;
+          }
+
+          const contentHtml = `
+            <div class="flex-1 flex flex-col min-w-0 p-2.5">
+              <header class="text-[11px] text-slate-500 mb-1 flex justify-between items-center font-medium shrink-0 gap-1">
+                <div class="flex items-center min-w-0 ${isDelayed ? 'text-yellow-800' : 'text-slate-800'}">
+                  ${getIconSvg(task.type, task.equipment)}
+                  <span class="font-black text-[13px] truncate leading-tight">${task.client || '-'}</span>
+                </div>
+                <span class="font-bold tracking-tighter leading-none shrink-0 ${isDelayed ? 'text-yellow-700' : 'text-slate-500'}">
+                  ${dIcon}${fDate}
+                </span>
+              </header>
+              <div class="text-[13px] font-bold ${isDelayed ? 'text-yellow-900' : 'text-slate-700'} mb-1.5 line-clamp-2 flex-1">
+                ${task.site || '-'}
+              </div>
+              <footer class="flex items-center justify-between shrink-0 border-t ${isDelayed ? 'border-yellow-200' : 'border-slate-100'} pt-1 mt-auto w-full gap-1">
+                <span class="text-[11px] font-bold ${isDelayed ? 'bg-yellow-50 text-yellow-700' : 'bg-slate-100 text-slate-600'} px-1.5 py-0.5 rounded truncate shrink-0 max-w-[35%]">
+                  ${task.office || '-'}
+                </span>
+                ${footerCenterHtml}
+                <span class="text-[11px] font-bold ${isDelayed ? 'text-yellow-800' : 'text-slate-500'} truncate shrink-0 max-w-[35%] text-right ml-auto">
+                  👤 ${task.salesperson || task.salesRep || '-'}
+                </span>
+              </footer>
+            </div>
+          `;
+
+          card.innerHTML = thumbHtml + contentHtml;
+        }
+        
+        card.addEventListener('click', () => openDetailModal(task)); 
+        card.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('taskId', task.id);
+          setTimeout(() => card.classList.add('opacity-40'), 0);
+        }); 
+        card.addEventListener('dragend', () => card.classList.remove('opacity-40')); 
+        zone.querySelector('.task-list').appendChild(card);
+      }); 
+      
+      updateSearchButtonState();
+    }
+
+    async function handleUploadCheck(fieldName, isChecked) {
+      if (!currentOpenTaskId || !gasUrl) return;
+      const syncIcon = document.getElementById('sync-icon'); 
+      syncIcon.classList.add('animate-spin', 'text-blue-400');
+      
+      let val = '';
+      if (isChecked) {
+        const userName = sessionStorage.getItem('userName') || '不明';
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        
+        val = `済 ${userName} ${yyyy}${mm}${dd} ${hh}:${min}`;
+      }
+
+      try {
+        const payload = {
+          action: 'updateField',
+          taskId: currentOpenTaskId,
+          fieldName: fieldName,
+          newValue: val,
+          userName: sessionStorage.getItem('userName') || '不明'
+        };
+        const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await res.json(); 
+        
+        if (result.success) { 
+          showToast(`アップロード状況を更新しました`); 
+          const t = tasks.find(x => x.id === currentOpenTaskId);
+          if (t) {
+            t[fieldName] = val; 
+            openDetailModal(t); 
+          }
+        } else {
+          throw new Error();
+        }
+      } catch (e) { 
+        showToast('更新に失敗しました', 'error'); 
+      } finally { 
+        syncIcon.classList.remove('animate-spin', 'text-blue-400'); 
+      }
+    }
+    
+    async function handleDeliverableCheck(itemKey, isChecked) {
+      if (!currentOpenTaskId || !gasUrl) return;
+      
+      const t = tasks.find(x => x.id === currentOpenTaskId);
+      let savedStatus = {};
+      try {
+        savedStatus = JSON.parse(t.checkStatus || '{}');
+      } catch(e) {}
+      
+      if (isChecked) {
+        savedStatus[itemKey] = true;
+      } else {
+        delete savedStatus[itemKey];
+      }
+      
+      const jsonStr = JSON.stringify(savedStatus);
+      const syncIcon = document.getElementById('sync-icon'); 
+      syncIcon.classList.add('animate-spin', 'text-blue-400');
+
+      try {
+        const payload = {
+          action: 'updateField',
+          taskId: currentOpenTaskId,
+          fieldName: '成果物チェック状況',
+          newValue: jsonStr,
+          userName: sessionStorage.getItem('userName') || '不明'
+        };
+        const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await res.json(); 
+        
+        if (result.success) { 
+          t.checkStatus = jsonStr;
+        } else {
+          throw new Error();
+        }
+      } catch(e) { 
+        showToast('更新に失敗しました。画面をリロードしてください', 'error'); 
+      } finally { 
+        syncIcon.classList.remove('animate-spin', 'text-blue-400'); 
+      }
+    }
+
+    function setupDragAndDrop() {
+      document.querySelectorAll('.drop-zone').forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('drag-over');
+        });
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          handleDrop(e.dataTransfer.getData('taskId'), zone.getAttribute('data-status'));
+        });
+      });
+      
+      document.getElementById('collapsed-sidebar').addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!isSidebarOpen) toggleSidebar();
+      });
+    }
+
+    function toggleSidebar() {
+      isSidebarOpen = !isSidebarOpen;
+      document.getElementById('collapsed-sidebar').classList.toggle('hidden', isSidebarOpen);
+      document.getElementById('expanded-sidebar').classList.toggle('hidden', !isSidebarOpen);
+    }
+
+    function renderRadioGroup(fieldName, options, currentVal) {
+      let html = `<div class="flex flex-nowrap overflow-hidden gap-x-2.5 gap-y-1.5">`;
+      options.forEach(opt => {
+        const checked = (opt === currentVal) ? 'checked' : '';
+        html += `
+          <label class="flex items-center gap-1 cursor-pointer text-sm font-bold text-slate-700 hover:text-blue-600 transition-colors whitespace-nowrap">
+            <input type="radio" name="radio-${fieldName}" value="${opt}" ${checked} class="w-4 h-4 cursor-pointer text-blue-600 focus:ring-blue-500 border-gray-300" onchange="handleRadioChange('${fieldName}', this.value)">
+            <span>${opt}</span>
+          </label>
+        `;
+      });
+      html += `</div>`;
+      return html;
+    }
+
+    async function handleRadioChange(fieldName, value) {
+      if (!currentOpenTaskId || !gasUrl) return;
+      const syncIcon = document.getElementById('sync-icon');
+      syncIcon.classList.add('animate-spin', 'text-blue-400');
+      
+      try {
+        const payload = {
+          action: 'updateField',
+          taskId: currentOpenTaskId,
+          fieldName: fieldName,
+          newValue: value,
+          userName: sessionStorage.getItem('userName') || '不明'
+        };
+        const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await res.json(); 
+        
+        if (result.success) {
+          showToast(`${fieldName}を更新しました`);
+          fetchTasksFromGas(true);
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        showToast('更新に失敗しました', 'error');
+      } finally {
+        syncIcon.classList.remove('animate-spin', 'text-blue-400');
+      }
+    }
+
+    function loadStatusDescriptions() {
+      const descs = JSON.parse(localStorage.getItem('statusDescriptions') || '{}');
+      document.querySelectorAll('.status-desc').forEach(el => {
+        const key = el.getAttribute('data-status-key');
+        if (descs[key]) {
+          el.textContent = descs[key];
+          el.classList.remove('hidden');
+        } else {
+          el.textContent = '';
+          el.classList.add('hidden');
+        }
+      });
+    }
+
+    function renderSettingsDescInputs() {
+      const descs = JSON.parse(localStorage.getItem('statusDescriptions') || '{}');
+      const container = document.getElementById('status-desc-inputs');
+      container.innerHTML = '';
+      
+      STATUS_LIST.forEach(s => {
+        container.innerHTML += `
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-500">${s}</label>
+            <input type="text" id="desc-input-${s}" value="${descs[s] || ''}" placeholder="説明なし" class="border border-slate-300 rounded p-2 text-sm outline-none focus:border-blue-500">
+          </div>
+        `;
+      });
+    }
+
+    async function handleImageUpload(e, index) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!gasUrl || !currentOpenTaskId) {
+        showToast('保存に失敗しました', 'error');
+        return;
+      }
+      
+      const overlay = document.getElementById(`upload-overlay-${index}`);
+      if (overlay) overlay.classList.remove('hidden');
+      
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Data = event.target.result;
+        try {
+          const payload = {
+            action: 'uploadImage',
+            taskId: currentOpenTaskId,
+            imageIndex: index,
+            base64Data: base64Data,
+            mimeType: file.type,
+            fileName: `${currentOpenTaskId}_img${index}_${file.name}`,
+            userName: sessionStorage.getItem('userName') || '不明'
+          };
+          
+          const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+          const result = await res.json();
+          
+          if (result.success) {
+            showToast('画像を保存しました');
+            const t = tasks.find(x => x.id === currentOpenTaskId);
+            if (t) {
+               if (index === 1) t.image1 = result.url;
+               else if (index === 2) t.image2 = result.url;
+               else if (index === 3) t.slipImage = result.url; 
+               
+               const imgEl = document.getElementById(`detail-img-${index}`);
+               const phEl = document.getElementById(`detail-img-ph-${index}`);
+               if (imgEl && phEl) {
+                 imgEl.src = result.url;
+                 imgEl.classList.remove('hidden');
+                 phEl.classList.add('hidden');
+               }
+            }
+          } else {
+            showToast(result.message || 'アップロード失敗', 'error');
+          }
+        } catch (err) {
+          showToast('通信エラー', 'error');
+        } finally {
+          if (overlay) overlay.classList.add('hidden');
+          e.target.value = ''; 
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openDetailModal(task) {
+      currentOpenTaskId = task.id; 
+      
+      document.getElementById('detail-title-icon').innerHTML = getIconSvg(task.type, task.equipment, 'w-10 h-10');
+      document.getElementById('detail-title-main').textContent = task.client || 'お客様名未設定';
+      document.getElementById('detail-subtitle').textContent = task.site || '現場名未設定';
+      document.getElementById('detail-date').textContent = formatYYYYMMDD(task.date); 
+      
+      const statusColors = {
+        "予定": "bg-slate-300 text-slate-800 border-slate-400",
+        "測量前準備": "bg-yellow-200 text-yellow-800 border-yellow-400",
+        "点群処理中": "bg-blue-200 text-blue-800 border-blue-400",
+        "横断作成中": "bg-orange-200 text-orange-800 border-orange-400",
+        "成果作成中": "bg-indigo-200 text-indigo-800 border-indigo-400",
+        "設計待": "bg-cyan-200 text-cyan-800 border-cyan-400",
+        "確認待": "bg-purple-200 text-purple-800 border-purple-400",
+        "０円請求未": "bg-red-200 text-red-800 border-red-400",
+        "まとめて提出": "bg-gray-200 text-gray-800 border-gray-400",
+        "共有移動未": "bg-pink-200 text-pink-800 border-pink-400",
+        "共有に移動済": "bg-green-200 text-green-800 border-green-400",
+        "新宮担当": "bg-teal-200 text-teal-800 border-teal-400"
+      };
+      
+      const statusEl = document.getElementById('detail-status');
+      statusEl.textContent = task.status || '予定';
+      statusEl.className = `font-bold border px-2 py-0.5 rounded shadow-sm ${statusColors[task.status] || statusColors["予定"]}`;
+      
+      document.getElementById('detail-type').textContent = task.type || '未設定'; 
+      document.getElementById('detail-equipment').textContent = task.equipment || '未設定';
+      document.getElementById('detail-office').textContent = task.office || '未設定';
+      document.getElementById('detail-sales').textContent = task.salesperson || task.salesRep || '未設定';
+      document.getElementById('detail-billing').textContent = task.billing || '未設定';
+      document.getElementById('detail-district').textContent = task.district || '未設定';
+      document.getElementById('detail-ref-point').textContent = task.refPoint || '未設定';
+      document.getElementById('detail-route').textContent = task.route || '未設定';
+      
+      const ministriesOpts = masterData.ministries.length > 0 ? masterData.ministries : ['国交省', '農水省', '民間'];
+      document.getElementById('detail-dips-container').innerHTML = renderRadioGroup('DIPS2.0登録', ['未登録', '登録済'], task.dips);
+      document.getElementById('detail-ministry-container').innerHTML = renderRadioGroup('管轄省庁', ministriesOpts, task.ministry);
+      document.getElementById('detail-standard-container').innerHTML = renderRadioGroup('社内規格値', ['なし', '80％', '50％'], task.standard);
+      
+      document.getElementById('detail-share-path').textContent = task.sharePath || '未登録';
+      document.getElementById('detail-type').className = `flex-1 min-w-0 text-sm font-bold truncate ${task.type?.includes("起工") ? "text-orange-600" : "text-blue-600"}`;
+
+      const img1 = document.getElementById('detail-img-1');
+      const ph1 = document.getElementById('detail-img-ph-1');
+      if (task.image1) {
+        img1.src = task.image1;
+        img1.classList.remove('hidden');
+        ph1.classList.add('hidden');
+      } else {
+        img1.src = '';
+        img1.classList.add('hidden');
+        ph1.classList.remove('hidden');
+      }
+      
+      const img2 = document.getElementById('detail-img-2');
+      const ph2 = document.getElementById('detail-img-ph-2');
+      if (task.image2) {
+        img2.src = task.image2;
+        img2.classList.remove('hidden');
+        ph2.classList.add('hidden');
+      } else {
+        img2.src = '';
+        img2.classList.add('hidden');
+        ph2.classList.remove('hidden');
+      }
+
+      const img3 = document.getElementById('detail-img-3');
+      const ph3 = document.getElementById('detail-img-ph-3');
+      if (task.slipImage) {
+        img3.src = task.slipImage;
+        img3.classList.remove('hidden');
+        ph3.classList.add('hidden');
+      } else {
+        img3.src = '';
+        img3.classList.add('hidden');
+        ph3.classList.remove('hidden');
+      }
+
+      const roles = [
+        { id: 'design', key: 'designRep', jp: '設計担当', list: ASSIGNEES.design, selectColorClass: 'bg-white' },
+        { id: 'plan', key: 'planRep', jp: '施工計画', list: ASSIGNEES.others, selectColorClass: 'bg-white' },
+        { id: 'survey', key: 'surveyRep', jp: '測量担当', list: ASSIGNEES.others, selectColorClass: 'bg-white' },
+        { id: 'pointcloud', key: 'pointCloudRep', jp: '点群処理', list: ASSIGNEES.others, selectColorClass: 'bg-white' },
+        { id: 'cross', key: 'crossSectionRep', jp: '現況横断', list: ASSIGNEES.others, selectColorClass: 'bg-white' },
+        { id: 'earth', key: '土量', jp: '土量', list: ASSIGNEES.others, selectColorClass: 'bg-white' },
+        { id: 'output', key: 'outputRep', jp: '成果作成', list: ASSIGNEES.others, selectColorClass: 'bg-white' },
+        { id: 'zeroyen', key: 'zeroYenRep', jp: '０円請求', list: ASSIGNEES.others, selectColorClass: 'bg-white' }
+      ];
+      
+      const cont = document.getElementById('assignees-container');
+      let html = '';
+      
+      roles.forEach((r, index) => {
+        let selected = (task[r.key] || task[r.jp]) ? (task[r.key] || task[r.jp]).split(',').map(s => s.trim()) : ['ー'];
+        let disp = selected.join(', ');
+        if (disp.length > 12) disp = disp.substring(0, 12) + '...';
+        
+        let opts = '';
+        r.list.forEach(opt => {
+          opts += `<label class="multi-select-item"><input type="checkbox" value="${opt}" ${selected.includes(opt) ? 'checked' : ''} onchange="handleCheckboxChange(this, '${r.id}')">${opt}</label>`;
+        });
+        
+        selected.forEach(v => {
+          if (!r.list.includes(v) && v !== 'ー') {
+            opts += `<label class="multi-select-item"><input type="checkbox" value="${v}" checked onchange="handleCheckboxChange(this, '${r.id}')">${v} (外)</label>`;
+          }
+        });
+        
+        const menuClass = 'multi-select-menu open-up';
+        const isRightEdge = (index % 4 === 3);
+        const borderClass = isRightEdge ? 'md:pr-3' : 'md:border-r md:border-slate-300 md:pr-3 md:mr-3';
+
+        html += `
+          <div class="${borderClass} select-none">
+            <div class="text-slate-500 font-bold text-xs mb-1.5">${r.jp}</div>
+            <div class="multi-select-dropdown" id="dropdown-${r.id}">
+              <button type="button" class="multi-select-button ${r.selectColorClass} shadow-sm border border-slate-300 w-full hover:bg-slate-50 transition-colors" onclick="toggleMultiSelect('${r.id}')">
+                <span id="displayText-${r.id}" class="truncate">${disp}</span>
+              </button>
+              <div class="${menuClass}" id="menu-${r.id}">${opts}</div>
+            </div>
+          </div>
+        `;
+      });
+      
+      cont.innerHTML = html;
+      document.addEventListener('click', closeAllMultiSelects);
+      
+      document.getElementById('detail-map').innerHTML = task.mapUrl 
+        ? `<div class="flex items-center gap-2"><span class="text-blue-500 text-base">📍</span><a href="${task.mapUrl}" target="_blank" class="text-blue-600 font-bold hover:underline truncate">現場位置 (Google Maps)</a></div>` 
+        : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">📍</span><span class="text-slate-400 font-medium">現場位置 未登録</span></div>`;
+      
+      document.getElementById('detail-meet-map').innerHTML = task.meetUrl 
+        ? `<div class="flex items-center gap-2"><span class="text-emerald-500 text-base">📍</span><a href="${task.meetUrl}" target="_blank" class="text-emerald-600 font-bold hover:underline truncate">集合場所 (Google Maps)</a></div>` 
+        : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">📍</span><span class="text-slate-400 font-medium">集合場所 未登録</span></div>`;
+      
+      document.getElementById('detail-office-loc').innerHTML = task.officeLoc 
+        ? `<div class="flex items-center gap-2"><span class="text-indigo-500 text-base">🏢</span><a href="${task.officeLoc}" target="_blank" class="text-indigo-600 font-bold hover:underline truncate">事務所位置 (Google Maps)</a></div>` 
+        : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">🏢</span><span class="text-slate-400 font-medium">事務所位置 未登録</span></div>`;
+      
+      document.getElementById('detail-pj-link').innerHTML = task.pjUrl 
+        ? `<div class="flex items-center gap-2"><span class="text-blue-500 text-base">📁</span><a href="${task.pjUrl}" target="_blank" class="text-blue-600 font-bold hover:underline truncate">プロジェクトを開く</a></div>` 
+        : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">📁</span><span class="text-slate-400 font-medium">プロジェクト 未登録</span></div>`;
+      
+      document.getElementById('detail-chat-link').innerHTML = task.chatUrl 
+        ? `<div class="flex items-center gap-2"><span class="text-emerald-500 text-base">💬</span><a href="${task.chatUrl}" target="_blank" class="text-emerald-600 font-bold hover:underline truncate">Google Chat を開く</a></div>` 
+        : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">💬</span><span class="text-slate-400 font-medium">Google Chat 未登録</span></div>`;
+      
+      const uploadItems = [
+        '施工計画書', 'YS・Base', '現況横断武蔵',
+        '飛行ルート', 'Photo・オルソ', '標定点配置武蔵',
+        'TSC観測データ', 'DGN', '成果物ZIP',
+        'TLS_data', 'XPT・XPTC', ''
+      ];
+      
+      const uploadCont = document.getElementById('upload-status-container');
+      let uploadHtml = '';
+      
+      uploadItems.forEach((item, idx) => {
+        const isRightEdge = (idx % 3 === 2);
+        const pipe = isRightEdge ? '' : '<span class="text-slate-300 font-bold ml-auto pl-2">｜</span>';
+
+        if (item === '') {
+          uploadHtml += `<div class="flex items-center text-sm ${isRightEdge ? '' : 'pr-3'}"></div>`;
+          return;
+        }
+
+        const rawVal = String(task[item] || '');
+        const isChecked = (rawVal.startsWith('済') || rawVal === 'true') ? 'checked' : '';
+        
+        let infoHtml = '';
+        if (isChecked && rawVal.replace('済', '').trim().length > 0) {
+          let text = rawVal.replace(/^済\s*/, '').replace(/^\(/, '').replace(/\)$/, '');
+          infoHtml = `<span class="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded ml-1 shrink-0 shadow-sm">${text}</span>`;
+        }
+
+        uploadHtml += `
+          <div class="flex items-center text-sm ${isRightEdge ? '' : 'pr-3'} py-0.5">
+            <label class="flex items-center gap-2 cursor-pointer text-slate-700 hover:text-blue-600 transition-colors font-bold flex-1 min-w-0">
+              <input type="checkbox" class="w-4 h-4 cursor-pointer shrink-0" ${isChecked} onchange="handleUploadCheck('${item}', this.checked)">
+              <span class="truncate" title="${item}">${item}</span>
+              ${infoHtml}
+            </label>
+            ${pipe}
+          </div>
+        `;
+      });
+      uploadCont.innerHTML = uploadHtml;
+
+      const btnToggleCheck = document.getElementById('btn-toggle-check');
+      const chkCont = document.getElementById('deliverable-check-container');
+      const chkTitle = document.getElementById('deliverable-check-title'); 
+      
+      let eqType = '';
+      if (task.equipment) {
+        if (task.equipment.includes('TLS')) {
+          eqType = 'TLS';
+        } else if (task.equipment.includes('M400') || task.equipment.includes('M600')) {
+          eqType = 'ULS';
+        }
+      }
+      
+      const ministryType = task.ministry || '民間';
+      const surveyType = task.type || '起工';
+      let targetChecks = [];
+      
+      if (eqType) {
+        const judgeKey = `${ministryType}_${eqType}_${surveyType}`;
+        targetChecks = (masterData.checkMaster || []).filter(c => c.key === judgeKey);
+      }
+      
+      if (targetChecks.length === 0) {
+        btnToggleCheck.classList.add('hidden'); 
+        chkCont.innerHTML = '';
+      } else {
+        btnToggleCheck.classList.remove('hidden');
+        btnToggleCheck.classList.add('flex'); 
+        
+        if (chkTitle) {
+          chkTitle.innerHTML = `📋 ${ministryType} ${eqType}${surveyType}成果チェック`;
+        }
+        
+        let savedStatus = {};
+        try { savedStatus = JSON.parse(task.checkStatus || '{}'); } catch(e) {}
+
+        let checkHtml = '';
+        let currentLargeCat = '';
+        let currentMidCat = ''; 
+        
+        targetChecks.forEach(c => {
+          if (currentLargeCat !== c.largeCat) {
+            currentLargeCat = c.largeCat;
+            checkHtml += `<div class="font-bold text-sm text-white bg-slate-600 px-3 py-1.5 rounded shadow-sm mt-4 mb-2 flex items-center gap-2 sticky top-0 z-10"><span class="text-lg">📁</span>${currentLargeCat}</div>`;
+          }
+          
+          if (c.midCat && currentMidCat !== c.midCat) {
+            currentMidCat = c.midCat;
+            checkHtml += `<div class="font-bold text-xs text-slate-700 bg-slate-200 border-l-4 border-slate-500 px-2 py-1 mt-3 mb-1 ml-1 rounded-r shadow-sm w-max max-w-[95%]">${currentMidCat}</div>`;
+          }
+          
+          const itemKey = `${c.midCat}_${c.item}`;
+          const isChecked = savedStatus[itemKey] ? 'checked' : '';
+          
+          checkHtml += `
+            <div class="flex items-start text-sm pl-4 py-2 hover:bg-blue-50 rounded transition-colors border-b border-dashed border-slate-200 last:border-0">
+              <label class="flex items-start gap-2.5 cursor-pointer w-full">
+                <input type="checkbox" class="w-4 h-4 mt-[3px] cursor-pointer text-blue-600 rounded border-slate-300 shrink-0" ${isChecked} onchange="handleDeliverableCheck('${itemKey}', this.checked)">
+                <div class="flex-1 leading-relaxed text-slate-800 font-medium">
+                  ${c.item}
+                </div>
+              </label>
+            </div>
+          `;
+        });
+        chkCont.innerHTML = checkHtml;
+      }
+      detailModal.classList.remove('hidden');
+    }
+    
+    function openEditFromDetail() {
+      const idToEdit = currentOpenTaskId;
+      closeDetailModal();
+      openTaskModal(idToEdit);
+    }
+
+    function closeDetailModal() { 
+      detailModal.classList.add('hidden'); 
+      currentOpenTaskId = null; 
+      document.removeEventListener('click', closeAllMultiSelects); 
+      
+      const article = document.getElementById('detail-article');
+      const panel = document.getElementById('deliverable-check-panel');
+      panel.classList.remove('w-[420px]', 'opacity-100');
+      panel.classList.add('w-0', 'opacity-0');
+      article.classList.remove('max-w-[1420px]');
+      article.classList.add('max-w-[1000px]');
+    }
+
+    function toggleDeliverableCheck() {
+      const article = document.getElementById('detail-article');
+      const panel = document.getElementById('deliverable-check-panel');
+      
+      if (panel.classList.contains('w-0')) {
+        article.classList.remove('max-w-[1000px]');
+        article.classList.add('max-w-[1420px]');
+        panel.classList.remove('w-0', 'opacity-0');
+        panel.classList.add('w-[420px]', 'opacity-100');
+      } else {
+        panel.classList.remove('w-[420px]', 'opacity-100');
+        panel.classList.add('w-0', 'opacity-0');
+        setTimeout(() => {
+          article.classList.remove('max-w-[1420px]');
+          article.classList.add('max-w-[1000px]');
+        }, 300);
+      }
+    }
+
+    function toggleMultiSelect(roleId) {
+      const m = document.getElementById(`menu-${roleId}`);
+      const o = m.classList.contains('open');
+      document.querySelectorAll('.multi-select-menu').forEach(x => x.classList.remove('open'));
+      if (!o) m.classList.add('open');
+    }
+
+    function closeAllMultiSelects(e) {
+      if (e.target.closest('.multi-select-dropdown')) return;
+      document.querySelectorAll('.multi-select-menu').forEach(m => m.classList.remove('open'));
+    }
+    
+    function handleCheckboxChange(el, r) {
+      const cbs = document.getElementById(`menu-${r}`).querySelectorAll('input[type="checkbox"]');
+      let sel = [];
+      
+      if (el.value === 'ー' && el.checked) {
+        cbs.forEach(c => { if (c.value !== 'ー') c.checked = false; });
+      } else if (el.value !== 'ー' && el.checked) {
+        cbs.forEach(c => { if (c.value === 'ー') c.checked = false; });
+      }
+      
+      cbs.forEach(c => { if (c.checked) sel.push(c.value); });
+      
+      if (sel.length === 0) {
+        cbs.forEach(c => { if (c.value === 'ー') c.checked = true; });
+        sel = ['ー'];
+      }
+      
+      let disp = sel.join(', ');
+      if (disp.length > 15) disp = disp.substring(0, 15) + '...';
+      document.getElementById(`displayText-${r}`).textContent = disp;
+      sendAssigneeChangeToGAS(r, sel.join(', '));
+    }
+
+    async function sendAssigneeChangeToGAS(r, val) {
+      if (!currentOpenTaskId || !gasUrl) return;
+      const syncIcon = document.getElementById('sync-icon');
+      syncIcon.classList.add('animate-spin', 'text-blue-400');
+      
+      try {
+        const payload = {
+          action: 'updateAssignee',
+          taskId: currentOpenTaskId,
+          role: r,
+          newValue: val,
+          userName: sessionStorage.getItem('userName') || '不明'
+        };
+        const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await res.json();
+        if (result.success) {
+          showToast('担当者を更新しました');
+          fetchTasksFromGas(true);
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        showToast('担当者の更新に失敗', 'error');
+      } finally {
+        syncIcon.classList.remove('animate-spin', 'text-blue-400');
+      }
+    }
+
+    async function handleDrop(id, stat) {
+      const idx = tasks.findIndex(t => t.id === id);
+      if (idx === -1 || tasks[idx].status === stat) return;
+      
+      const prev = JSON.parse(JSON.stringify(tasks));
+      tasks[idx].status = stat;
+      renderBoard(); 
+      
+      if (!gasUrl) return;
+      document.getElementById('sync-icon').classList.add('animate-spin', 'text-blue-400');
+      
+      try {
+        const payload = {
+          action: 'updateStatus',
+          taskId: id,
+          newStatus: stat,
+          userName: sessionStorage.getItem('userName') || '不明'
+        };
+        const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await res.json();
+        if (result.success) {
+          showToast('ステータスを変更しました');
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        tasks = prev;
+        renderBoard();
+        showToast('通信エラー', 'error');
+      } finally {
+        document.getElementById('sync-icon').classList.remove('animate-spin', 'text-blue-400');
+      }
+    }
+
+    // ================= フル編集・新規追加モーダル =================
+    document.getElementById('btn-new-task').addEventListener('click', () => openTaskModal(null));
+    
+    const btnDelete = document.getElementById('btn-delete-task');
+    if (btnDelete) {
+      btnDelete.addEventListener('click', async () => {
+        if (!currentOpenTaskId || !gasUrl) return;
+        if (!window.confirm('復元できません。本当に削除しますか？')) return;
+        
+        const origText = btnDelete.innerHTML;
+        btnDelete.innerHTML = '🗑️ 削除中...';
+        btnDelete.disabled = true;
+        
+        try {
+          const payload = {
+            action: 'deleteTask',
+            taskId: currentOpenTaskId,
+            userName: sessionStorage.getItem('userName') || '不明'
+          };
+          const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+          const result = await res.json();
+          if (result.success) {
+            showToast('案件を削除しました');
+            closeTaskModal();
+            fetchTasksFromGas();
+          } else {
+            showToast(result.message || '削除に失敗', 'error');
+          }
+        } catch (err) {
+          showToast('通信エラー', 'error');
+        } finally {
+          btnDelete.innerHTML = origText;
+          btnDelete.disabled = false;
+        }
+      });
+    }
+    
+    function openTaskModal(taskId) {
+      isEditMode = !!taskId; 
+      currentOpenTaskId = taskId; 
+      document.getElementById('modal-title').innerHTML = isEditMode ? '📝 案件情報の編集' : '➕ 新規案件の追加';
+      
+      const form = document.getElementById('task-form');
+      form.reset();
+      populateMasterDropdowns(); 
+
+      if (isEditMode) {
+        document.getElementById('btn-delete-task').classList.remove('hidden');
+        const t = tasks.find(x => x.id === taskId);
+        
+        if (t) {
+          document.getElementById('edit-title-icon').innerHTML = getIconSvg(t.type, t.equipment, 'w-10 h-10');
+          document.getElementById('fm-date').value = formatDateForInput(t.date);
+          document.getElementById('fm-status').value = t.status || '予定';
+          document.getElementById('fm-type').value = t.type || '';
+          document.getElementById('fm-equipment').value = t.equipment || '';
+          document.getElementById('fm-client').value = t.client || '';
+          document.getElementById('fm-billing').value = t.billing || '';
+          document.getElementById('fm-site').value = t.site || '';
+          document.getElementById('fm-office').value = t.office || '';
+          
+          const reps = masterData.offices[t.office] || [];
+          const salesSelect = document.getElementById('fm-sales');
+          salesSelect.innerHTML = '<option value="">（未選択）</option>';
+          reps.forEach(r => salesSelect.innerHTML += `<option value="${r}">${r}</option>`);
+          
+          document.getElementById('fm-sales').value = t.salesperson || t.salesRep || '';
+          document.getElementById('fm-district').value = t.district || ''; 
+          document.getElementById('fm-office-loc').value = t.officeLoc || ''; 
+          document.getElementById('fm-ministry').value = t.ministry || '';
+          document.getElementById('fm-standard').value = t.standard || '';
+          document.getElementById('fm-route').value = t.route || '';
+          document.getElementById('fm-dips').value = t.dips || '';
+          document.getElementById('fm-ref-point').value = t.refPoint || '';
+          document.getElementById('fm-mapUrl').value = t.mapUrl || '';
+          document.getElementById('fm-meetUrl').value = t.meetUrl || '';
+          document.getElementById('fm-pjUrl').value = t.pjUrl || '';
+          document.getElementById('fm-chatUrl').value = t.chatUrl || '';
+          document.getElementById('fm-sharePath').value = t.sharePath || '';
+        }
+      } else {
+        document.getElementById('btn-delete-task').classList.add('hidden');
+        document.getElementById('fm-status').value = '予定';
+        document.getElementById('edit-title-icon').innerHTML = '✨';
+      }
+      
+      taskModal.classList.remove('hidden');
+      
+      const checkEmpty = () => {
+        document.querySelectorAll('#task-form input[type="text"], #task-form input[type="date"], #task-form select').forEach(el => {
+          if (!el.value || el.value.trim() === "" || el.value === "ー") {
+            el.classList.add('bg-yellow-50');
+            el.classList.remove('bg-white');
+          } else {
+            el.classList.add('bg-white');
+            el.classList.remove('bg-yellow-50');
+          }
+        });
+      };
+      
+      checkEmpty();
+      
+      document.querySelectorAll('#task-form input, #task-form select').forEach(el => {
+        el.removeEventListener('input', checkEmpty);
+        el.removeEventListener('change', checkEmpty);
+        el.addEventListener('input', checkEmpty);
+        el.addEventListener('change', checkEmpty);
+      });
+    }
+
+    function closeTaskModal() {
+      taskModal.classList.add('hidden');
+      currentOpenTaskId = null;
+    }
+
+    document.getElementById('task-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!gasUrl) {
+        showToast('連携設定(GAS URL)が行われていません', 'error');
+        return;
+      }
+      
+      const taskData = {
+        date: document.getElementById('fm-date').value.replace(/-/g, '/'),
+        status: document.getElementById('fm-status').value,
+        type: document.getElementById('fm-type').value,
+        equipment: document.getElementById('fm-equipment').value,
+        client: document.getElementById('fm-client').value,
+        billing: document.getElementById('fm-billing').value,
+        site: document.getElementById('fm-site').value,
+        office: document.getElementById('fm-office').value,
+        salesperson: document.getElementById('fm-sales').value,
+        district: document.getElementById('fm-district').value, 
+        officeLoc: document.getElementById('fm-office-loc').value, 
+        ministry: document.getElementById('fm-ministry').value,
+        standard: document.getElementById('fm-standard').value,
+        route: document.getElementById('fm-route').value,
+        dips: document.getElementById('fm-dips').value,
+        refPoint: document.getElementById('fm-ref-point').value,
+        mapUrl: document.getElementById('fm-mapUrl').value,
+        meetUrl: document.getElementById('fm-meetUrl').value,
+        pjUrl: document.getElementById('fm-pjUrl').value,
+        chatUrl: document.getElementById('fm-chatUrl').value,
+        sharePath: document.getElementById('fm-sharePath').value
+      };
+      
+      const btn = document.getElementById('btn-save-task');
+      btn.innerHTML = '🔄 保存中...';
+      btn.disabled = true;
+      
+      try {
+        const payload = isEditMode 
+          ? { action: 'updateTask', taskId: currentOpenTaskId, taskData: taskData, userName: sessionStorage.getItem('userName') || '不明' } 
+          : { action: 'createTask', taskData: taskData, userName: sessionStorage.getItem('userName') || '不明' };
+          
+        const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await res.json();
+        
+        if (result.success) {
+          showToast(isEditMode ? '案件を更新しました' : '新規案件を追加しました');
+          closeTaskModal();
+          fetchTasksFromGas();
+        } else {
+          showToast(result.message || '保存に失敗', 'error');
+        }
+      } catch (err) {
+        showToast('通信エラー', 'error');
+      } finally {
+        btn.innerHTML = '内容を保存する';
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
+      const btn = e.target.querySelector('button[type="submit"]');
+      const origText = btn.innerHTML;
+      btn.innerHTML = '認証中...';
+      btn.disabled = true;
+      
+      try {
+        if (user === 'CBkanban' && pass === 'survey2026') {
+          sessionStorage.setItem('isLoggedIn', 'true');
+          sessionStorage.setItem('userName', 'システム管理');
+          showMainApp();
+          if (gasUrl) {
+            fetchTasksFromGas();
+            startAutoReload();
+            showToast('管理者としてログインしました');
+          } else {
+            showToast('右上の⚙️から連携設定を行ってください', 'error');
+          }
+          return;
+        }
+        
+        if (gasUrl) {
+           const res = await fetch(gasUrl, {
+             method: 'POST',
+             body: JSON.stringify({ action: 'login', username: user, password: pass })
+           });
+           const result = await res.json();
+           
+           if (result.success) {
+             sessionStorage.setItem('isLoggedIn', 'true');
+             sessionStorage.setItem('userName', result.userName);
+             showMainApp();
+             showToast(`${result.userName} さんとしてログインしました`);
+             fetchTasksFromGas();
+             startAutoReload();
+           } else {
+             showToast(result.message || 'IDまたはパスワードが間違っています', 'error');
+           }
+        } else {
+          showToast('連携設定(GAS URL)が行われていません', 'error');
+        }
+      } catch(err) {
+        showToast('通信エラーが発生しました', 'error');
+      } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    });
+    
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      sessionStorage.removeItem('isLoggedIn');
+      sessionStorage.removeItem('userName');
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      loginScreen.classList.remove('hidden');
+      mainApp.classList.add('hidden');
+      tasks = [];
+      renderBoard();
+      
+      if (autoReloadTimer) {
+        clearInterval(autoReloadTimer);
+        autoReloadTimer = null;
+      }
+    });
+
+    function showMainApp() {
+      loginScreen.classList.add('hidden');
+      mainApp.classList.remove('hidden');
+    }
+    
+    document.getElementById('btn-settings').addEventListener('click', () => { 
+      document.getElementById('gas-url').value = gasUrl; 
+      document.getElementById('auto-reload-interval').value = localStorage.getItem('autoReloadInterval') || '30';
+      renderSettingsDescInputs(); 
+      settingsModal.classList.remove('hidden'); 
+    });
+
+    document.getElementById('btn-cancel-settings').addEventListener('click', () => {
+      settingsModal.classList.add('hidden');
+    });
+
+    document.getElementById('btn-save-settings').addEventListener('click', () => { 
+      gasUrl = document.getElementById('gas-url').value;
+      localStorage.setItem('gasUrl', gasUrl); 
+      
+      const reloadVal = document.getElementById('auto-reload-interval').value;
+      localStorage.setItem('autoReloadInterval', reloadVal);
+      startAutoReload(); 
+
+      const descs = {};
+      STATUS_LIST.forEach(s => {
+        const input = document.getElementById(`desc-input-${s}`);
+        if (input) descs[s] = input.value.trim();
+      });
+      localStorage.setItem('statusDescriptions', JSON.stringify(descs));
+      loadStatusDescriptions(); 
+      
+      updateSettingBadge();
+      settingsModal.classList.add('hidden');
+      showToast('設定を保存しました');
+      
+      if (sessionStorage.getItem('isLoggedIn') === 'true') {
+        fetchTasksFromGas();
+      }
+    });
+
+    function updateSettingBadge() {
+      if (gasUrl) {
+        settingBadge.classList.add('hidden');
+      } else {
+        settingBadge.classList.remove('hidden');
+      }
+    }
+
+    let toastTimeout;
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      document.getElementById('toast-icon').innerText = type === 'error' ? '⚠️' : '✅';
+      
+      toast.className = `fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-2xl text-white flex items-center gap-3 z-[70] transition-all duration-300 transform translate-y-0 opacity-100 ${type === 'error' ? 'bg-red-600' : 'bg-slate-800'}`;
+      toast.classList.remove('hidden');
+      
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+        setTimeout(() => toast.classList.add('hidden'), 300);
+      }, 3000);
+    }
+
+    init();
+
+    // === 画像の右クリック＆拡大・削除機能 ===
+    let targetImageIndex = null;
+    const contextMenu = document.getElementById('image-context-menu');
+
+    function handleContextMenu(e, index) {
+      e.preventDefault(); 
+      const task = tasks.find(t => t.id === currentOpenTaskId);
+      
+      if (!task || (index === 1 && !task.image1) || (index === 2 && !task.image2) || (index === 3 && !task.slipImage)) return;
+
+      targetImageIndex = index;
+      contextMenu.style.left = `${e.clientX}px`;
+      contextMenu.style.top = `${e.clientY}px`;
+      contextMenu.classList.remove('hidden');
+    }
+
+    document.addEventListener('click', () => contextMenu.classList.add('hidden'));
+
+    function viewImageFullscreen() {
+      const task = tasks.find(t => t.id === currentOpenTaskId);
+      const imgSrc = targetImageIndex === 1 ? task.image1 : (targetImageIndex === 2 ? task.image2 : task.slipImage);
+      if (imgSrc) {
+        document.getElementById('viewer-img').src = imgSrc;
+        document.getElementById('image-viewer-modal').classList.remove('hidden');
+      }
+    }
+
+    function closeImageViewer() {
+      document.getElementById('image-viewer-modal').classList.add('hidden');
+      document.getElementById('viewer-img').src = '';
+    }
+
+    async function deleteTargetImage() {
+      const targetName = targetImageIndex === 3 ? "伝票画像" : `画像${targetImageIndex}`;
+      if (!window.confirm(`${targetName}を削除しますか？`)) return;
+      
+      const localProp = targetImageIndex === 1 ? 'image1' : (targetImageIndex === 2 ? 'image2' : 'slipImage');
+      const gasField = targetImageIndex === 1 ? '画像1' : (targetImageIndex === 2 ? '画像2' : '伝票画像');
+      
+      const syncIcon = document.getElementById('sync-icon'); 
+      syncIcon.classList.add('animate-spin', 'text-blue-400');
+      
+      try {
+        const payload = {
+          action: 'updateField',
+          taskId: currentOpenTaskId,
+          fieldName: gasField,
+          newValue: '',
+          userName: sessionStorage.getItem('userName') || '不明'
+        };
+        const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await res.json(); 
+        
+        if (result.success) { 
+          showToast(`${targetName}を削除しました`); 
+          document.getElementById(`detail-img-${targetImageIndex}`).classList.add('hidden');
+          document.getElementById(`detail-img-${targetImageIndex}`).src = '';
+          document.getElementById(`detail-img-ph-${targetImageIndex}`).classList.remove('hidden');
+          
+          const task = tasks.find(t => t.id === currentOpenTaskId);
+          if (task) task[localProp] = '';
+          renderBoard();
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        showToast('削除に失敗しました', 'error');
+      } finally {
+        syncIcon.classList.remove('animate-spin', 'text-blue-400');
+      }
+    }
+  </script>
+</body>
+</html>
