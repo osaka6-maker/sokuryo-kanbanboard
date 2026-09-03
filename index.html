@@ -476,6 +476,10 @@
             </div>
           </section>
 
+          <section class="bg-blue-50 rounded-xl p-3 border border-blue-200 shadow-sm mb-4">
+            <textarea id="detail-note" rows="2" class="w-full bg-white border border-blue-300 rounded-lg p-2 text-base font-bold text-slate-800 focus:border-blue-500 outline-none resize-y shadow-inner" onchange="handleNoteChange(this.value)" placeholder="📝 重要な連絡事項や備考をここに入力（自動保存 / 閲覧者も編集可能）..."></textarea>
+          </section>
+
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
             <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm flex flex-col gap-3 md:col-span-3">
               <div class="flex items-center">
@@ -498,22 +502,24 @@
                 <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">請求先名</span>
                 <span id="detail-billing" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
               </div>
+              <div class="pt-3 border-t border-slate-200 mt-2 space-y-3">
+                <div class="flex items-center">
+                  <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">現場地区名</span>
+                  <span id="detail-district" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+                </div>
+                <div class="flex items-center">
+                  <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">電子基準点</span>
+                  <span id="detail-ref-point" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+                </div>
+                <div class="flex items-center">
+                  <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">飛行ルート</span>
+                  <span id="detail-route" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+                </div>
+              </div>
             </section>
             
             <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm flex flex-col gap-3 md:col-span-4">
-              <div class="flex items-center">
-                <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">現場地区名</span>
-                <span id="detail-district" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
-              </div>
-              <div class="flex items-center">
-                <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">電子基準点</span>
-                <span id="detail-ref-point" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
-              </div>
-              <div class="flex items-center">
-                <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">飛行ルート</span>
-                <span id="detail-route" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
-              </div>
-              <div class="pt-2 border-t border-slate-200 mt-1 space-y-3">
+              <div class="space-y-3">
                 <div>
                   <span class="text-slate-500 font-bold text-[11px] block mb-1.5 select-none">DIPS2.0登録</span>
                   <div id="detail-dips-container" class="select-none"></div>
@@ -1533,6 +1539,7 @@
       document.getElementById('detail-office').textContent = task.office || '未設定';
       document.getElementById('detail-sales').textContent = task.salesperson || task.salesRep || '未設定';
       document.getElementById('detail-billing').textContent = task.billing || '未設定';
+      document.getElementById('detail-note').value = task.note || ''; // ★追加
       document.getElementById('detail-district').textContent = task.district || '未設定';
       document.getElementById('detail-ref-point').textContent = task.refPoint || '未設定';
       document.getElementById('detail-route').textContent = task.route || '未設定';
@@ -1767,11 +1774,16 @@
       const btnEditDetail = document.getElementById('btn-edit-detail');
       if (btnEditDetail) btnEditDetail.classList.toggle('hidden', isViewer);
       
-      // 2. チェックボックスの有効/無効化
-      detailModal.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.disabled = isViewer;
-        if (isViewer) cb.classList.add('cursor-not-allowed', 'opacity-50');
-        else cb.classList.remove('cursor-not-allowed', 'opacity-50');
+      // 2. チェックボックス・ラジオボタンの有効/無効化
+      detailModal.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el => {
+        el.disabled = isViewer;
+        if (isViewer) {
+          el.classList.add('cursor-not-allowed', 'opacity-50');
+          if (el.parentElement) el.parentElement.classList.add('cursor-not-allowed');
+        } else {
+          el.classList.remove('cursor-not-allowed', 'opacity-50');
+          if (el.parentElement) el.parentElement.classList.remove('cursor-not-allowed');
+        }
       });
       
       // 3. 画像アップロード用窓口の有効/無効化
@@ -2064,7 +2076,8 @@
         meetUrl: document.getElementById('fm-meetUrl').value,
         pjUrl: document.getElementById('fm-pjUrl').value,
         chatUrl: document.getElementById('fm-chatUrl').value,
-        sharePath: document.getElementById('fm-sharePath').value
+        sharePath: document.getElementById('fm-sharePath').value,
+        note: document.getElementById('detail-note').value // ★追加（詳細画面の枠から直接取得）
       };
       
       const btn = document.getElementById('btn-save-task');
@@ -2306,6 +2319,27 @@
         }
       } catch (e) {
         showToast('削除に失敗しました', 'error');
+      } finally {
+        syncIcon.classList.remove('animate-spin', 'text-blue-400');
+      }
+    }
+    async function handleNoteChange(val) {
+      if (!currentOpenTaskId || !gasUrl) return;
+      const syncIcon = document.getElementById('sync-icon');
+      syncIcon.classList.add('animate-spin', 'text-blue-400');
+      try {
+        const payload = { action: 'updateField', taskId: currentOpenTaskId, fieldName: '備考', newValue: val, userName: sessionStorage.getItem('userName') || '不明' };
+        const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await res.json();
+        if (result.success) {
+          showToast('備考を保存しました');
+          const t = tasks.find(x => x.id === currentOpenTaskId);
+          if (t) t.note = val;
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        showToast('備考の保存に失敗', 'error');
       } finally {
         syncIcon.classList.remove('animate-spin', 'text-blue-400');
       }
