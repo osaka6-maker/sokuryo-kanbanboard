@@ -392,7 +392,7 @@
       <!-- ヘッダー（チェックリスト表示ボタンを右上に移動） -->
       <header class="flex justify-between items-center px-6 py-3 border-b border-slate-100 shrink-0 select-none z-30 bg-white relative shadow-sm">
         <div class="flex gap-3">
-          <button onclick="openEditFromDetail()" class="text-sm text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm">
+          <button id="btn-edit-detail" onclick="openEditFromDetail()" class="text-sm text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm">
             ✏️ 編集
           </button>
         </div>
@@ -1155,7 +1155,9 @@
         zone.querySelector('.count').textContent = parseInt(zone.querySelector('.count').textContent) + 1;
         
         const card = document.createElement('article');
-        card.draggable = true;
+        // ★変更：閲覧者はドラッグできないようにする
+        const userRole = sessionStorage.getItem('userRole');
+        card.draggable = (userRole !== '閲覧者');
         let isDelayed = false;
         
         if (task.date && ["点群処理中", "横断作成中", "成果作成中", "設計待", "確認待"].includes(task.status)) {
@@ -1757,6 +1759,27 @@
         });
         chkCont.innerHTML = checkHtml;
       }
+      
+      // ★ここから追加：閲覧者用のUI制御（開くたびに判定）
+      const isViewer = (sessionStorage.getItem('userRole') === '閲覧者');
+      
+      // 1. 編集ボタンの表示/非表示
+      const btnEditDetail = document.getElementById('btn-edit-detail');
+      if (btnEditDetail) btnEditDetail.classList.toggle('hidden', isViewer);
+      
+      // 2. チェックボックスの有効/無効化
+      detailModal.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.disabled = isViewer;
+        if (isViewer) cb.classList.add('cursor-not-allowed', 'opacity-50');
+        else cb.classList.remove('cursor-not-allowed', 'opacity-50');
+      });
+      
+      // 3. 画像アップロード用窓口の有効/無効化
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById(`upload-img-${i}`).disabled = isViewer;
+      }
+      // ★ここまで追加
+
       detailModal.classList.remove('hidden');
     }
     
@@ -1799,6 +1822,9 @@
     }
 
     function toggleMultiSelect(roleId) {
+      // ★追加：閲覧者はドロップダウンを開けない
+      if (sessionStorage.getItem('userRole') === '閲覧者') return;
+
       const m = document.getElementById(`menu-${roleId}`);
       const o = m.classList.contains('open');
       document.querySelectorAll('.multi-select-menu').forEach(x => x.classList.remove('open'));
@@ -2081,6 +2107,7 @@
         if (user === 'CBkanban' && pass === 'survey2026') {
           sessionStorage.setItem('isLoggedIn', 'true');
           sessionStorage.setItem('userName', 'システム管理');
+          sessionStorage.setItem('userRole', '編集者'); // ★ここを追加
           showMainApp();
           if (gasUrl) {
             fetchTasksFromGas();
@@ -2102,6 +2129,7 @@
            if (result.success) {
              sessionStorage.setItem('isLoggedIn', 'true');
              sessionStorage.setItem('userName', result.userName);
+             sessionStorage.setItem('userRole', result.userRole || '編集者'); // ★ここを追加
              showMainApp();
              showToast(`${result.userName} さんとしてログインしました`);
              fetchTasksFromGas();
@@ -2123,6 +2151,7 @@
     document.getElementById('btn-logout').addEventListener('click', () => {
       sessionStorage.removeItem('isLoggedIn');
       sessionStorage.removeItem('userName');
+      sessionStorage.removeItem('userRole'); // ★ここを追加
       document.getElementById('username').value = '';
       document.getElementById('password').value = '';
       loginScreen.classList.remove('hidden');
@@ -2139,6 +2168,13 @@
     function showMainApp() {
       loginScreen.classList.add('hidden');
       mainApp.classList.remove('hidden');
+      
+      // ★追加：閲覧者の場合は新規作成ボタンを隠す
+      if (sessionStorage.getItem('userRole') === '閲覧者') {
+        document.getElementById('btn-new-task').classList.add('hidden');
+      } else {
+        document.getElementById('btn-new-task').classList.remove('hidden');
+      }
     }
     
     document.getElementById('btn-settings').addEventListener('click', () => { 
