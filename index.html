@@ -162,23 +162,31 @@
       </nav>
     </header>
 
-    <section class="bg-slate-100 border-b border-slate-200 px-4 py-2 text-xs flex flex-wrap gap-4 items-center shrink-0 shadow-sm z-10 text-slate-700 select-none">
-      <span class="font-bold text-slate-800 bg-slate-200 px-2 py-1 rounded">💡 アイコンの見方</span>
-      <div class="flex items-center gap-2 border-r border-slate-300 pr-4">
-        <span class="font-bold text-slate-500">色(測量):</span>
-        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></span>起工</span>
-        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span>出来形</span>
-        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm"></span>その他</span>
+    <section class="bg-slate-200 border-b border-slate-300 flex flex-wrap items-end shrink-0 shadow-sm z-10 text-slate-700 select-none pt-2 px-2">
+      <!-- タブ -->
+      <div class="flex gap-1 ml-2">
+        <button id="tab-kanban" onclick="switchView('kanban')" class="px-5 py-2 bg-slate-50 border-t border-l border-r border-slate-300 rounded-t-lg font-bold text-blue-700 relative top-[1px] shadow-sm z-10 transition-colors cursor-pointer">📋 カンバン</button>
+        <button id="tab-calendar" onclick="switchView('calendar')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">📅 カレンダー</button>
       </div>
-      <div class="flex items-center gap-2 border-r border-slate-300 pr-4">
-        <span class="font-bold text-slate-500">形(機器):</span>
-        <span class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,1 15,5 15,11 8,15 1,11 1,5" fill="#64748b" /></svg>ULS</span>
-        <span class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,1.5 14.5,5.25 14.5,10.75 8,14.5 1.5,10.75 1.5,5.25" fill="none" stroke="#64748b" stroke-width="2" /></svg>TLS</span>
-        <span class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,13 2,13" fill="#64748b" /></svg>その他</span>
-      </div>
-      <div class="flex items-center gap-1">
-        <span class="font-bold text-slate-500">アラート:</span>
-        <span class="flex items-center gap-1 bg-yellow-100 border border-yellow-400 text-yellow-800 px-1.5 py-0.5 rounded shadow-sm font-bold text-[10px]">⚠️ 2週間超過</span>
+      <!-- アイコンの見方 (右詰め) -->
+      <div class="ml-auto flex flex-wrap items-center gap-4 px-2 pb-2 text-xs">
+        <span class="font-bold text-slate-800 bg-white border border-slate-300 px-2 py-1 rounded shadow-sm">💡 アイコンの見方</span>
+        <div class="flex items-center gap-2 border-r border-slate-300 pr-4">
+          <span class="font-bold text-slate-500">色(測量):</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></span>起工</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span>出来形</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm"></span>その他</span>
+        </div>
+        <div class="flex items-center gap-2 border-r border-slate-300 pr-4">
+          <span class="font-bold text-slate-500">形(機器):</span>
+          <span class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,1 15,5 15,11 8,15 1,11 1,5" fill="#64748b" /></svg>ULS</span>
+          <span class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,1.5 14.5,5.25 14.5,10.75 8,14.5 1.5,10.75 1.5,5.25" fill="none" stroke="#64748b" stroke-width="2" /></svg>TLS</span>
+          <span class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 16 16"><polygon points="8,2 14,13 2,13" fill="#64748b" /></svg>その他</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <span class="font-bold text-slate-500">アラート:</span>
+          <span class="flex items-center gap-1 bg-yellow-100 border border-yellow-400 text-yellow-800 px-1.5 py-0.5 rounded shadow-sm font-bold text-[10px]">⚠️ 2週間超過</span>
+        </div>
       </div>
     </section>
 
@@ -1471,8 +1479,8 @@
       });
     }
 
-    function loadStatusDescriptions() {
-      const descs = globalStatusDescriptions; // ★変更
+    function renderSettingsDescInputs() { // ★ここを直す
+      const descs = globalStatusDescriptions; 
       const container = document.getElementById('status-desc-inputs');
       container.innerHTML = '';
       
