@@ -506,10 +506,6 @@
             </div>
           </section>
 
-          <section class="bg-blue-50 rounded-xl p-3 border border-blue-200 shadow-sm mb-4">
-            <textarea id="detail-note" rows="2" class="w-full bg-white border border-blue-300 rounded-lg p-2 text-base font-bold text-slate-800 focus:border-blue-500 outline-none resize-y shadow-inner" onchange="handleNoteChange(this.value)" placeholder="📝 重要な連絡事項や備考をここに入力（自動保存 / 閲覧者も編集可能）..."></textarea>
-          </section>
-
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
             <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm flex flex-col gap-3 md:col-span-3">
               <div class="flex items-center">
@@ -1572,7 +1568,6 @@
       document.getElementById('detail-office').textContent = task.office || '未設定';
       document.getElementById('detail-sales').textContent = task.salesperson || task.salesRep || '未設定';
       document.getElementById('detail-billing').textContent = task.billing || '未設定';
-      document.getElementById('detail-note').value = task.note || ''; // ★追加
       document.getElementById('detail-district').textContent = task.district || '未設定';
       document.getElementById('detail-ref-point').textContent = task.refPoint || '未設定';
       document.getElementById('detail-route').textContent = task.route || '未設定';
@@ -2109,8 +2104,7 @@
         meetUrl: document.getElementById('fm-meetUrl').value,
         pjUrl: document.getElementById('fm-pjUrl').value,
         chatUrl: document.getElementById('fm-chatUrl').value,
-        sharePath: document.getElementById('fm-sharePath').value,
-        note: document.getElementById('detail-note').value // ★追加（詳細画面の枠から直接取得）
+        sharePath: document.getElementById('fm-sharePath').value
       };
       
       const btn = document.getElementById('btn-save-task');
@@ -2489,7 +2483,7 @@
             const userRole = sessionStorage.getItem('userRole');
             const dragAttr = (userRole !== '閲覧者') ? `draggable="true" ondragstart="handleDragStartCalendar(event, '${task.id}')" ondragend="handleDragEndCalendar(event)"` : '';
             
-            // 背景色を少し濃く、枠線を強調
+            // ★変更：背景色を少し濃く、枠線を強調して視認性アップ
             let stColor = "bg-white border-slate-300 text-slate-800 hover:border-blue-500 hover:bg-blue-50";
             if(task.status === "予定") stColor = "bg-slate-100 border-slate-400 text-slate-700 hover:border-blue-500";
             else if(task.status === "設計待") stColor = "bg-cyan-100 border-cyan-300 text-cyan-900 hover:border-cyan-600";
@@ -2519,7 +2513,7 @@
             </div>
           `;
         } else {
-          // 前月・次月のマス（薄く表示）
+          // ★追加：前月・次月のマス（薄く表示）
           html += `
             <div class="bg-slate-50 opacity-40 min-h-[120px] flex flex-col p-2 border border-slate-200">
                <header class="mb-1 flex justify-end">
