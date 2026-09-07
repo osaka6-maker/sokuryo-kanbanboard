@@ -784,17 +784,6 @@
                     </div>
                   </div>
                 </div>
-                <div class="pt-3 border-t border-slate-200 mt-4 flex flex-col">
-                  <label class="block text-xs font-bold text-slate-500 mb-1 select-none">📁 共有パス (フォルダパス等)</label>
-                  <input type="text" id="fm-sharePath" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner">
-                </div>
-              </section>
-            </div>
-            
-            <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm mt-4 flex items-center justify-center text-center select-none">
-              <p class="text-sm font-bold text-slate-400">※ 各担当者の変更は「詳細画面」のリストから行ってください</p>
-            </section>
-
           </div>
         </div>
 
@@ -2453,23 +2442,42 @@
       const startDayOfWeek = firstDay.getDay(); 
       const totalDays = lastDay.getDate();
       const filteredTasks = getFilteredAndSortedTasks(); 
+
+      // 前月・次月の日付計算用
+      const prevMonthLastDay = new Date(currentCalYear, currentCalMonth, 0).getDate();
       
       let dayCount = 1;
+      let nextMonthDayCount = 1;
       let html = '';
       
       // カレンダー生成 (最大6週 = 42マス)
       for (let i = 0; i < 42; i++) {
-        if (i < startDayOfWeek || dayCount > totalDays) {
-          html += `<div class="bg-slate-100 opacity-50 min-h-[100px]"></div>`;
-        } else {
+        let displayDate = "";
+        let isCurrentMonth = false;
+        let cellDateStr = "";
+
+        if (i < startDayOfWeek) {
+          // 前月
+          displayDate = prevMonthLastDay - startDayOfWeek + i + 1;
+        } else if (dayCount <= totalDays) {
+          // 当月
+          displayDate = dayCount;
+          isCurrentMonth = true;
           const MM = String(currentCalMonth + 1).padStart(2, '0');
           const DD = String(dayCount).padStart(2, '0');
-          const dateStr = `${currentCalYear}/${MM}/${DD}`;
+          cellDateStr = `${currentCalYear}/${MM}/${DD}`;
+          dayCount++;
+        } else {
+          // 次月
+          displayDate = nextMonthDayCount;
+          nextMonthDayCount++;
+        }
+
+        if (isCurrentMonth) {
+          const isToday = new Date().toDateString() === new Date(currentCalYear, currentCalMonth, displayDate).toDateString();
+          const todayClass = isToday ? "bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md text-sm font-black" : "text-slate-700 w-7 h-7 flex items-center justify-center text-sm font-bold";
           
-          const isToday = new Date().toDateString() === new Date(currentCalYear, currentCalMonth, dayCount).toDateString();
-          const todayClass = isToday ? "bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-sm" : "text-slate-600 w-6 h-6 flex items-center justify-center";
-          
-          const dayTasks = filteredTasks.filter(t => formatYYYYMMDD(t.date) === dateStr);
+          const dayTasks = filteredTasks.filter(t => formatYYYYMMDD(t.date) === cellDateStr);
           let tasksHtml = '';
           
           dayTasks.forEach(task => {
@@ -2481,35 +2489,44 @@
             const userRole = sessionStorage.getItem('userRole');
             const dragAttr = (userRole !== '閲覧者') ? `draggable="true" ondragstart="handleDragStartCalendar(event, '${task.id}')" ondragend="handleDragEndCalendar(event)"` : '';
             
-            let stColor = "bg-white border-slate-200 text-slate-700 hover:border-blue-400";
-            if(task.status === "予定") stColor = "bg-slate-100 border-slate-300 text-slate-600 hover:border-blue-400";
-            else if(task.status === "設計待") stColor = "bg-cyan-50 border-cyan-200 text-cyan-800 hover:border-cyan-500";
-            else if(task.status === "確認待") stColor = "bg-purple-50 border-purple-200 text-purple-800 hover:border-purple-500";
-            else if(task.status === "０円請求未") stColor = "bg-red-50 border-red-200 text-red-800 hover:border-red-500";
+            // 背景色を少し濃く、枠線を強調
+            let stColor = "bg-white border-slate-300 text-slate-800 hover:border-blue-500 hover:bg-blue-50";
+            if(task.status === "予定") stColor = "bg-slate-100 border-slate-400 text-slate-700 hover:border-blue-500";
+            else if(task.status === "設計待") stColor = "bg-cyan-100 border-cyan-300 text-cyan-900 hover:border-cyan-600";
+            else if(task.status === "確認待") stColor = "bg-purple-100 border-purple-300 text-purple-900 hover:border-purple-600";
+            else if(task.status === "０円請求未") stColor = "bg-red-100 border-red-300 text-red-900 hover:border-red-600";
             
             tasksHtml += `
-              <div class="${stColor} border rounded shadow-sm p-1.5 mb-1 text-[11px] cursor-pointer hover:shadow transition-all truncate select-none ${isDelayed ? 'border-yellow-400 bg-yellow-50' : ''}" 
+              <div class="${stColor} border-2 rounded shadow-sm p-2 mb-1.5 cursor-pointer transition-all truncate select-none ${isDelayed ? 'border-yellow-500 bg-yellow-100 shadow-yellow-200/50' : ''}" 
                    onclick="openDetailModalFromId('${task.id}')" ${dragAttr}>
-                <div class="flex items-center font-bold">
-                  ${getIconSvg(task.type, task.equipment, 'w-3 h-3')}
+                <div class="flex items-center font-black text-xs mb-0.5">
+                  ${getIconSvg(task.type, task.equipment, 'w-3.5 h-3.5 mr-1.5')}
                   <span class="truncate leading-tight">${task.client || '-'}</span>
                 </div>
-                <div class="truncate text-slate-500 scale-90 origin-left mt-0.5">${task.site || '-'}</div>
+                <div class="truncate text-slate-600 text-[11px] font-medium ml-5">${task.site || '-'}</div>
               </div>
             `;
           });
 
           html += `
-            <div class="bg-white min-h-[100px] flex flex-col p-1.5 drop-zone-cal transition-colors" data-date="${dateStr}">
-              <header class="text-xs font-bold mb-1 flex justify-end">
-                <span class="${todayClass}">${dayCount}</span>
+            <div class="bg-white min-h-[120px] flex flex-col p-2 drop-zone-cal transition-colors border border-slate-100" data-date="${cellDateStr}">
+              <header class="mb-1.5 flex justify-end">
+                <span class="${todayClass}">${displayDate}</span>
               </header>
-              <div class="flex-1 overflow-y-auto px-0.5 pb-1">
+              <div class="flex-1 overflow-y-auto px-0.5 pb-1 space-y-1">
                 ${tasksHtml}
               </div>
             </div>
           `;
-          dayCount++;
+        } else {
+          // 前月・次月のマス（薄く表示）
+          html += `
+            <div class="bg-slate-50 opacity-40 min-h-[120px] flex flex-col p-2 border border-slate-200">
+               <header class="mb-1 flex justify-end">
+                <span class="text-slate-400 w-6 h-6 flex items-center justify-center text-xs font-bold">${displayDate}</span>
+              </header>
+            </div>
+          `;
         }
       }
       grid.innerHTML = html;
