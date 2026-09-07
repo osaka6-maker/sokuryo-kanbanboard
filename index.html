@@ -858,6 +858,7 @@
     let filterRole = 'all';
     let filterAssignee = '';
     let autoReloadTimer = null; 
+    let globalStatusDescriptions = {}; // ★追加 
 
     const loginScreen = document.getElementById('login-screen');
     const mainApp = document.getElementById('main-app');
@@ -942,10 +943,15 @@
         if (result.success) { 
           tasks = result.tasks || []; 
           if (result.masterData) {
-            masterData = result.masterData;
-            populateMasterDropdowns();
-          }
-          renderBoard();
+          masterData = result.masterData;
+          populateMasterDropdowns();
+        }
+        // ★追加：バックエンドから説明文を受け取って適用
+        if (result.statusDescriptions) {
+          globalStatusDescriptions = result.statusDescriptions;
+          loadStatusDescriptions();
+        }
+        renderBoard();
           
           if (currentOpenTaskId && !detailModal.classList.contains('hidden')) { 
              const updatedTask = tasks.find(t => t.id === currentOpenTaskId); 
@@ -1422,7 +1428,7 @@
     }
 
     function loadStatusDescriptions() {
-      const descs = JSON.parse(localStorage.getItem('statusDescriptions') || '{}');
+      const descs = globalStatusDescriptions; // ★変更
       document.querySelectorAll('.status-desc').forEach(el => {
         const key = el.getAttribute('data-status-key');
         if (descs[key]) {
@@ -1435,8 +1441,8 @@
       });
     }
 
-    function renderSettingsDescInputs() {
-      const descs = JSON.parse(localStorage.getItem('statusDescriptions') || '{}');
+    function loadStatusDescriptions() {
+      const descs = globalStatusDescriptions; // ★変更
       const container = document.getElementById('status-desc-inputs');
       container.innerHTML = '';
       
@@ -2194,6 +2200,14 @@
       document.getElementById('gas-url').value = gasUrl; 
       document.getElementById('auto-reload-interval').value = localStorage.getItem('autoReloadInterval') || '30';
       renderSettingsDescInputs(); 
+      
+      // ★追加：閲覧者は説明文の入力枠を無効化
+      const isViewer = sessionStorage.getItem('userRole') === '閲覧者';
+      document.querySelectorAll('#status-desc-inputs input').forEach(input => {
+        input.disabled = isViewer;
+        if (isViewer) input.classList.add('bg-slate-100', 'cursor-not-allowed');
+      });
+
       settingsModal.classList.remove('hidden'); 
     });
 
@@ -2201,7 +2215,7 @@
       settingsModal.classList.add('hidden');
     });
 
-    document.getElementById('btn-save-settings').addEventListener('click', () => { 
+    document.getElementById('btn-save-settings').addEventListener('click', async () => { // ★asyncを追加
       gasUrl = document.getElementById('gas-url').value;
       localStorage.setItem('gasUrl', gasUrl); 
       
@@ -2214,12 +2228,27 @@
         const input = document.getElementById(`desc-input-${s}`);
         if (input) descs[s] = input.value.trim();
       });
-      localStorage.setItem('statusDescriptions', JSON.stringify(descs));
-      loadStatusDescriptions(); 
       
       updateSettingBadge();
       settingsModal.classList.add('hidden');
-      showToast('設定を保存しました');
+      
+      // ★変更：ローカル保存をやめて、GASへ送信する処理に変更
+      if (sessionStorage.getItem('userRole') !== '閲覧者' && gasUrl) {
+        try {
+          const payload = { action: 'saveStatusDescriptions', descriptions: descs, userName: sessionStorage.getItem('userName') || '不明' };
+          const res = await fetch(gasUrl, { method: 'POST', body: JSON.stringify(payload) });
+          const result = await res.json();
+          if (result.success) {
+            globalStatusDescriptions = descs;
+            loadStatusDescriptions();
+            showToast('全体設定を保存しました');
+          }
+        } catch(e) {
+          showToast('説明文の保存に失敗しました', 'error');
+        }
+      } else {
+        showToast('ローカル設定を保存しました');
+      }
       
       if (sessionStorage.getItem('isLoggedIn') === 'true') {
         fetchTasksFromGas();
