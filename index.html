@@ -1225,8 +1225,8 @@
           card.className = `select-none ${isDelayed ? "bg-yellow-100 border-yellow-400 shadow-yellow-300" : "bg-white border-slate-200"} rounded-lg shadow-sm border cursor-pointer hover:shadow-md hover:border-blue-400 transition-all flex flex-row overflow-hidden shrink-0 min-h-[85px]`; 
           
           const thumbHtml = task.image1 
-            ? `<div class="w-20 shrink-0 bg-slate-200 border-r ${isDelayed ? 'border-yellow-300' : 'border-slate-200'}">
-                 <img src="${task.image1}" class="w-full h-full object-cover">
+            ? `<div class="w-[120px] shrink-0 bg-slate-200 flex items-center justify-center border-r ${isDelayed ? 'border-yellow-300' : 'border-slate-200'}">
+                 <img src="${task.image1}" class="w-full h-full object-contain">
                </div>` 
             : ''; 
 
@@ -1829,7 +1829,20 @@
     
     function openEditFromDetail() {
       const idToEdit = currentOpenTaskId;
-      closeDetailModal();
+      // 詳細モーダルを非表示にする（IDリセット処理をバイパス）
+      detailModal.classList.add('hidden');
+      document.removeEventListener('click', closeAllMultiSelects);
+      const article = document.getElementById('detail-article');
+      const panel = document.getElementById('deliverable-check-panel');
+      if (panel) {
+        panel.classList.remove('w-[420px]', 'opacity-100');
+        panel.classList.add('w-0', 'opacity-0');
+      }
+      if (article) {
+        article.classList.remove('max-w-[1420px]');
+        article.classList.add('max-w-[1000px]');
+      }
+      // そのまま対象IDの編集画面を開く
       openTaskModal(idToEdit);
     }
 
@@ -2012,6 +2025,8 @@
       populateMasterDropdowns(); 
 
       if (isEditMode) {
+        document.getElementById('btn-delete-task').classList.remove('hidden');
+        const t = tasks.find(x => String(x.id) === String(taskId));
         document.getElementById('btn-delete-task').classList.remove('hidden');
         const t = tasks.find(x => x.id === taskId);
         
