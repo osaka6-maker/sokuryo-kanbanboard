@@ -2449,79 +2449,90 @@
         let displayDate = "";
         let isCurrentMonth = false;
         let cellDateStr = "";
+        let targetYear = currentCalYear;
+        let targetMonth = currentCalMonth;
 
         if (i < startDayOfWeek) {
           // 前月
           displayDate = prevMonthLastDay - startDayOfWeek + i + 1;
+          targetMonth = currentCalMonth - 1;
         } else if (dayCount <= totalDays) {
           // 当月
           displayDate = dayCount;
           isCurrentMonth = true;
-          const MM = String(currentCalMonth + 1).padStart(2, '0');
-          const DD = String(dayCount).padStart(2, '0');
-          cellDateStr = `${currentCalYear}/${MM}/${DD}`;
           dayCount++;
         } else {
           // 次月
           displayDate = nextMonthDayCount;
           nextMonthDayCount++;
+          targetMonth = currentCalMonth + 1;
         }
 
-        if (isCurrentMonth) {
-          const isToday = new Date().toDateString() === new Date(currentCalYear, currentCalMonth, displayDate).toDateString();
-          const todayClass = isToday ? "bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md text-sm font-black" : "text-slate-700 w-7 h-7 flex items-center justify-center text-sm font-bold";
-          
-          const dayTasks = filteredTasks.filter(t => formatYYYYMMDD(t.date) === cellDateStr);
-          let tasksHtml = '';
-          
-          dayTasks.forEach(task => {
-            let isDelayed = false;
-            if (["点群処理中", "横断作成中", "成果作成中", "設計待", "確認待"].includes(task.status)) {
-              if ((new Date() - new Date(task.date)) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true;
-            }
-            
-            const userRole = sessionStorage.getItem('userRole');
-            const dragAttr = (userRole !== '閲覧者') ? `draggable="true" ondragstart="handleDragStartCalendar(event, '${task.id}')" ondragend="handleDragEndCalendar(event)"` : '';
-            
-            // ★変更：背景色を少し濃く、枠線を強調して視認性アップ
-            let stColor = "bg-white border-slate-300 text-slate-800 hover:border-blue-500 hover:bg-blue-50";
-            if(task.status === "予定") stColor = "bg-slate-100 border-slate-400 text-slate-700 hover:border-blue-500";
-            else if(task.status === "設計待") stColor = "bg-cyan-100 border-cyan-300 text-cyan-900 hover:border-cyan-600";
-            else if(task.status === "確認待") stColor = "bg-purple-100 border-purple-300 text-purple-900 hover:border-purple-600";
-            else if(task.status === "０円請求未") stColor = "bg-red-100 border-red-300 text-red-900 hover:border-red-600";
-            
-            tasksHtml += `
-              <div class="${stColor} border-2 rounded shadow-sm p-2 mb-1.5 cursor-pointer transition-all truncate select-none ${isDelayed ? 'border-yellow-500 bg-yellow-100 shadow-yellow-200/50' : ''}" 
-                   onclick="openDetailModalFromId('${task.id}')" ${dragAttr}>
-                <div class="flex items-center font-black text-xs mb-0.5">
-                  ${getIconSvg(task.type, task.equipment, 'w-3.5 h-3.5 mr-1.5')}
-                  <span class="truncate leading-tight">${task.client || '-'}</span>
-                </div>
-                <div class="truncate text-slate-600 text-[11px] font-medium ml-5">${task.site || '-'}</div>
-              </div>
-            `;
-          });
-
-          html += `
-            <div class="bg-white min-h-[120px] flex flex-col p-2 drop-zone-cal transition-colors border border-slate-100" data-date="${cellDateStr}">
-              <header class="mb-1.5 flex justify-end">
-                <span class="${todayClass}">${displayDate}</span>
-              </header>
-              <div class="flex-1 overflow-y-auto px-0.5 pb-1 space-y-1">
-                ${tasksHtml}
-              </div>
-            </div>
-          `;
-        } else {
-          // ★追加：前月・次月のマス（薄く表示）
-          html += `
-            <div class="bg-slate-50 opacity-40 min-h-[120px] flex flex-col p-2 border border-slate-200">
-               <header class="mb-1 flex justify-end">
-                <span class="text-slate-400 w-6 h-6 flex items-center justify-center text-xs font-bold">${displayDate}</span>
-              </header>
-            </div>
-          `;
+        // 年跨ぎ（1月と12月）の調整
+        if (targetMonth < 0) {
+          targetMonth = 11;
+          targetYear--;
+        } else if (targetMonth > 11) {
+          targetMonth = 0;
+          targetYear++;
         }
+
+        const MM = String(targetMonth + 1).padStart(2, '0');
+        const DD = String(displayDate).padStart(2, '0');
+        cellDateStr = `${targetYear}/${MM}/${DD}`; // 全てのマスで正確な日付を生成
+
+        const isToday = new Date().toDateString() === new Date(targetYear, targetMonth, displayDate).toDateString();
+        
+        // 当月と前月・次月で見た目を分ける
+        const todayClass = isToday 
+          ? "bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md text-sm font-black" 
+          : (isCurrentMonth ? "text-slate-700 w-7 h-7 flex items-center justify-center text-sm font-bold" : "text-slate-400 w-7 h-7 flex items-center justify-center text-sm font-bold");
+        
+        const cellClass = isCurrentMonth
+          ? "bg-white min-h-[120px] flex flex-col p-2 drop-zone-cal transition-colors border border-slate-100"
+          : "bg-slate-50 min-h-[120px] flex flex-col p-2 drop-zone-cal transition-colors border border-slate-200 opacity-60"; // ★前月次月もdrop-zone-calクラスを追加しドロップ可能に
+
+        const dayTasks = filteredTasks.filter(t => formatYYYYMMDD(t.date) === cellDateStr);
+        let tasksHtml = '';
+        
+        dayTasks.forEach(task => {
+          let isDelayed = false;
+          if (["点群処理中", "横断作成中", "成果作成中", "設計待", "確認待"].includes(task.status)) {
+            if ((new Date() - new Date(task.date)) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true;
+          }
+          
+          const userRole = sessionStorage.getItem('userRole');
+          const dragAttr = (userRole !== '閲覧者') ? `draggable="true" ondragstart="handleDragStartCalendar(event, '${task.id}')" ondragend="handleDragEndCalendar(event)"` : '';
+          
+          let stColor = "bg-white border-slate-300 text-slate-800 hover:border-blue-500 hover:bg-blue-50";
+          if(task.status === "予定") stColor = "bg-slate-100 border-slate-400 text-slate-700 hover:border-blue-500";
+          else if(task.status === "設計待") stColor = "bg-cyan-100 border-cyan-300 text-cyan-900 hover:border-cyan-600";
+          else if(task.status === "確認待") stColor = "bg-purple-100 border-purple-300 text-purple-900 hover:border-purple-600";
+          else if(task.status === "０円請求未") stColor = "bg-red-100 border-red-300 text-red-900 hover:border-red-600";
+          
+          tasksHtml += `
+            <div class="${stColor} border-2 rounded shadow-sm p-2 mb-1.5 cursor-pointer transition-all truncate select-none ${isDelayed ? 'border-yellow-500 bg-yellow-100 shadow-yellow-200/50' : ''}" 
+                 onclick="openDetailModalFromId('${task.id}')" ${dragAttr}>
+              <div class="flex items-center font-black text-xs mb-0.5">
+                ${getIconSvg(task.type, task.equipment, 'w-3.5 h-3.5 mr-1.5')}
+                <span class="truncate leading-tight">${task.client || '-'}</span>
+              </div>
+              <div class="truncate text-slate-600 text-[11px] font-medium ml-5">${task.site || '-'}</div>
+            </div>
+          `;
+        });
+
+        // 前月・次月含め全てのマスにタスクとドロップ機能を適用
+        html += `
+          <div class="${cellClass}" data-date="${cellDateStr}">
+            <header class="mb-1.5 flex justify-end">
+              <span class="${todayClass}">${displayDate}</span>
+            </header>
+            <div class="flex-1 overflow-y-auto px-0.5 pb-1 space-y-1">
+              ${tasksHtml}
+            </div>
+          </div>
+        `;
       }
       grid.innerHTML = html;
       setupCalendarDragAndDrop();
