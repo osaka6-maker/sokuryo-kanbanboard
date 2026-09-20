@@ -997,7 +997,14 @@
       onSnapshot(collection(db, 'tasks'), (snapshot) => {
         window.tasks = [];
         snapshot.forEach(docSnap => {
-          const d = docSnap.data();
+          const rawD = docSnap.data();
+          const d = {};
+          // ★修正：スプレッドシート由来の「見えない改行や空白」を自動で取り除いて読み取る
+          for (let key in rawD) {
+            const cleanKey = key.replace(/\r?\n/g, '').trim();
+            d[cleanKey] = rawD[key];
+          }
+          
           window.tasks.push({
             id: docSnap.id,
             date: d['測量日'] || '',
