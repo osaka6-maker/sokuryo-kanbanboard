@@ -934,7 +934,9 @@
         sessionStorage.setItem('userName', user.email);
         sessionStorage.setItem('userRole', '編集者');
         
-        document.getElementById('user-display-name').textContent = `👤 ${user.email}`;
+        if (document.getElementById('user-display-name')) {
+          document.getElementById('user-display-name').textContent = `👤 ${user.email}`;
+        }
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         
