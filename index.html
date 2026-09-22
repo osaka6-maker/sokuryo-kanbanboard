@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>測量DB カンバンボード</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -111,6 +111,14 @@
       cursor: pointer;
       transform: scale(1.1);
     }
+
+    /* 無効化ボタン用スタイル */
+    .btn-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+      filter: grayscale(100%);
+    }
   </style>
 </head>
 <body class="bg-slate-100 font-sans h-screen flex flex-col overflow-hidden text-slate-800">
@@ -123,11 +131,11 @@
       <form id="login-form" class="space-y-4">
         <label class="block">
           <span class="block text-sm font-bold text-slate-600 mb-1">メールアドレス</span>
-          <input type="email" id="login-email" class="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-base focus:border-blue-500 outline-none transition-colors" required>
+          <input type="email" id="login-email" class="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-base focus:border-blue-500 outline-none transition-colors" required />
         </label>
         <label class="block">
           <span class="block text-sm font-bold text-slate-600 mb-1">パスワード</span>
-          <input type="password" id="login-password" class="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-base focus:border-blue-500 outline-none transition-colors" required>
+          <input type="password" id="login-password" class="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-base focus:border-blue-500 outline-none transition-colors" required />
         </label>
         <footer>
           <button type="submit" id="btn-login-submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-lg text-base mt-4 shadow-md transition-colors">ログイン</button>
@@ -138,7 +146,6 @@
 
   <!-- ================= メインアプリ画面 ================= -->
   <div id="main-app" class="hidden flex flex-col h-full w-full relative">
-    
     <header class="bg-slate-800 text-white p-3 shadow-lg flex justify-between items-center shrink-0 z-20 select-none">
       <h1 class="text-lg font-bold flex items-center gap-2">
         <span id="sync-icon" class="inline-block">🔄</span> 測量DB カンバンボード (Firebase)
@@ -163,13 +170,11 @@
     </header>
 
     <section class="bg-slate-200 border-b border-slate-300 flex flex-wrap items-end shrink-0 shadow-sm z-10 text-slate-700 select-none pt-2 px-2">
-      <!-- タブ -->
       <div class="flex gap-1 ml-2">
         <button id="tab-kanban" onclick="switchView('kanban')" class="px-5 py-2 bg-slate-50 border-t border-l border-r border-slate-300 rounded-t-lg font-bold text-blue-700 relative top-[1px] shadow-sm z-10 transition-colors cursor-pointer">📋 カンバン</button>
         <button id="tab-calendar" onclick="switchView('calendar')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">📅 カレンダー</button>
         <button id="tab-logs" onclick="switchView('logs')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">📜 更新ログ</button>
       </div>
-      <!-- アイコンの見方 (右詰め) -->
       <div class="ml-auto flex flex-wrap items-center gap-4 px-2 pb-2 text-xs">
         <span class="font-bold text-slate-800 bg-white border border-slate-300 px-2 py-1 rounded shadow-sm">💡 アイコンの見方</span>
         <div class="flex items-center gap-2 border-r border-slate-300 pr-4">
@@ -192,7 +197,7 @@
     </section>
 
     <section id="search-bar-container" class="hidden bg-slate-200 border-b border-slate-300 px-4 py-3 flex flex-wrap gap-3 items-center shrink-0 shadow-inner z-10 animate-fade-in-down select-none">
-      <input type="search" id="search-text" placeholder="お客様名・現場名で検索..." class="border border-slate-300 rounded px-3 py-1.5 text-sm outline-none focus:border-blue-500 w-64 shadow-sm">
+      <input type="search" id="search-text" placeholder="お客様名・現場名で検索..." class="border border-slate-300 rounded px-3 py-1.5 text-sm outline-none focus:border-blue-500 w-64 shadow-sm" />
       <div class="flex items-center gap-2 border-l border-slate-400 pl-3 ml-1">
         <span class="text-sm font-bold text-slate-600">担当者:</span>
         <select id="search-role" class="border border-slate-300 rounded px-2 py-1.5 text-sm outline-none shadow-sm">
@@ -202,7 +207,7 @@
           <option value="survey">測量担当</option>
           <option value="pointcloud">点群処理</option>
           <option value="cross">現況横断</option>
-          <option value="earth">土量</option>
+          <option value="hyouteiten">標定点配置図</option>
           <option value="output">成果作成</option>
           <option value="zeroyen">０円請求</option>
         </select>
@@ -337,7 +342,6 @@
             <span class="text-base leading-none">▶</span>
           </header>
           <div class="flex-1 overflow-hidden flex flex-col gap-2 p-2 bg-slate-300 min-h-0">
-            
             <section style="flex: 1;" class="min-h-0 bg-gray-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm shrink-0" data-status="まとめて提出">
               <div class="bg-gray-200 shrink-0">
                 <header class="text-sm font-bold text-gray-800 px-2.5 py-2 flex justify-between items-center">
@@ -389,7 +393,6 @@
               </div>
               <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1.5 task-list min-h-0"></div>
             </section>
-
           </div>
         </aside>
       </div>
@@ -437,7 +440,6 @@
           </table>
         </div>
       </div>
-
     </main>
   </div>
 
@@ -447,10 +449,17 @@
       
       <!-- ヘッダー -->
       <header class="flex justify-between items-center px-6 py-3 border-b border-slate-100 shrink-0 select-none z-30 bg-white relative shadow-sm">
-        <div class="flex gap-3">
+        <div class="flex items-center gap-3">
           <button id="btn-edit-detail" onclick="openEditFromDetail()" class="text-sm text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm">
             ✏️ 編集
           </button>
+          <!-- URLリンクボタン（未設定時はグレーアウト） -->
+          <a id="detail-btn-chat" href="#" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm">
+            Googleチャット
+          </a>
+          <a id="detail-btn-pj" href="#" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm">
+            PJ
+          </a>
         </div>
         <div class="flex items-center gap-4">
           <button id="btn-toggle-check" onclick="toggleDeliverableCheck()" class="hidden text-sm text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-1.5 rounded-lg transition-colors items-center gap-2 font-bold shadow-sm">
@@ -465,7 +474,8 @@
         
         <!-- 左側：メインコンテンツ -->
         <div class="flex-1 overflow-y-auto p-5 md:p-6 flex flex-col gap-4 bg-white min-w-[600px]">
-          <section class="flex flex-col md:flex-row justify-between items-start gap-6">
+          <!-- ヘッダー情報（お客様名など）と画像 -->
+          <section class="flex flex-col md:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-4">
             <div class="flex-1 flex flex-col gap-3">
               <div class="flex gap-3 items-center">
                 <div id="detail-title-icon" class="flex-shrink-0 pt-1"></div>
@@ -483,7 +493,7 @@
             <!-- 画像アップロード -->
             <div class="flex gap-2 shrink-0 select-none">
                <div class="w-[150px] h-[105px] bg-slate-50 flex items-center justify-center text-slate-500 text-xs overflow-hidden rounded-lg shadow-sm border-2 border-dashed border-slate-400 relative group cursor-pointer" onclick="document.getElementById('upload-img-1').click()" oncontextmenu="handleContextMenu(event, 1)">
-                 <img id="detail-img-1" src="" class="hidden w-full h-full object-cover absolute inset-0 z-0">
+                 <img id="detail-img-1" src="" class="hidden w-full h-full object-cover absolute inset-0 z-0" />
                  <div id="detail-img-ph-1" class="flex flex-col items-center gap-1 z-10">
                    <span class="text-2xl mb-1 text-slate-400">📷</span>
                    <span class="font-bold">画像1</span>
@@ -492,14 +502,14 @@
                    <span class="text-2xl mb-1">🔄</span>
                    <span class="font-bold text-[10px]">変更する</span>
                  </div>
-                 <input type="file" id="upload-img-1" accept="image/*" class="hidden" onchange="handleImageUpload(event, 1)">
+                 <input type="file" id="upload-img-1" accept="image/*" class="hidden" onchange="handleImageUpload(event, 1)" />
                  <div id="upload-overlay-1" class="hidden absolute inset-0 bg-slate-900/80 z-30 flex flex-col items-center justify-center text-white">
                    <span class="animate-spin text-3xl mb-1">⏳</span>
                    <span class="font-bold text-[10px]">保存中...</span>
                  </div>
                </div>
                <div class="w-[150px] h-[105px] bg-slate-50 flex items-center justify-center text-slate-500 text-xs overflow-hidden rounded-lg shadow-sm border-2 border-dashed border-slate-400 relative group cursor-pointer" onclick="document.getElementById('upload-img-2').click()" oncontextmenu="handleContextMenu(event, 2)">
-                 <img id="detail-img-2" src="" class="hidden w-full h-full object-cover absolute inset-0 z-0">
+                 <img id="detail-img-2" src="" class="hidden w-full h-full object-cover absolute inset-0 z-0" />
                  <div id="detail-img-ph-2" class="flex flex-col items-center gap-1 z-10">
                    <span class="text-2xl mb-1 text-slate-400">📷</span>
                    <span class="font-bold">画像2</span>
@@ -508,14 +518,14 @@
                    <span class="text-2xl mb-1">🔄</span>
                    <span class="font-bold text-[10px]">変更する</span>
                  </div>
-                 <input type="file" id="upload-img-2" accept="image/*" class="hidden" onchange="handleImageUpload(event, 2)">
+                 <input type="file" id="upload-img-2" accept="image/*" class="hidden" onchange="handleImageUpload(event, 2)" />
                  <div id="upload-overlay-2" class="hidden absolute inset-0 bg-slate-900/80 z-30 flex flex-col items-center justify-center text-white">
                    <span class="animate-spin text-3xl mb-1">⏳</span>
                    <span class="font-bold text-[10px]">保存中...</span>
                  </div>
                </div>
                <div class="w-[150px] h-[105px] bg-emerald-50 flex items-center justify-center text-emerald-600 text-xs overflow-hidden rounded-lg shadow-sm border-2 border-dashed border-emerald-400 relative group cursor-pointer" onclick="document.getElementById('upload-img-3').click()" oncontextmenu="handleContextMenu(event, 3)">
-                 <img id="detail-img-3" src="" class="hidden w-full h-full object-cover absolute inset-0 z-0">
+                 <img id="detail-img-3" src="" class="hidden w-full h-full object-cover absolute inset-0 z-0" />
                  <div id="detail-img-ph-3" class="flex flex-col items-center gap-1 z-10">
                    <span class="text-2xl mb-1 text-emerald-400">🧾</span>
                    <span class="font-bold">伝票画像</span>
@@ -524,7 +534,7 @@
                    <span class="text-2xl mb-1">🔄</span>
                    <span class="font-bold text-[10px]">変更する</span>
                  </div>
-                 <input type="file" id="upload-img-3" accept="image/*" class="hidden" onchange="handleImageUpload(event, 3)">
+                 <input type="file" id="upload-img-3" accept="image/*" class="hidden" onchange="handleImageUpload(event, 3)" />
                  <div id="upload-overlay-3" class="hidden absolute inset-0 bg-slate-900/80 z-30 flex flex-col items-center justify-center text-white">
                    <span class="animate-spin text-3xl mb-1">⏳</span>
                    <span class="font-bold text-[10px]">保存中...</span>
@@ -533,95 +543,99 @@
             </div>
           </section>
 
-          <!-- 諸元データ -->
-          <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-            <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm flex flex-col gap-3 md:col-span-3">
-              <div class="flex items-center">
-                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">測量種別</span>
-                <span id="detail-type" class="flex-1 min-w-0 text-sm font-bold text-indigo-700 truncate"></span>
-              </div>
-              <div class="flex items-center">
-                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">使用機器</span>
-                <span id="detail-equipment" class="flex-1 min-w-0 text-sm font-bold text-amber-700 truncate"></span>
-              </div>
-              <div class="flex items-center">
-                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">営業所</span>
-                <span id="detail-office" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
-              </div>
-              <div class="flex items-center">
-                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">営業マン</span>
-                <span id="detail-sales" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
-              </div>
-              <div class="flex items-center">
-                <span class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">請求先名</span>
-                <span id="detail-billing" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
-              </div>
-              <div class="pt-3 border-t border-slate-200 mt-2 space-y-3">
-                <div class="flex items-center">
-                  <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">現場地区名</span>
-                  <span id="detail-district" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
-                </div>
-                <div class="flex items-center">
-                  <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">電子基準点</span>
-                  <span id="detail-ref-point" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
-                </div>
-                <div class="flex items-center">
-                  <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">飛行ルート</span>
-                  <span id="detail-route" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
-                </div>
-              </div>
-            </section>
+          <!-- メインコンテンツ 3カラムレイアウト（左：2/3、右：1/3のアップロード） -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
             
-            <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm space-y-3 md:col-span-4">
-              <div class="space-y-3">
-                <div>
-                  <span class="text-slate-500 font-bold text-[11px] block mb-1.5 select-none">DIPS2.0登録</span>
-                  <div id="detail-dips-container" class="select-none"></div>
-                </div>
-                <div>
-                  <span class="text-slate-500 font-bold text-[11px] block mb-1.5 select-none">管轄省庁</span>
-                  <div id="detail-ministry-container" class="select-none"></div>
-                </div>
-                <div>
-                  <span class="text-slate-500 font-bold text-[11px] block mb-1.5 select-none">社内規格値</span>
-                  <div id="detail-standard-container" class="select-none"></div>
-                </div>
+            <!-- 左側エリア（カラム1＆2の統合） -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+              <!-- 上部：カラム1とカラム2の並び -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- ［カラム 1］ 基本情報 -->
+                <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col gap-3">
+                  <div class="flex items-center">
+                    <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">測量種別</span>
+                    <span id="detail-type" class="flex-1 min-w-0 text-sm font-bold text-indigo-700 truncate"></span>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">使用機器</span>
+                    <span id="detail-equipment" class="flex-1 min-w-0 text-sm font-bold text-amber-700 truncate"></span>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">営業所</span>
+                    <span id="detail-office" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">営業マン</span>
+                    <span id="detail-sales" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">請求先名</span>
+                    <span id="detail-billing" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+                  </div>
+                  <div class="pt-3 border-t border-slate-200 mt-2 space-y-3">
+                    <div class="flex items-center">
+                      <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">現場地区名</span>
+                      <span id="detail-district" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+                    </div>
+                    <div class="flex items-center">
+                      <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">電子基準点</span>
+                      <span id="detail-ref-point" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+                    </div>
+                    <div class="flex items-center">
+                      <span class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">飛行ルート</span>
+                      <span id="detail-route" class="flex-1 min-w-0 text-sm font-bold text-slate-800 truncate"></span>
+                    </div>
+                  </div>
+                </section>
+                
+                <!-- ［カラム 2］ 設定・位置情報リンク -->
+                <section class="flex flex-col gap-4">
+                  <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm grid grid-cols-3 gap-3">
+                    <div>
+                      <span class="text-slate-500 font-bold text-[11px] block mb-2 select-none">DIPS2.0登録</span>
+                      <div id="detail-dips-container" class="select-none flex flex-col gap-2"></div>
+                    </div>
+                    <div>
+                      <span class="text-slate-500 font-bold text-[11px] block mb-2 select-none">管轄省庁</span>
+                      <div id="detail-ministry-container" class="select-none flex flex-col gap-2"></div>
+                    </div>
+                    <div>
+                      <span class="text-slate-500 font-bold text-[11px] block mb-2 select-none">社内規格値</span>
+                      <div id="detail-standard-container" class="select-none flex flex-col gap-2"></div>
+                    </div>
+                  </div>
+                  <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col gap-3 justify-center flex-1">
+                    <div id="detail-map" class="text-sm"></div>
+                    <div id="detail-meet-map" class="text-sm"></div>
+                    <div id="detail-office-loc" class="text-sm"></div>
+                  </div>
+                </section>
               </div>
-            </section>
-            
-            <!-- リンク・パス -->
-            <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm md:col-span-5 flex flex-col justify-between">
-              <div class="flex flex-1">
-                <div class="flex flex-col gap-4 w-[50%] pr-3 border-r border-slate-200">
-                  <div id="detail-map" class="text-sm"></div>
-                  <div id="detail-meet-map" class="text-sm"></div>
-                  <div id="detail-office-loc" class="text-sm"></div>
-                </div>
-                <div class="flex flex-col gap-4 w-[50%] pl-3">
-                  <div id="detail-pj-link" class="text-sm"></div>
-                  <div id="detail-chat-link" class="text-sm"></div>
-                </div>
-              </div>
-              <div class="pt-3 border-t border-slate-200 mt-4 flex flex-col">
-                <div class="text-xs font-bold text-slate-500 mb-1.5 flex items-center gap-1 select-none">📁 共有パス</div>
-                <div id="detail-share-path" class="text-sm bg-white p-2 border border-slate-300 rounded break-all text-slate-700 shadow-inner font-mono selection:bg-blue-200"></div>
-              </div>
-            </section>
-          </div>
 
-          <!-- 各担当者 -->
-          <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm mt-1 select-none">
-            <h3 class="text-slate-500 font-bold text-sm mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2">
-              👥 各担当者 <span class="text-[11px] font-normal ml-2 opacity-80">(クリックして変更できます)</span>
-            </h3>
-            <div id="assignees-container" class="grid grid-cols-1 md:grid-cols-4 gap-y-3 gap-x-0"></div>
-          </section>
-          
-          <!-- アップロード状況 -->
-          <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm mt-3 select-none">
-            <h3 class="text-slate-500 font-bold text-sm mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2">☁️ データアップロード状況</h3>
-            <div id="upload-status-container" class="grid grid-cols-1 md:grid-cols-3 gap-y-3 gap-x-0"></div>
-          </section>
+              <!-- 下部：カラム横断（共有パスと各担当者） -->
+              <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm">
+                <div class="text-xs font-bold text-slate-500 mb-1.5 flex items-center gap-1 select-none">📁 共有パス</div>
+                <div id="detail-share-path" class="text-sm bg-white p-2.5 border border-slate-300 rounded break-all text-slate-700 shadow-inner font-mono selection:bg-blue-200"></div>
+              </section>
+
+              <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm select-none">
+                <h3 class="text-slate-500 font-bold text-sm mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2">
+                  👥 各担当者 <span class="text-[11px] font-normal ml-2 opacity-80">(クリックして変更できます)</span>
+                </h3>
+                <div id="assignees-container" class="grid grid-cols-2 md:grid-cols-4 gap-y-3 gap-x-0"></div>
+              </section>
+            </div>
+
+            <!-- 右側エリア（カラム3：アップロード状況） -->
+            <div class="lg:col-span-1 h-full">
+              <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm h-full flex flex-col">
+                <h3 class="text-slate-500 font-bold text-sm mb-3 border-b border-slate-200 pb-1.5 flex items-center gap-2 shrink-0">☁️ データアップロード状況</h3>
+                <!-- スクロール可能なコンテナ -->
+                <div id="upload-status-container" class="flex-1 overflow-y-auto flex flex-col pr-1 gap-1"></div>
+              </section>
+            </div>
+
+          </div>
         </div>
 
         <!-- 右側：成果物チェックスライドパネル -->
@@ -649,24 +663,24 @@
       
       <form id="task-form" class="flex flex-col bg-slate-50 rounded-b-2xl overflow-hidden h-full">
         <div class="p-5 md:p-6 flex-1 overflow-y-auto">
-          <div class="border border-slate-300 rounded-xl p-5 flex flex-col gap-5 bg-white shadow-sm">
+          <div class="border border-slate-300 rounded-xl p-5 flex flex-col gap-4 bg-white shadow-sm">
             
-            <section class="flex flex-col md:flex-row justify-between gap-6 mb-1">
+            <section class="flex flex-col md:flex-row justify-between gap-6 mb-2">
               <div class="flex-1 flex gap-3">
                 <div id="edit-title-icon" class="pt-3 flex-shrink-0"></div>
                 <div class="flex flex-col justify-center space-y-4 w-full">
                   <label class="block">
                     <span class="text-xs font-bold text-slate-500 block mb-1 select-none">お客様名 <span class="text-red-500">*</span></span>
-                    <input type="text" id="fm-client" class="w-full border border-slate-300 rounded p-2 text-xl font-bold focus:border-blue-500 outline-none transition-colors" required>
+                    <input type="text" id="fm-client" class="w-full border border-slate-300 rounded p-2 text-xl font-bold focus:border-blue-500 outline-none transition-colors" required />
                   </label>
                   <label class="block">
                     <span class="text-xs font-bold text-slate-500 block mb-1 select-none">現場名</span>
-                    <input type="text" id="fm-site" class="w-full border border-slate-300 rounded p-2 text-base font-bold focus:border-blue-500 outline-none transition-colors">
+                    <input type="text" id="fm-site" class="w-full border border-slate-300 rounded p-2 text-base font-bold focus:border-blue-500 outline-none transition-colors" />
                   </label>
                   <div class="flex gap-4">
                     <label class="block flex-1">
                       <span class="text-xs font-bold text-slate-500 block mb-1 select-none">測量日</span>
-                      <input type="date" id="fm-date" class="w-full border border-slate-300 rounded p-2 text-sm focus:border-blue-500 outline-none">
+                      <input type="date" id="fm-date" class="w-full border border-slate-300 rounded p-2 text-sm focus:border-blue-500 outline-none" />
                     </label>
                     <label class="block flex-1">
                       <span class="text-xs font-bold text-slate-500 block mb-1 select-none">ステータス</span>
@@ -701,121 +715,139 @@
               </div>
             </section>
 
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-              <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm space-y-4 md:col-span-3">
-                <div class="flex items-center">
-                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">測量種別</label>
-                  <select id="fm-type" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
-                    <option value="">ー</option>
-                    <option value="起工">起工</option>
-                    <option value="出来形">出来形</option>
-                    <option value="その他">その他</option>
-                  </select>
-                </div>
-                <div class="flex items-center">
-                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">使用機器</label>
-                  <select id="fm-equipment" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
-                    <option value="">（未選択）</option>
-                  </select>
-                </div>
-                <div class="flex items-center">
-                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">営業所</label>
-                  <select id="fm-office" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
-                    <option value="">（未選択）</option>
-                  </select>
-                </div>
-                <div class="flex items-center">
-                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">営業マン</label>
-                  <select id="fm-sales" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
-                    <option value="">（未選択）</option>
-                  </select>
-                </div>
-                <div class="flex items-center">
-                  <label class="w-20 shrink-0 text-slate-500 font-bold text-xs select-none">請求先名</label>
-                  <input type="text" id="fm-billing" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold">
-                </div>
-              </section>
-              
-              <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm space-y-3 md:col-span-4">
-                <div class="flex flex-col gap-1">
-                  <label class="text-slate-500 font-bold text-xs select-none">現場地区名</label>
-                  <input type="text" id="fm-district" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold">
-                </div>
-                <div class="flex flex-col gap-1">
-                  <label class="text-slate-500 font-bold text-xs select-none">電子基準点</label>
-                  <input type="text" id="fm-ref-point" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold">
-                </div>
-                <div class="flex flex-col gap-1">
-                  <label class="text-slate-500 font-bold text-xs select-none">飛行ルート</label>
-                  <input type="text" id="fm-route" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold">
-                </div>
+            <!-- 入力フォーム 3カラムレイアウト（アップロード枠のスペース確保のため） -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+            
+            <div class="lg:col-span-2 flex flex-col gap-4">
+              <!-- カラム1＆2 並び -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- ［カラム 1］ 基本情報入力 -->
+                <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col gap-3">
+                  <div class="flex items-center">
+                    <label class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">測量種別</label>
+                    <select id="fm-type" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                      <option value="">ー</option>
+                      <option value="起工">起工</option>
+                      <option value="出来形">出来形</option>
+                      <option value="その他">その他</option>
+                    </select>
+                  </div>
+                  <div class="flex items-center">
+                    <label class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">使用機器</label>
+                    <select id="fm-equipment" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                      <option value="">（未選択）</option>
+                    </select>
+                  </div>
+                  <div class="flex items-center">
+                    <label class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">営業所</label>
+                    <select id="fm-office" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                      <option value="">（未選択）</option>
+                    </select>
+                  </div>
+                  <div class="flex items-center">
+                    <label class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">営業マン</label>
+                    <select id="fm-sales" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                      <option value="">（未選択）</option>
+                    </select>
+                  </div>
+                  <div class="flex items-center">
+                    <label class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">請求先名</label>
+                    <input type="text" id="fm-billing" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold" />
+                  </div>
+
+                  <div class="pt-3 border-t border-slate-200 mt-1 space-y-3">
+                    <div class="flex items-center">
+                      <label class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">現場地区名</label>
+                      <input type="text" id="fm-district" class="flex-1 border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold" />
+                    </div>
+                    <div class="flex items-center">
+                      <label class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">電子基準点</label>
+                      <input type="text" id="fm-ref-point" class="flex-1 border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold" />
+                    </div>
+                    <div class="flex items-center">
+                      <label class="w-24 shrink-0 text-slate-500 font-bold text-xs select-none">飛行ルート</label>
+                      <input type="text" id="fm-route" class="flex-1 border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-bold" />
+                    </div>
+                  </div>
+                </section>
                 
-                <div class="pt-2 border-t border-slate-300 mt-1 space-y-3">
-                  <div class="flex flex-col gap-1">
-                    <label class="text-slate-500 font-bold text-xs select-none">DIPS2.0登録</label>
-                    <select id="fm-dips" class="w-full border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
-                      <option value="">ー</option>
-                      <option value="未登録">未登録</option>
-                      <option value="登録済">登録済</option>
-                    </select>
-                  </div>
-                  <div class="flex flex-col gap-1">
-                    <label class="text-slate-500 font-bold text-xs select-none">管轄省庁</label>
-                    <select id="fm-ministry" class="w-full border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
-                      <option value="">ー</option>
-                    </select>
-                  </div>
-                  <div class="flex flex-col gap-1">
-                    <label class="text-slate-500 font-bold text-xs select-none">社内規格値</label>
-                    <select id="fm-standard" class="w-full border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
-                      <option value="">ー</option>
-                      <option value="なし">なし</option>
-                      <option value="80％">80％</option>
-                      <option value="50％">50％</option>
-                    </select>
-                  </div>
-                </div>
-              </section>
-              
-              <!-- リンク・パス -->
-              <section class="bg-slate-50 rounded-xl p-3 md:p-4 border border-slate-200 shadow-sm md:col-span-5 flex flex-col justify-between">
-                <div>
-                  <h3 class="text-slate-500 font-bold text-sm mb-3 flex items-center gap-1 select-none">🔗 リンク・パス (URL入力)</h3>
-                  <div class="flex flex-1">
-                    <div class="flex flex-col gap-3 w-[50%] pr-3 border-r border-slate-200">
-                      <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">📍 現場位置 URL</label>
-                        <input type="text" id="fm-mapUrl" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">📍 集合場所 URL</label>
-                        <input type="text" id="fm-meetUrl" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">🏢 事務所位置 URL</label>
-                        <input type="text" id="fm-office-loc" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
-                      </div>
+                <!-- ［カラム 2］ 設定・URLリンク入力 -->
+                <section class="flex flex-col gap-4">
+                  <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm grid grid-cols-3 gap-3">
+                    <div class="flex flex-col gap-1.5">
+                      <label class="text-slate-500 font-bold text-[11px] select-none">DIPS2.0登録</label>
+                      <select id="fm-dips" class="w-full border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                        <option value="">ー</option>
+                        <option value="未登録">未登録</option>
+                        <option value="登録済">登録済</option>
+                      </select>
                     </div>
-                    <div class="flex flex-col gap-3 w-[50%] pl-3">
-                      <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">📁 PJ URL</label>
-                        <input type="text" id="fm-pjUrl" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
+                    <div class="flex flex-col gap-1.5">
+                      <label class="text-slate-500 font-bold text-[11px] select-none">管轄省庁</label>
+                      <select id="fm-ministry" class="w-full border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                        <option value="">ー</option>
+                      </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                      <label class="text-slate-500 font-bold text-[11px] select-none">社内規格値</label>
+                      <select id="fm-standard" class="w-full border border-slate-300 rounded p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-bold cursor-pointer">
+                        <option value="">ー</option>
+                        <option value="なし">なし</option>
+                        <option value="80％">80％</option>
+                        <option value="50％">50％</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col gap-2.5 flex-1 justify-center">
+                    <h3 class="text-slate-500 font-bold text-xs mb-1 flex items-center gap-1 select-none">🔗 URLリンク設定</h3>
+                    <div class="flex items-center">
+                      <label class="w-20 shrink-0 text-[11px] font-bold text-slate-500 select-none">📍 現場位置</label>
+                      <input type="text" id="fm-mapUrl" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-xs outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://..." />
+                    </div>
+                    <div class="flex items-center">
+                      <label class="w-20 shrink-0 text-[11px] font-bold text-slate-500 select-none">📍 集合場所</label>
+                      <input type="text" id="fm-meetUrl" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-xs outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://..." />
+                    </div>
+                    <div class="flex items-center">
+                      <label class="w-20 shrink-0 text-[11px] font-bold text-slate-500 select-none">🏢 事務所</label>
+                      <input type="text" id="fm-office-loc" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-xs outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://..." />
+                    </div>
+                    <div class="pt-2 border-t border-slate-200 mt-1 space-y-2.5">
+                      <div class="flex items-center">
+                        <label class="w-20 shrink-0 text-[11px] font-bold text-slate-500 select-none">💬 Chat</label>
+                        <input type="text" id="fm-chatUrl" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-xs outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://..." />
                       </div>
-                      <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">💬 Chat URL</label>
-                        <input type="text" id="fm-chatUrl" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://...">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 select-none">📁 共有パス</label>
-                        <input type="text" id="fm-sharePath" class="w-full border border-slate-300 rounded p-1.5 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="\\server\share\...">
+                      <div class="flex items-center">
+                        <label class="w-20 shrink-0 text-[11px] font-bold text-slate-500 select-none">📁 PJ</label>
+                        <input type="text" id="fm-pjUrl" class="flex-1 min-w-0 border border-slate-300 rounded p-1.5 text-xs outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="https://..." />
                       </div>
                     </div>
                   </div>
-                </div>
+                </section>
+              </div>
+
+              <!-- 下部：カラム横断（共有パス入力） -->
+              <section class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-sm mt-1">
+                <label class="text-xs font-bold text-slate-500 mb-1.5 block select-none">📁 共有パス</label>
+                <input type="text" id="fm-sharePath" class="w-full border border-slate-300 rounded p-2 text-sm outline-none focus:border-blue-500 font-mono bg-white shadow-inner" placeholder="\\server\share\..." />
               </section>
             </div>
 
-        <footer class="flex justify-between items-center px-6 py-4 border-t-2 border-slate-200 shrink-0 bg-white rounded-b-2xl select-none mt-5">
+            <!-- 右側エリア（カラム3：編集時はアップロードがないためプレースホルダー等） -->
+            <div class="lg:col-span-1 h-full hidden lg:block opacity-60 pointer-events-none">
+              <section class="bg-slate-50 rounded-xl p-4 border border-dashed border-slate-300 h-full flex flex-col items-center justify-center text-slate-400">
+                <span class="text-3xl mb-2">☁️</span>
+                <span class="text-xs font-bold text-center">データのアップロードは<br />詳細画面から行えます</span>
+              </section>
+            </div>
+
+          </div>
+
+          </div>
+        </div>
+
+        <footer class="flex justify-between items-center px-6 py-4 border-t-2 border-slate-200 shrink-0 bg-white rounded-b-2xl select-none">
           <div>
             <button type="button" id="btn-delete-task" class="hidden px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors shadow-sm">
               🗑️ この案件を削除する
@@ -852,7 +884,7 @@
 
   <!-- ================= 画像拡大モーダル ================= -->
   <section id="image-viewer-modal" class="hidden fixed inset-0 z-[80] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeImageViewer()">
-    <img id="viewer-img" src="" class="max-w-full max-h-full object-contain shadow-2xl rounded" onclick="event.stopPropagation()">
+    <img id="viewer-img" src="" class="max-w-full max-h-full object-contain shadow-2xl rounded" onclick="event.stopPropagation()" />
     <button onclick="closeImageViewer()" class="absolute top-4 right-6 text-white text-4xl font-bold hover:text-slate-300 transition-colors">&times;</button>
   </section>
 
@@ -971,14 +1003,12 @@
     document.getElementById('btn-logout').addEventListener('click', () => {
       signOut(auth);
     });
-
-    // --- Firestore Data Fetching ---
+        // --- Firestore Data Fetching ---
     async function loadMasterDataFromFirebase() {
       try {
         const snap = await getDoc(doc(db, 'settings', 'masterData'));
         if (snap.exists()) {
           const data = snap.data();
-          // 後方互換性：古い JSON 文字列が存在する場合はそれを解析し、新しいオブジェクト型がある場合は優先
           if (data.masterData && typeof data.masterData === 'object') {
              window.masterData = data.masterData;
           } else if (data.masterJson) {
@@ -998,7 +1028,7 @@
 
     function setupRealtimeTasks() {
       const syncIcon = document.getElementById('sync-icon');
-      syncIcon.classList.add('animate-spin', 'text-blue-400');
+      if (syncIcon) syncIcon.classList.add('animate-spin', 'text-blue-400');
       
       onSnapshot(collection(db, 'tasks'), (snapshot) => {
         window.tasks = [];
@@ -1038,7 +1068,6 @@
             slipImage: d['伝票画像'] || '',
             statusDate: d['ステータス変更日'] || '',
             
-            // 旧文字列表現と新オブジェクト表現に対応
             checkStatus: d['成果物チェック状況'] || {},
             
             designRep: d['設計担当'] || '',
@@ -1046,11 +1075,10 @@
             surveyRep: d['測量担当'] || '',
             pointCloudRep: d['点群処理'] || '',
             crossSectionRep: d['現況横断'] || '',
-            earthRep: d['土量'] || '',
+            hyouteitenRep: d['標定点配置図'] || '',
             outputRep: d['成果作成'] || '',
             zeroYenRep: d['０円請求'] || '',
             
-            // アップロード状況（文字列/オブジェクト両対応）
             '施工計画書': d['施工計画書'] || null,
             'YS・Base': d['YS・Base'] || null,
             '現況横断武蔵': d['現況横断武蔵'] || null,
@@ -1070,7 +1098,7 @@
            const updatedTask = window.tasks.find(t => t.id === window.currentOpenTaskId);
            if (updatedTask) window.openDetailModal(updatedTask);
         }
-        syncIcon.classList.remove('animate-spin', 'text-blue-400');
+        if (syncIcon) syncIcon.classList.remove('animate-spin', 'text-blue-400');
       });
     }
 
@@ -1095,19 +1123,23 @@
         const q = query(collection(db, 'logs'), orderBy('timestamp', 'desc'), limit(100));
         const snapshot = await getDocs(q);
         const tbody = document.getElementById('logs-table-body');
+        if (!tbody) return;
         tbody.innerHTML = '';
         snapshot.forEach(docSnap => {
           const d = docSnap.data();
           const dateStr = d.timestamp ? new Date(d.timestamp.toDate()).toLocaleString('ja-JP') : '-';
-          tbody.innerHTML += `
-            <tr class="hover:bg-slate-50 transition-colors">
-              <td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">${dateStr}</td>
-              <td class="py-2.5 px-3 font-bold text-slate-700">${d.userName}</td>
-              <td class="py-2.5 px-3 text-blue-600 font-bold">${d.taskId}</td>
-              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-200 font-bold text-slate-800">${d.actionType}</span></td>
-              <td class="py-2.5 px-3 text-slate-600">${d.details}</td>
-            </tr>
-          `;
+          
+          // 💡 VS Codeのエラー誤検知を防ぐため、文字列結合を安全な形に修正しました
+          let rowHtml = '';
+          rowHtml += '<tr class="hover:bg-slate-50 transition-colors">';
+          rowHtml += '<td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">' + dateStr + '</td>';
+          rowHtml += '<td class="py-2.5 px-3 font-bold text-slate-700">' + d.userName + '</td>';
+          rowHtml += '<td class="py-2.5 px-3 text-blue-600 font-bold">' + d.taskId + '</td>';
+          rowHtml += '<td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-200 font-bold text-slate-800">' + d.actionType + '</span></td>';
+          rowHtml += '<td class="py-2.5 px-3 text-slate-600">' + d.details + '</td>';
+          rowHtml += '</tr>';
+          
+          tbody.innerHTML += rowHtml;
         });
       } catch(e) { console.error(e); }
     };
@@ -1117,7 +1149,8 @@
       const idx = window.tasks.findIndex(t => t.id === id);
       if (idx === -1 || window.tasks[idx].status === stat) return;
       try {
-        document.getElementById('sync-icon').classList.add('animate-spin', 'text-blue-400');
+        const syncIcon = document.getElementById('sync-icon');
+        if (syncIcon) syncIcon.classList.add('animate-spin', 'text-blue-400');
         const updateData = { 'ステータス': stat };
         if (stat === '設計待') {
           updateData['ステータス変更日'] = formatYYYYMMDD(new Date());
@@ -1130,7 +1163,8 @@
       } catch(e) {
         showToast('更新失敗', 'error');
       } finally {
-        document.getElementById('sync-icon').classList.remove('animate-spin', 'text-blue-400');
+        const syncIcon = document.getElementById('sync-icon');
+        if (syncIcon) syncIcon.classList.remove('animate-spin', 'text-blue-400');
       }
     };
 
@@ -1138,18 +1172,22 @@
       const idx = window.tasks.findIndex(t => t.id === id);
       if (idx === -1 || formatYYYYMMDD(window.tasks[idx].date) === newDateStr) return;
       try {
-        document.getElementById('sync-icon').classList.add('animate-spin', 'text-blue-400');
+        const syncIcon = document.getElementById('sync-icon');
+        if (syncIcon) syncIcon.classList.add('animate-spin', 'text-blue-400');
         await updateDoc(doc(db, 'tasks', id), { '測量日': newDateStr });
         await window.recordLog(id, '測量日変更', newDateStr);
         showToast(`測量日を ${newDateStr} に変更しました`);
       } catch(e) { showToast('更新失敗', 'error'); }
-      finally { document.getElementById('sync-icon').classList.remove('animate-spin', 'text-blue-400'); }
+      finally { 
+        const syncIcon = document.getElementById('sync-icon');
+        if (syncIcon) syncIcon.classList.remove('animate-spin', 'text-blue-400'); 
+      }
     };
 
     window.sendAssigneeChangeToFirebase = async function(roleId, val) {
       if (!window.currentOpenTaskId) return;
       try {
-        const roleMap = { 'design': '設計担当', 'plan': '施工計画', 'survey': '測量担当', 'pointcloud': '点群処理', 'cross': '現況横断', 'earth': '土量', 'output': '成果作成', 'zeroyen': '０円請求' };
+        const roleMap = { 'design': '設計担当', 'plan': '施工計画', 'survey': '測量担当', 'pointcloud': '点群処理', 'cross': '現況横断', 'hyouteiten': '標定点配置図', 'output': '成果作成', 'zeroyen': '０円請求' };
         const dbField = roleMap[roleId];
         await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [dbField]: val });
         await window.recordLog(window.currentOpenTaskId, '担当者更新', `${dbField} -> ${val}`);
@@ -1158,7 +1196,7 @@
     };
 
     window.handleCheckboxChange = function(el, r) {
-      const cbs = document.getElementById(`menu-${r}`).querySelectorAll('input[type="checkbox"]');
+      const cbs = document.getElementById('menu-' + r).querySelectorAll('input[type="checkbox"]');
       let sel = [];
       if (el.value === 'ー' && el.checked) {
         cbs.forEach(c => { if (c.value !== 'ー') c.checked = false; });
@@ -1172,25 +1210,26 @@
       }
       let disp = sel.join(', ');
       if (disp.length > 15) disp = disp.substring(0, 15) + '...';
-      document.getElementById(`displayText-${r}`).textContent = disp;
+      
+      const displayEl = document.getElementById('displayText-' + r);
+      if (displayEl) displayEl.textContent = disp;
+
       window.sendAssigneeChangeToFirebase(r, sel.join(', '));
     };
-
     window.handleUploadCheck = async function(fieldName, isChecked) {
       if (!window.currentOpenTaskId) return;
       
       let val = null;
       if (isChecked) {
         const now = new Date();
-        // 過去の会話履歴に基づき、ファイル名・日付形式は「YYYYMMDD」表記を内部でも使用
-        const yyyymmdd = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-        const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        const yyyymmdd = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+        const hhmm = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
         val = {
           isUploaded: true,
           user: window.currentUser.email.split('@')[0],
           date: yyyymmdd,
           time: hhmm,
-          timestamp: serverTimestamp() // Firestore Timestampをセット
+          timestamp: serverTimestamp() 
         };
       } else {
         val = { isUploaded: false, user: '', date: '', time: '' };
@@ -1206,7 +1245,6 @@
       if (!window.currentOpenTaskId) return;
       const t = window.tasks.find(x => x.id === window.currentOpenTaskId);
       
-      // 文字列/オブジェクト両対応で安全にパース
       let savedStatus = {};
       if (typeof t.checkStatus === 'object') {
         savedStatus = { ...t.checkStatus };
@@ -1218,7 +1256,6 @@
       else delete savedStatus[itemKey];
       
       try {
-        // Map型(オブジェクト)として直接保存する
         await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { '成果物チェック状況': savedStatus });
       } catch(e) { showToast('チェック状態保存エラー', 'error'); }
     };
@@ -1243,12 +1280,12 @@
     window.handleImageUpload = async function(e, index) {
       const file = e.target.files[0];
       if (!file || !window.currentOpenTaskId) return;
-      const overlay = document.getElementById(`upload-overlay-${index}`);
+      const overlay = document.getElementById('upload-overlay-' + index);
       if (overlay) overlay.classList.remove('hidden');
       try {
         const webpBlob = await compressImageToWebP(file);
         const dbField = index === 1 ? '画像1' : (index === 2 ? '画像2' : '伝票画像');
-        const fileRef = ref(storage, `tasks/${window.currentOpenTaskId}/${dbField}_${Date.now()}.webp`);
+        const fileRef = ref(storage, 'tasks/' + window.currentOpenTaskId + '/' + dbField + '_' + Date.now() + '.webp');
         await uploadBytes(fileRef, webpBlob);
         const downloadUrl = await getDownloadURL(fileRef);
         await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [dbField]: downloadUrl });
@@ -1263,15 +1300,15 @@
     };
 
     window.deleteTargetImage = async function() {
-      const targetName = window.targetImageIndex === 3 ? "伝票画像" : `画像${window.targetImageIndex}`;
-      if (!window.confirm(`${targetName}を削除しますか？`)) return;
+      const targetName = window.targetImageIndex === 3 ? "伝票画像" : "画像" + window.targetImageIndex;
+      if (!window.confirm(targetName + "を削除しますか？")) return;
       const gasField = window.targetImageIndex === 1 ? '画像1' : (window.targetImageIndex === 2 ? '画像2' : '伝票画像');
       try {
         await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [gasField]: '' });
         await window.recordLog(window.currentOpenTaskId, '画像削除', targetName);
-        showToast(`${targetName}を削除しました`);
-        document.getElementById(`detail-img-${window.targetImageIndex}`).classList.add('hidden');
-        document.getElementById(`detail-img-ph-${window.targetImageIndex}`).classList.remove('hidden');
+        showToast(targetName + "を削除しました");
+        document.getElementById('detail-img-' + window.targetImageIndex).classList.add('hidden');
+        document.getElementById('detail-img-ph-' + window.targetImageIndex).classList.remove('hidden');
       } catch (e) { showToast('削除失敗', 'error'); }
       document.getElementById('image-context-menu').classList.add('hidden');
     };
@@ -1338,7 +1375,7 @@
     document.getElementById('btn-save-settings').addEventListener('click', async () => {
       const descs = {};
       window.STATUS_LIST.forEach(s => {
-        const input = document.getElementById(`desc-input-${s}`);
+        const input = document.getElementById('desc-input-' + s);
         if (input) descs[s] = input.value.trim();
       });
       try {
@@ -1354,18 +1391,24 @@
     // UI関数群
     // ==========================================
     const fontSizeSelect = document.getElementById('font-size-selector');
-    fontSizeSelect.addEventListener('change', (e) => {
-      const size = e.target.value; localStorage.setItem('appFontSize', size); applyFontSize(size);
-    });
+    if(fontSizeSelect) {
+      fontSizeSelect.addEventListener('change', (e) => {
+        const size = e.target.value; localStorage.setItem('appFontSize', size); applyFontSize(size);
+      });
+    }
+
     function applyFontSize(size) {
       const root = document.documentElement;
       if (size === 'small') root.style.fontSize = '12px';
       else if (size === 'large') root.style.fontSize = '16px';
       else root.style.fontSize = '14px';
-      document.getElementById('font-size-selector').value = size;
+      const selector = document.getElementById('font-size-selector');
+      if(selector) selector.value = size;
     }
+
     function initFilters() { 
       const sel = document.getElementById('search-assignee'); 
+      if(!sel) return;
       sel.innerHTML = '<option value="">（全員表示）</option><option value="-">- (未設定)</option>';
       const all = new Set([...window.ASSIGNEES.design, ...window.ASSIGNEES.others]); 
       all.delete('ー'); 
@@ -1373,41 +1416,79 @@
         const opt = document.createElement('option'); opt.value = n; opt.textContent = n; sel.appendChild(opt);
       }); 
     }
+
     function populateMasterDropdowns() {
       const officeSelect = document.getElementById('fm-office');
       const eqSelect = document.getElementById('fm-equipment');
       const minSelect = document.getElementById('fm-ministry');
-      officeSelect.innerHTML = '<option value="">（未選択）</option>';
-      Object.keys(window.masterData.offices || {}).forEach(o => { officeSelect.innerHTML += `<option value="${o}">${o}</option>`; });
-      eqSelect.innerHTML = '<option value="">（未選択）</option>';
-      (window.masterData.equipments || []).forEach(e => { eqSelect.innerHTML += `<option value="${e}">${e}</option>`; });
-      minSelect.innerHTML = '<option value="">ー</option>';
-      (window.masterData.ministries || []).forEach(m => { minSelect.innerHTML += `<option value="${m}">${m}</option>`; });
+      
+      let officeHtml = '<option value="">（未選択）</option>';
+      Object.keys(window.masterData.offices || {}).forEach(o => { officeHtml += '<option value="' + o + '">' + o + '</option>'; });
+      if(officeSelect) officeSelect.innerHTML = officeHtml;
+      
+      let eqHtml = '<option value="">（未選択）</option>';
+      (window.masterData.equipments || []).forEach(e => { eqHtml += '<option value="' + e + '">' + e + '</option>'; });
+      if(eqSelect) eqSelect.innerHTML = eqHtml;
+      
+      let minHtml = '<option value="">ー</option>';
+      (window.masterData.ministries || []).forEach(m => { minHtml += '<option value="' + m + '">' + m + '</option>'; });
+      if(minSelect) minSelect.innerHTML = minHtml;
     }
-    document.getElementById('fm-office').addEventListener('change', (e) => {
-      const salesSelect = document.getElementById('fm-sales');
-      salesSelect.innerHTML = '<option value="">（未選択）</option>';
-      const reps = window.masterData.offices[e.target.value] || [];
-      reps.forEach(r => { salesSelect.innerHTML += `<option value="${r}">${r}</option>`; });
-    });
-    document.getElementById('btn-toggle-search').addEventListener('click', () => {
-      const c = document.getElementById('search-bar-container'); c.classList.toggle('hidden');
-      if (!c.classList.contains('hidden')) document.getElementById('search-text').focus();
-    });
+
+    const fmOffice = document.getElementById('fm-office');
+    if(fmOffice) {
+      fmOffice.addEventListener('change', (e) => {
+        const salesSelect = document.getElementById('fm-sales');
+        if(!salesSelect) return;
+        let salesHtml = '<option value="">（未選択）</option>';
+        const reps = window.masterData.offices[e.target.value] || [];
+        reps.forEach(r => { salesHtml += '<option value="' + r + '">' + r + '</option>'; });
+        salesSelect.innerHTML = salesHtml;
+      });
+    }
+
+    const btnToggleSearch = document.getElementById('btn-toggle-search');
+    if(btnToggleSearch) {
+      btnToggleSearch.addEventListener('click', () => {
+        const c = document.getElementById('search-bar-container'); 
+        if(c) {
+          c.classList.toggle('hidden');
+          if (!c.classList.contains('hidden')) document.getElementById('search-text').focus();
+        }
+      });
+    }
+
     window.updateCurrentView = function() {
       if (window.currentView === 'kanban') renderBoard();
       else renderCalendar();
     }
-    document.getElementById('search-text').addEventListener('input', (e) => { window.filterText = e.target.value.toLowerCase(); window.updateCurrentView(); });
-    document.getElementById('search-role').addEventListener('change', (e) => { window.filterRole = e.target.value; window.updateCurrentView(); });
-    document.getElementById('search-assignee').addEventListener('change', (e) => { window.filterAssignee = e.target.value; window.updateCurrentView(); });
-    document.getElementById('btn-clear-search').addEventListener('click', () => {
-      document.getElementById('search-text').value = ''; document.getElementById('search-role').value = 'all'; document.getElementById('search-assignee').value = '';
-      window.filterText = ''; window.filterRole = 'all'; window.filterAssignee = ''; window.updateCurrentView();
-    });
-    document.getElementById('sort-order').addEventListener('change', (e) => {
-      window.currentSort = e.target.value; localStorage.setItem('sortOrder', window.currentSort); window.updateCurrentView();
-    });
+
+    const searchText = document.getElementById('search-text');
+    if(searchText) searchText.addEventListener('input', (e) => { window.filterText = e.target.value.toLowerCase(); window.updateCurrentView(); });
+    
+    const searchRole = document.getElementById('search-role');
+    if(searchRole) searchRole.addEventListener('change', (e) => { window.filterRole = e.target.value; window.updateCurrentView(); });
+    
+    const searchAssignee = document.getElementById('search-assignee');
+    if(searchAssignee) searchAssignee.addEventListener('change', (e) => { window.filterAssignee = e.target.value; window.updateCurrentView(); });
+    
+    const btnClearSearch = document.getElementById('btn-clear-search');
+    if(btnClearSearch) {
+      btnClearSearch.addEventListener('click', () => {
+        document.getElementById('search-text').value = ''; 
+        document.getElementById('search-role').value = 'all'; 
+        document.getElementById('search-assignee').value = '';
+        window.filterText = ''; window.filterRole = 'all'; window.filterAssignee = ''; window.updateCurrentView();
+      });
+    }
+
+    const sortOrder = document.getElementById('sort-order');
+    if(sortOrder) {
+      sortOrder.addEventListener('change', (e) => {
+        window.currentSort = e.target.value; localStorage.setItem('sortOrder', window.currentSort); window.updateCurrentView();
+      });
+    }
+
     function getFilteredAndSortedTasks() {
       let f = window.tasks;
       if (window.filterText) f = f.filter(t => (t.client && t.client.toLowerCase().includes(window.filterText)) || (t.site && t.site.toLowerCase().includes(window.filterText)));
@@ -1415,7 +1496,7 @@
         f = f.filter(t => {
           const isUnassigned = (v1, v2) => { const s1 = String(v1||'').trim(); const s2 = String(v2||'').trim(); return (s1===''||s1==='ー') && (s2===''||s2==='ー'); };
           const hasAssignee = (v1, v2, target) => { return (v1 && String(v1).includes(target)) || (v2 && String(v2).includes(target)); };
-          const m = { 'design':['designRep','設計担当'], 'plan':['planRep','施工計画'], 'survey':['surveyRep','測量担当'], 'pointcloud':['pointCloudRep','点群処理'], 'cross':['crossSectionRep','現況横断'], 'output':['outputRep','成果作成'], 'zeroyen':['zeroYenRep','０円請求'], 'earth':['earthRep','土量'] };
+          const m = { 'design':['designRep','設計担当'], 'plan':['planRep','施工計画'], 'survey':['surveyRep','測量担当'], 'pointcloud':['pointCloudRep','点群処理'], 'cross':['crossSectionRep','現況横断'], 'output':['outputRep','成果作成'], 'zeroyen':['zeroYenRep','０円請求'], 'hyouteiten':['hyouteitenRep','標定点配置図'] };
           if (window.filterRole === 'all') { 
             if (window.filterAssignee === '-') return Object.values(m).some(keys => isUnassigned(t[keys[0]], t[keys[1]]));
             else return Object.values(m).some(keys => hasAssignee(t[keys[0]], t[keys[1]], window.filterAssignee));
@@ -1431,83 +1512,141 @@
         return window.currentSort === 'asc' ? new Date(a.date) - new Date(b.date) : new Date(b.date) - new Date(a.date);
       });
     }
+
     function formatYYYYMMDD(dateStr) {
       if (!dateStr || dateStr === "未定" || dateStr === "") return "未定";
       let cleanDate = dateStr.replace(/[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '');
       const d = new Date(cleanDate);
       if (isNaN(d.getTime())) return dateStr;
-      return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
     }
+
     function formatDateForInput(dateStr) {
       if (!dateStr || dateStr === "未定" || dateStr === "") return "";
       const d = new Date(dateStr); if (isNaN(d.getTime())) return "";
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
-    function getIconSvg(type, eq, sizeClass="w-3.5 h-3.5") { 
+
+    function getIconSvg(type, eq, sizeClass) { 
+      if(!sizeClass) sizeClass = "w-3.5 h-3.5";
       let color = "#22c55e"; 
       const t = type ? String(type).trim() : '';
       const e = eq ? String(eq).trim() : '';
       
-      if (t.includes("起工")) color = "#f97316"; 
-      else if (t.includes("出来形")) color = "#3b82f6"; 
+      if (t.indexOf("起工") !== -1) color = "#f97316"; 
+      else if (t.indexOf("出来形") !== -1) color = "#3b82f6"; 
       
-      let shape = `<polygon points="8,2 14,13 2,13" fill="${color}" />`; 
-      if (e.includes("TLS")) shape = `<polygon points="8,1.5 14.5,5.25 14.5,10.75 8,14.5 1.5,10.75 1.5,5.25" fill="none" stroke="${color}" stroke-width="2" />`; 
-      else if (e.includes("ULS") || e.includes("M4")) shape = `<polygon points="8,1 15,5 15,11 8,15 1,11 1,5" fill="${color}" />`; 
-      return `<svg class="${sizeClass} shrink-0 mr-1" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">${shape}</svg>`; 
+      let shape = '<polygon points="8,2 14,13 2,13" fill="' + color + '" />'; 
+      if (e.indexOf("TLS") !== -1) shape = '<polygon points="8,1.5 14.5,5.25 14.5,10.75 8,14.5 1.5,10.75 1.5,5.25" fill="none" stroke="' + color + '" stroke-width="2" />'; 
+      else if (e.indexOf("ULS") !== -1 || e.indexOf("M400") !== -1 || e.indexOf("M600") !== -1) shape = '<polygon points="8,1 15,5 15,11 8,15 1,11 1,5" fill="' + color + '" />'; 
+      
+      let svgHtml = '';
+      svgHtml += '<svg class="' + sizeClass + ' shrink-0 mr-1" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">';
+      svgHtml += shape;
+      svgHtml += '</svg>';
+      return svgHtml;
     }
+
     function updateSearchButtonState() {
-      const btn = document.getElementById('btn-toggle-search'); const count = document.getElementById('filtered-count').textContent;
+      const btn = document.getElementById('btn-toggle-search'); 
+      const countEl = document.getElementById('filtered-count');
+      if(!btn || !countEl) return;
+      const count = countEl.textContent;
       if (window.filterText !== '' || window.filterAssignee !== '') {
-        btn.classList.add('bg-blue-600', 'text-white', 'border-blue-500'); btn.classList.remove('bg-slate-700', 'text-blue-200', 'border-slate-600'); btn.innerHTML = `🔍 検索中 (${count}件)`;
+        btn.classList.add('bg-blue-600', 'text-white', 'border-blue-500'); 
+        btn.classList.remove('bg-slate-700', 'text-blue-200', 'border-slate-600'); 
+        btn.innerHTML = '🔍 検索中 (' + count + '件)';
       } else {
-        btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-500'); btn.classList.add('bg-slate-700', 'text-blue-200', 'border-slate-600'); btn.innerHTML = '🔍 検索・絞り';
+        btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-500'); 
+        btn.classList.add('bg-slate-700', 'text-blue-200', 'border-slate-600'); 
+        btn.innerHTML = '🔍 検索・絞り';
       }
     }
+
     function renderBoard() {
       document.querySelectorAll('.task-list').forEach(list => list.innerHTML = '');
       document.querySelectorAll('.count').forEach(el => el.textContent = '0');
       const filtered = getFilteredAndSortedTasks();
-      document.getElementById('filtered-count').textContent = filtered.length;
+      const countEl = document.getElementById('filtered-count');
+      if(countEl) countEl.textContent = filtered.length;
+      
       filtered.forEach(task => {
-        const zone = document.querySelector(`.drop-zone[data-status="${task.status}"]`);
+        const zone = document.querySelector('.drop-zone[data-status="' + task.status + '"]');
         if (!zone) return;
-        zone.querySelector('.count').textContent = parseInt(zone.querySelector('.count').textContent) + 1;
+        const countSpan = zone.querySelector('.count');
+        if(countSpan) countSpan.textContent = parseInt(countSpan.textContent) + 1;
+        
         const card = document.createElement('article');
-        card.draggable = true; let isDelayed = false;
+        card.draggable = true; 
+        let isDelayed = false;
+        
         if (task.date && ["点群処理中", "横断作成中", "成果作成中", "設計待", "確認待"].includes(task.status)) {
           if ((new Date() - new Date(task.date)) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true;
         }
+        
         const isSidebar = ["新宮担当", "共有移動未", "共有に移動済", "まとめて提出"].includes(task.status);
         const fDate = formatYYYYMMDD(task.date);
         const dIcon = isDelayed ? '<span title="測量日から2週間超過">⚠️</span> ' : '';
+        
+        let cardHtml = '';
         if (isSidebar) { 
           card.className = "bg-white p-2 rounded shadow border border-slate-200 cursor-pointer hover:border-blue-400 transition-all flex flex-col shrink-0 select-none"; 
-          card.innerHTML = `<header class="flex justify-between items-center text-slate-500 mb-0.5 gap-1 shrink-0"><div class="flex items-center shrink-0 min-w-0 text-slate-800">${getIconSvg(task.type, task.equipment)}<span class="font-bold text-[11px] truncate leading-none">${task.client || '-'}</span></div><span class="font-bold text-slate-500 text-[10px] shrink-0">${fDate}</span></header><div class="truncate text-slate-600 text-[11px] leading-tight">${task.site || '-'}</div>`; 
+          cardHtml += '<header class="flex justify-between items-center text-slate-500 mb-0.5 gap-1 shrink-0">';
+          cardHtml += '<div class="flex items-center shrink-0 min-w-0 text-slate-800">' + getIconSvg(task.type, task.equipment) + '<span class="font-bold text-[11px] truncate leading-none">' + (task.client || '-') + '</span></div>';
+          cardHtml += '<span class="font-bold text-slate-500 text-[10px] shrink-0">' + fDate + '</span></header>';
+          cardHtml += '<div class="truncate text-slate-600 text-[11px] leading-tight">' + (task.site || '-') + '</div>';
         } else { 
-          card.className = `select-none ${isDelayed ? "bg-yellow-100 border-yellow-400 shadow-yellow-300" : "bg-white border-slate-200"} rounded-lg shadow-sm border cursor-pointer hover:shadow-md hover:border-blue-400 transition-all flex flex-row overflow-hidden shrink-0 min-h-[85px]`; 
-          const thumbHtml = task.image1 ? `<div class="w-20 shrink-0 bg-slate-200 border-r ${isDelayed ? 'border-yellow-300' : 'border-slate-200'}"><img src="${task.image1}" class="w-full h-full object-cover"></div>` : ''; 
+          card.className = "select-none " + (isDelayed ? "bg-yellow-100 border-yellow-400 shadow-yellow-300" : "bg-white border-slate-200") + " rounded-lg shadow-sm border cursor-pointer hover:shadow-md hover:border-blue-400 transition-all flex flex-row overflow-hidden shrink-0 min-h-[85px]"; 
+          
+          let thumbHtml = '';
+          if(task.image1) {
+             thumbHtml += '<div class="w-20 shrink-0 bg-slate-200 border-r ' + (isDelayed ? 'border-yellow-300' : 'border-slate-200') + '">';
+             thumbHtml += '<img src="' + task.image1 + '" class="w-full h-full object-cover" /></div>';
+          }
+          
           let footerCenterHtml = '';
           if (task.status === '設計待') {
-            const designRep = task.designRep || '未設定'; let daysPassedText = '-日'; 
+            const designRep = task.designRep || '未設定'; 
+            let daysPassedText = '-日'; 
             if (task.statusDate) {
               const today = new Date(); const startDate = new Date(task.statusDate);
               today.setHours(0,0,0,0); startDate.setHours(0,0,0,0);
-              const diffTime = today.getTime() - startDate.getTime(); const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-              daysPassedText = `${diffDays}日`; 
+              const diffTime = today.getTime() - startDate.getTime(); 
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              daysPassedText = diffDays + '日'; 
             }
-            footerCenterHtml = `<div class="flex items-center gap-1 min-w-0 shrink px-1 justify-center"><span class="text-[10px] font-bold text-cyan-800 bg-cyan-100 border border-cyan-300 px-1 py-0.5 rounded truncate max-w-[60px]" title="${designRep}">📐${designRep}</span><span class="text-[10px] font-bold text-red-600 bg-white border border-red-200 px-1 py-0.5 rounded shadow-sm shrink-0 whitespace-nowrap">${daysPassedText}経過</span></div>`;
+            footerCenterHtml += '<div class="flex items-center gap-1 min-w-0 shrink px-1 justify-center">';
+            footerCenterHtml += '<span class="text-[10px] font-bold text-cyan-800 bg-cyan-100 border border-cyan-300 px-1 py-0.5 rounded truncate max-w-[60px]" title="' + designRep + '">📐' + designRep + '</span>';
+            footerCenterHtml += '<span class="text-[10px] font-bold text-red-600 bg-white border border-red-200 px-1 py-0.5 rounded shadow-sm shrink-0 whitespace-nowrap">' + daysPassedText + '経過</span></div>';
           }
-          const contentHtml = `<div class="flex-1 flex flex-col min-w-0 p-2.5"><header class="text-[11px] text-slate-500 mb-1 flex justify-between items-center font-medium shrink-0 gap-1"><div class="flex items-center min-w-0 ${isDelayed ? 'text-yellow-800' : 'text-slate-800'}">${getIconSvg(task.type, task.equipment)}<span class="font-black text-[13px] truncate leading-tight">${task.client || '-'}</span></div><span class="font-bold tracking-tighter leading-none shrink-0 ${isDelayed ? 'text-yellow-700' : 'text-slate-500'}">${dIcon}${fDate}</span></header><div class="text-[13px] font-bold ${isDelayed ? 'text-yellow-900' : 'text-slate-700'} mb-1.5 line-clamp-2 flex-1">${task.site || '-'}</div><footer class="flex items-center justify-between shrink-0 border-t ${isDelayed ? 'border-yellow-200' : 'border-slate-100'} pt-1 mt-auto w-full gap-1"><span class="text-[11px] font-bold ${isDelayed ? 'bg-yellow-50 text-yellow-700' : 'bg-slate-100 text-slate-600'} px-1.5 py-0.5 rounded truncate shrink-0 max-w-[35%]">${task.office || '-'}</span>${footerCenterHtml}<span class="text-[11px] font-bold ${isDelayed ? 'text-yellow-800' : 'text-slate-500'} truncate shrink-0 max-w-[35%] text-right ml-auto">👤 ${task.salesperson || '-'}</span></footer></div>`;
-          card.innerHTML = thumbHtml + contentHtml;
+          
+          let contentHtml = '';
+          contentHtml += '<div class="flex-1 flex flex-col min-w-0 p-2.5">';
+          contentHtml += '<header class="text-[11px] text-slate-500 mb-1 flex justify-between items-center font-medium shrink-0 gap-1">';
+          contentHtml += '<div class="flex items-center min-w-0 ' + (isDelayed ? 'text-yellow-800' : 'text-slate-800') + '">' + getIconSvg(task.type, task.equipment) + '<span class="font-black text-[13px] truncate leading-tight">' + (task.client || '-') + '</span></div>';
+          contentHtml += '<span class="font-bold tracking-tighter leading-none shrink-0 ' + (isDelayed ? 'text-yellow-700' : 'text-slate-500') + '">' + dIcon + fDate + '</span></header>';
+          contentHtml += '<div class="text-[13px] font-bold ' + (isDelayed ? 'text-yellow-900' : 'text-slate-700') + ' mb-1.5 line-clamp-2 flex-1">' + (task.site || '-') + '</div>';
+          contentHtml += '<footer class="flex items-center justify-between shrink-0 border-t ' + (isDelayed ? 'border-yellow-200' : 'border-slate-100') + ' pt-1 mt-auto w-full gap-1">';
+          contentHtml += '<span class="text-[11px] font-bold ' + (isDelayed ? 'bg-yellow-50 text-yellow-700' : 'bg-slate-100 text-slate-600') + ' px-1.5 py-0.5 rounded truncate shrink-0 max-w-[35%]">' + (task.office || '-') + '</span>';
+          contentHtml += footerCenterHtml;
+          contentHtml += '<span class="text-[11px] font-bold ' + (isDelayed ? 'text-yellow-800' : 'text-slate-500') + ' truncate shrink-0 max-w-[35%] text-right ml-auto">👤 ' + (task.salesperson || '-') + '</span></footer></div>';
+          
+          cardHtml = thumbHtml + contentHtml;
         }
+        
+        card.innerHTML = cardHtml;
         card.addEventListener('click', () => openDetailModal(task)); 
-        card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('taskId', task.id); setTimeout(() => card.classList.add('opacity-40'), 0); }); 
+        card.addEventListener('dragstart', (e) => { 
+          e.dataTransfer.setData('taskId', task.id); 
+          setTimeout(() => card.classList.add('opacity-40'), 0); 
+        }); 
         card.addEventListener('dragend', () => card.classList.remove('opacity-40')); 
-        zone.querySelector('.task-list').appendChild(card);
+        const tList = zone.querySelector('.task-list');
+        if(tList) tList.appendChild(card);
       }); 
       updateSearchButtonState();
     }
+
     function setupDragAndDrop() {
       document.querySelectorAll('.drop-zone').forEach(zone => {
         zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
@@ -1517,13 +1656,21 @@
           window.handleDrop(e.dataTransfer.getData('taskId'), zone.getAttribute('data-status'));
         });
       });
-      document.getElementById('collapsed-sidebar').addEventListener('dragover', (e) => { e.preventDefault(); if (!window.isSidebarOpen) window.toggleSidebar(); });
+      const cSide = document.getElementById('collapsed-sidebar');
+      if(cSide) {
+        cSide.addEventListener('dragover', (e) => { 
+          e.preventDefault(); 
+          if (!window.isSidebarOpen) window.toggleSidebar(); 
+        });
+      }
     }
+
     window.toggleSidebar = function() {
       window.isSidebarOpen = !window.isSidebarOpen;
       document.getElementById('collapsed-sidebar').classList.toggle('hidden', window.isSidebarOpen);
       document.getElementById('expanded-sidebar').classList.toggle('hidden', !window.isSidebarOpen);
     }
+
     function loadStatusDescriptions() {
       const descs = window.globalStatusDescriptions; 
       document.querySelectorAll('.status-desc').forEach(el => {
@@ -1532,30 +1679,80 @@
         else { el.textContent = ''; el.classList.add('hidden'); }
       });
     }
+
     function renderSettingsDescInputs() { 
       const descs = window.globalStatusDescriptions; 
       const container = document.getElementById('status-desc-inputs');
-      container.innerHTML = '';
+      if(!container) return;
+      
+      let cHtml = '';
       window.STATUS_LIST.forEach(s => {
-        container.innerHTML += `<div class="flex flex-col gap-1.5"><label class="text-xs font-bold text-slate-500">${s}</label><input type="text" id="desc-input-${s}" value="${descs[s] || ''}" placeholder="説明なし" class="border border-slate-300 rounded p-2 text-sm outline-none focus:border-blue-500"></div>`;
+        cHtml += '<div class="flex flex-col gap-1.5">';
+        cHtml += '<label class="text-xs font-bold text-slate-500">' + s + '</label>';
+        cHtml += '<input type="text" id="desc-input-' + s + '" value="' + (descs[s] || '') + '" placeholder="説明なし" class="border border-slate-300 rounded p-2 text-sm outline-none focus:border-blue-500" />';
+        cHtml += '</div>';
+      });
+      container.innerHTML = cHtml;
+    }
+
+    const btnSettings = document.getElementById('btn-settings');
+    if(btnSettings) {
+      btnSettings.addEventListener('click', () => { 
+        renderSettingsDescInputs(); 
+        document.getElementById('settings-modal').classList.remove('hidden'); 
       });
     }
-    document.getElementById('btn-settings').addEventListener('click', () => { 
-      renderSettingsDescInputs(); 
-      document.getElementById('settings-modal').classList.remove('hidden'); 
-    });
-    document.getElementById('btn-cancel-settings').addEventListener('click', () => { document.getElementById('settings-modal').classList.add('hidden'); });
+
+    const btnCancelSettings = document.getElementById('btn-cancel-settings');
+    if(btnCancelSettings) {
+      btnCancelSettings.addEventListener('click', () => { document.getElementById('settings-modal').classList.add('hidden'); });
+    }
     
     window.openDetailModal = function(task) {
       window.currentOpenTaskId = task.id; 
+      
+      const btnChat = document.getElementById('detail-btn-chat');
+      if (task.chatUrl) {
+        btnChat.href = task.chatUrl;
+        btnChat.style.opacity = '1'; btnChat.style.pointerEvents = 'auto'; btnChat.style.filter = 'none';
+      } else {
+        btnChat.href = '#';
+        btnChat.style.opacity = '0.5'; btnChat.style.pointerEvents = 'none'; btnChat.style.filter = 'grayscale(100%)';
+      }
+
+      const btnPj = document.getElementById('detail-btn-pj');
+      if (task.pjUrl) {
+        btnPj.href = task.pjUrl;
+        btnPj.style.opacity = '1'; btnPj.style.pointerEvents = 'auto'; btnPj.style.filter = 'none';
+      } else {
+        btnPj.href = '#';
+        btnPj.style.opacity = '0.5'; btnPj.style.pointerEvents = 'none'; btnPj.style.filter = 'grayscale(100%)';
+      }
+
       document.getElementById('detail-title-icon').innerHTML = getIconSvg(task.type, task.equipment, 'w-10 h-10');
       document.getElementById('detail-title-main').textContent = task.client || 'お客様名未設定';
       document.getElementById('detail-subtitle').textContent = task.site || '現場名未設定';
       document.getElementById('detail-date').textContent = formatYYYYMMDD(task.date); 
-      const statusColors = { "予定": "bg-slate-300 text-slate-800 border-slate-400", "測量前準備": "bg-yellow-200 text-yellow-800 border-yellow-400", "点群処理中": "bg-blue-200 text-blue-800 border-blue-400", "横断作成中": "bg-orange-200 text-orange-800 border-orange-400", "成果作成中": "bg-indigo-200 text-indigo-800 border-indigo-400", "設計待": "bg-cyan-200 text-cyan-800 border-cyan-400", "確認待": "bg-purple-200 text-purple-800 border-purple-400", "０円請求未": "bg-red-200 text-red-800 border-red-400", "まとめて提出": "bg-gray-200 text-gray-800 border-gray-400", "共有移動未": "bg-pink-200 text-pink-800 border-pink-400", "共有に移動済": "bg-green-200 text-green-800 border-green-400", "新宮担当": "bg-teal-200 text-teal-800 border-teal-400" };
+      
+      const statusColors = { 
+        "予定": "bg-slate-300 text-slate-800 border-slate-400", 
+        "測量前準備": "bg-yellow-200 text-yellow-800 border-yellow-400", 
+        "点群処理中": "bg-blue-200 text-blue-800 border-blue-400", 
+        "横断作成中": "bg-orange-200 text-orange-800 border-orange-400", 
+        "成果作成中": "bg-indigo-200 text-indigo-800 border-indigo-400", 
+        "設計待": "bg-cyan-200 text-cyan-800 border-cyan-400", 
+        "確認待": "bg-purple-200 text-purple-800 border-purple-400", 
+        "０円請求未": "bg-red-200 text-red-800 border-red-400", 
+        "まとめて提出": "bg-gray-200 text-gray-800 border-gray-400", 
+        "共有移動未": "bg-pink-200 text-pink-800 border-pink-400", 
+        "共有に移動済": "bg-green-200 text-green-800 border-green-400", 
+        "新宮担当": "bg-teal-200 text-teal-800 border-teal-400" 
+      };
+      
       const statusEl = document.getElementById('detail-status');
       statusEl.textContent = task.status || '予定';
-      statusEl.className = `font-bold border px-2 py-0.5 rounded shadow-sm ${statusColors[task.status] || statusColors["予定"]}`;
+      statusEl.className = 'font-bold border px-2 py-0.5 rounded shadow-sm ' + (statusColors[task.status] || statusColors["予定"]);
+      
       document.getElementById('detail-type').textContent = task.type || '未設定'; 
       document.getElementById('detail-equipment').textContent = task.equipment || '未設定';
       document.getElementById('detail-office').textContent = task.office || '未設定';
@@ -1564,12 +1761,19 @@
       document.getElementById('detail-district').textContent = task.district || '未設定';
       document.getElementById('detail-ref-point').textContent = task.refPoint || '未設定';
       document.getElementById('detail-route').textContent = task.route || '未設定';
+      
       document.getElementById('detail-dips-container').innerHTML = renderRadioGroup('DIPS2.0登録', ['未登録', '登録済'], task.dips);
       const ministriesOpts = window.masterData.ministries.length > 0 ? window.masterData.ministries : ['国交省', '農水省', '民間'];
       document.getElementById('detail-ministry-container').innerHTML = renderRadioGroup('管轄省庁', ministriesOpts, task.ministry);
       document.getElementById('detail-standard-container').innerHTML = renderRadioGroup('社内規格値', ['なし', '80％', '50％'], task.standard);
+      
       document.getElementById('detail-share-path').textContent = task.sharePath || '未登録';
-      document.getElementById('detail-type').className = `flex-1 min-w-0 text-sm font-bold truncate ${task.type?.includes("起工") ? "text-orange-600" : "text-blue-600"}`;
+      
+      let dTypeClass = 'flex-1 min-w-0 text-sm font-bold truncate ';
+      if (task.type && task.type.indexOf("起工") !== -1) dTypeClass += "text-orange-600";
+      else dTypeClass += "text-blue-600";
+      document.getElementById('detail-type').className = dTypeClass;
+      
       const img1 = document.getElementById('detail-img-1'); const ph1 = document.getElementById('detail-img-ph-1');
       if (task.image1) { img1.src = task.image1; img1.classList.remove('hidden'); ph1.classList.add('hidden'); } else { img1.src = ''; img1.classList.add('hidden'); ph1.classList.remove('hidden'); }
       const img2 = document.getElementById('detail-img-2'); const ph2 = document.getElementById('detail-img-ph-2');
@@ -1583,43 +1787,81 @@
         { id: 'survey', key: 'surveyRep', jp: '測量担当', list: window.ASSIGNEES.others, selectColorClass: 'bg-white' },
         { id: 'pointcloud', key: 'pointCloudRep', jp: '点群処理', list: window.ASSIGNEES.others, selectColorClass: 'bg-white' },
         { id: 'cross', key: 'crossSectionRep', jp: '現況横断', list: window.ASSIGNEES.others, selectColorClass: 'bg-white' },
-        { id: 'earth', key: 'earthRep', jp: '土量', list: window.ASSIGNEES.others, selectColorClass: 'bg-white' },
+        { id: 'hyouteiten', key: 'hyouteitenRep', jp: '標定点配置図', list: window.ASSIGNEES.others, selectColorClass: 'bg-white' },
         { id: 'output', key: 'outputRep', jp: '成果作成', list: window.ASSIGNEES.others, selectColorClass: 'bg-white' },
         { id: 'zeroyen', key: 'zeroYenRep', jp: '０円請求', list: window.ASSIGNEES.others, selectColorClass: 'bg-white' }
       ];
-      const cont = document.getElementById('assignees-container'); let html = '';
+      
+      const cont = document.getElementById('assignees-container'); 
+      let rolesHtml = '';
       roles.forEach((r, index) => {
         let selected = (task[r.key]) ? task[r.key].split(',').map(s => s.trim()) : ['ー'];
-        let disp = selected.join(', '); if (disp.length > 12) disp = disp.substring(0, 12) + '...';
-        let opts = '';
-        r.list.forEach(opt => { opts += `<label class="multi-select-item"><input type="checkbox" value="${opt}" ${selected.includes(opt) ? 'checked' : ''} onchange="handleCheckboxChange(this, '${r.id}')">${opt}</label>`; });
-        selected.forEach(v => { if (!r.list.includes(v) && v !== 'ー') { opts += `<label class="multi-select-item"><input type="checkbox" value="${v}" checked onchange="handleCheckboxChange(this, '${r.id}')">${v} (外)</label>`; } });
-        const menuClass = 'multi-select-menu open-up'; const isRightEdge = (index % 4 === 3); const borderClass = isRightEdge ? 'md:pr-3' : 'md:border-r md:border-slate-300 md:pr-3 md:mr-3';
-        html += `<div class="${borderClass} select-none"><div class="text-slate-500 font-bold text-xs mb-1.5">${r.jp}</div><div class="multi-select-dropdown" id="dropdown-${r.id}"><button type="button" class="multi-select-button ${r.selectColorClass} shadow-sm border border-slate-300 w-full hover:bg-slate-50 transition-colors" onclick="toggleMultiSelect('${r.id}')"><span id="displayText-${r.id}" class="truncate">${disp}</span></button><div class="${menuClass}" id="menu-${r.id}">${opts}</div></div></div>`;
-      });
-      cont.innerHTML = html;
-      document.addEventListener('click', closeAllMultiSelects);
-      document.getElementById('detail-map').innerHTML = task.mapUrl ? `<div class="flex items-center gap-2"><span class="text-blue-500 text-base">📍</span><a href="${task.mapUrl}" target="_blank" class="text-blue-600 font-bold hover:underline truncate">現場位置 (Google Maps)</a></div>` : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">📍</span><span class="text-slate-400 font-medium">現場位置 未登録</span></div>`;
-      document.getElementById('detail-meet-map').innerHTML = task.meetUrl ? `<div class="flex items-center gap-2"><span class="text-emerald-500 text-base">📍</span><a href="${task.meetUrl}" target="_blank" class="text-emerald-600 font-bold hover:underline truncate">集合場所 (Google Maps)</a></div>` : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">📍</span><span class="text-slate-400 font-medium">集合場所 未登録</span></div>`;
-      document.getElementById('detail-office-loc').innerHTML = task.officeLoc ? `<div class="flex items-center gap-2"><span class="text-indigo-500 text-base">🏢</span><a href="${task.officeLoc}" target="_blank" class="text-indigo-600 font-bold hover:underline truncate">事務所位置 (Google Maps)</a></div>` : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">🏢</span><span class="text-slate-400 font-medium">事務所位置 未登録</span></div>`;
-      document.getElementById('detail-pj-link').innerHTML = task.pjUrl ? `<div class="flex items-center gap-2"><span class="text-blue-500 text-base">📁</span><a href="${task.pjUrl}" target="_blank" class="text-blue-600 font-bold hover:underline truncate">プロジェクトを開く</a></div>` : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">📁</span><span class="text-slate-400 font-medium">プロジェクト 未登録</span></div>`;
-      document.getElementById('detail-chat-link').innerHTML = task.chatUrl ? `<div class="flex items-center gap-2"><span class="text-emerald-500 text-base">💬</span><a href="${task.chatUrl}" target="_blank" class="text-emerald-600 font-bold hover:underline truncate">Google Chat を開く</a></div>` : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">💬</span><span class="text-slate-400 font-medium">Google Chat 未登録</span></div>`;
-      
-      const uploadItems = ['施工計画書', 'YS・Base', '現況横断武蔵', '飛行ルート', 'Photo・オルソ', '標定点配置武蔵', 'TSC観測データ', 'DGN', '成果物ZIP', 'TLS_data', 'XPT・XPTC', ''];
-      const uploadCont = document.getElementById('upload-status-container'); let uploadHtml = '';
-      
-      uploadItems.forEach((item, idx) => {
-        const isRightEdge = (idx % 3 === 2); const pipe = isRightEdge ? '' : '<span class="text-slate-300 font-bold ml-auto pl-2">｜</span>';
-        if (item === '') { uploadHtml += `<div class="flex items-center text-sm ${isRightEdge ? '' : 'pr-3'}"></div>`; return; }
+        let disp = selected.join(', '); 
+        if (disp.length > 12) disp = disp.substring(0, 12) + '...';
         
+        let optsHtml = '';
+        r.list.forEach(opt => { 
+          const checked = selected.includes(opt) ? 'checked' : '';
+          optsHtml += '<label class="multi-select-item"><input type="checkbox" value="' + opt + '" ' + checked + ' onchange="handleCheckboxChange(this, \'' + r.id + '\')" />' + opt + '</label>'; 
+        });
+        selected.forEach(v => { 
+          if (!r.list.includes(v) && v !== 'ー') { 
+            optsHtml += '<label class="multi-select-item"><input type="checkbox" value="' + v + '" checked onchange="handleCheckboxChange(this, \'' + r.id + '\')" />' + v + ' (外)</label>'; 
+          } 
+        });
+        
+        const menuClass = 'multi-select-menu open-up'; 
+        const isRightEdge = (index % 4 === 3); 
+        const borderClass = isRightEdge ? 'md:pr-3' : 'md:border-r md:border-slate-300 md:pr-3 md:mr-3';
+        
+        rolesHtml += '<div class="' + borderClass + ' select-none">';
+        rolesHtml += '<div class="text-slate-500 font-bold text-xs mb-1.5">' + r.jp + '</div>';
+        rolesHtml += '<div class="multi-select-dropdown" id="dropdown-' + r.id + '">';
+        rolesHtml += '<button type="button" class="multi-select-button ' + r.selectColorClass + ' shadow-sm border border-slate-300 w-full hover:bg-slate-50 transition-colors" onclick="toggleMultiSelect(\'' + r.id + '\')">';
+        rolesHtml += '<span id="displayText-' + r.id + '" class="truncate">' + disp + '</span></button>';
+        rolesHtml += '<div class="' + menuClass + '" id="menu-' + r.id + '">' + optsHtml + '</div></div></div>';
+      });
+      cont.innerHTML = rolesHtml;
+      document.addEventListener('click', closeAllMultiSelects);
+      
+      const mapDiv = document.getElementById('detail-map');
+      if(task.mapUrl) {
+        mapDiv.innerHTML = '<div class="flex items-center gap-2"><span class="text-blue-500 text-base">📍</span><a href="' + task.mapUrl + '" target="_blank" class="text-blue-600 font-bold hover:underline truncate">現場位置 (Google Maps)</a></div>';
+      } else {
+        mapDiv.innerHTML = '<div class="flex items-center gap-2"><span class="text-slate-300 text-base">📍</span><span class="text-slate-400 font-medium">現場位置 未登録</span></div>';
+      }
+      
+      const meetDiv = document.getElementById('detail-meet-map');
+      if(task.meetUrl) {
+        meetDiv.innerHTML = '<div class="flex items-center gap-2"><span class="text-emerald-500 text-base">📍</span><a href="' + task.meetUrl + '" target="_blank" class="text-emerald-600 font-bold hover:underline truncate">集合場所 (Google Maps)</a></div>';
+      } else {
+        meetDiv.innerHTML = '<div class="flex items-center gap-2"><span class="text-slate-300 text-base">📍</span><span class="text-slate-400 font-medium">集合場所 未登録</span></div>';
+      }
+
+      const officeDiv = document.getElementById('detail-office-loc');
+      if(task.officeLoc) {
+        officeDiv.innerHTML = '<div class="flex items-center gap-2"><span class="text-indigo-500 text-base">🏢</span><a href="' + task.officeLoc + '" target="_blank" class="text-indigo-600 font-bold hover:underline truncate">事務所位置 (Google Maps)</a></div>';
+      } else {
+        officeDiv.innerHTML = '<div class="flex items-center gap-2"><span class="text-slate-300 text-base">🏢</span><span class="text-slate-400 font-medium">事務所位置 未登録</span></div>';
+      }
+      
+      // ご指定の順番の配列（縦1列に並べる）
+      const uploadItems = [
+        '施工計画書', '飛行ルート', 'TSC観測データ', 'TLS_data', 'YS・Base', 
+        'Photo・オルソ', 'DGN', 'XPT・XPTC', '現況横断武蔵', '標定点配置武蔵', '成果物ZIP'
+      ];
+      const uploadCont = document.getElementById('upload-status-container'); 
+      let uploadHtml = '';
+      
+      uploadItems.forEach((item) => {
         const rawVal = task[item];
         let isChecked = false;
         let text = '';
         
-        // 互換性ロジック（旧：文字列、新：オブジェクト）
+        // オブジェクトと文字列の両対応ロジック
         if (rawVal && typeof rawVal === 'object') {
           isChecked = rawVal.isUploaded;
-          if (isChecked && rawVal.user) text = `${rawVal.user} ${rawVal.time || ''}`;
+          if (isChecked && rawVal.user) text = (rawVal.user + ' ' + (rawVal.date || '') + ' ' + (rawVal.time || '')).trim();
         } else if (typeof rawVal === 'string') {
           isChecked = (rawVal.startsWith('済') || rawVal === 'true');
           if (isChecked && rawVal.replace('済', '').trim().length > 0) {
@@ -1627,29 +1869,45 @@
           }
         }
 
+        // textがある場合は右側に青いバッジとして配置する
         let infoHtml = '';
         if (text) {
-          infoHtml = `<span class="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded ml-1 shrink-0 shadow-sm">${text}</span>`;
+          infoHtml = '<div class="ml-2 text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap shrink-0">' + text + '</div>';
         }
-        uploadHtml += `<div class="flex items-center text-sm ${isRightEdge ? '' : 'pr-3'} py-0.5"><label class="flex items-center gap-2 cursor-pointer text-slate-700 hover:text-blue-600 transition-colors font-bold flex-1 min-w-0"><input type="checkbox" class="w-4 h-4 cursor-pointer shrink-0" ${isChecked ? 'checked' : ''} onchange="handleUploadCheck('${item}', this.checked)"><span class="truncate" title="${item}">${item}</span>${infoHtml}</label>${pipe}</div>`;
+            
+        uploadHtml += '<div class="flex items-center justify-between border-b border-dashed border-slate-200 last:border-0 py-2.5">';
+        uploadHtml += '<label class="flex items-center gap-2 cursor-pointer text-slate-700 hover:text-blue-600 transition-colors font-bold min-w-0">';
+        uploadHtml += '<input type="checkbox" class="w-4 h-4 cursor-pointer shrink-0" ' + (isChecked ? 'checked' : '') + ' onchange="handleUploadCheck(\'' + item + '\', this.checked)" />';
+        uploadHtml += '<span class="truncate text-sm" title="' + item + '">' + item + '</span></label>';
+        uploadHtml += infoHtml;
+        uploadHtml += '</div>';
       });
       uploadCont.innerHTML = uploadHtml;
 
-      const btnToggleCheck = document.getElementById('btn-toggle-check'); const chkCont = document.getElementById('deliverable-check-container'); const chkTitle = document.getElementById('deliverable-check-title'); 
+      const btnToggleCheck = document.getElementById('btn-toggle-check'); 
+      const chkCont = document.getElementById('deliverable-check-container'); 
+      const chkTitle = document.getElementById('deliverable-check-title'); 
+      
       let eqType = '';
       if (task.equipment) {
-        if (task.equipment.includes('TLS')) eqType = 'TLS'; else if (task.equipment.includes('M400') || task.equipment.includes('M600')) eqType = 'ULS';
+        if (task.equipment.indexOf('TLS') !== -1) eqType = 'TLS'; 
+        else if (task.equipment.indexOf('M400') !== -1 || task.equipment.indexOf('M600') !== -1) eqType = 'ULS';
       }
-      const ministryType = task.ministry || '民間'; const surveyType = task.type || '起工'; let targetChecks = [];
+      const ministryType = task.ministry || '民間'; 
+      const surveyType = task.type || '起工'; 
+      let targetChecks = [];
       if (eqType) {
-        const judgeKey = `${ministryType}_${eqType}_${surveyType}`;
+        const judgeKey = ministryType + '_' + eqType + '_' + surveyType;
         targetChecks = (window.masterData.checkMaster || []).filter(c => c.key === judgeKey);
       }
+      
       if (targetChecks.length === 0) {
-        btnToggleCheck.classList.add('hidden'); chkCont.innerHTML = '';
+        btnToggleCheck.classList.add('hidden'); 
+        chkCont.innerHTML = '';
       } else {
-        btnToggleCheck.classList.remove('hidden'); btnToggleCheck.classList.add('flex'); 
-        if (chkTitle) chkTitle.innerHTML = `📋 ${ministryType} ${eqType}${surveyType}成果チェック`;
+        btnToggleCheck.classList.remove('hidden'); 
+        btnToggleCheck.classList.add('flex'); 
+        if (chkTitle) chkTitle.innerHTML = '📋 ' + ministryType + ' ' + eqType + surveyType + '成果チェック';
         
         let savedStatus = {}; 
         if (typeof task.checkStatus === 'object') {
@@ -1658,12 +1916,27 @@
           try { savedStatus = JSON.parse(task.checkStatus || '{}'); } catch(e) {}
         }
 
-        let checkHtml = ''; let currentLargeCat = ''; let currentMidCat = ''; 
+        let checkHtml = ''; 
+        let currentLargeCat = ''; 
+        let currentMidCat = ''; 
+        
         targetChecks.forEach(c => {
-          if (currentLargeCat !== c.largeCat) { currentLargeCat = c.largeCat; checkHtml += `<div class="font-bold text-sm text-white bg-slate-600 px-3 py-1.5 rounded shadow-sm mt-4 mb-2 flex items-center gap-2 sticky top-0 z-10"><span class="text-lg">📁</span>${currentLargeCat}</div>`; }
-          if (c.midCat && currentMidCat !== c.midCat) { currentMidCat = c.midCat; checkHtml += `<div class="font-bold text-xs text-slate-700 bg-slate-200 border-l-4 border-slate-500 px-2 py-1 mt-3 mb-1 ml-1 rounded-r shadow-sm w-max max-w-[95%]">${currentMidCat}</div>`; }
-          const itemKey = `${c.midCat}_${c.item}`; const isChecked = savedStatus[itemKey] ? 'checked' : '';
-          checkHtml += `<div class="flex items-start text-sm pl-4 py-2 hover:bg-blue-50 rounded transition-colors border-b border-dashed border-slate-200 last:border-0"><label class="flex items-start gap-2.5 cursor-pointer w-full"><input type="checkbox" class="w-4 h-4 mt-[3px] cursor-pointer text-blue-600 rounded border-slate-300 shrink-0" ${isChecked} onchange="handleDeliverableCheck('${itemKey}', this.checked)"><div class="flex-1 leading-relaxed text-slate-800 font-medium">${c.item}</div></label></div>`;
+          if (currentLargeCat !== c.largeCat) { 
+            currentLargeCat = c.largeCat; 
+            checkHtml += '<div class="font-bold text-sm text-white bg-slate-600 px-3 py-1.5 rounded shadow-sm mt-4 mb-2 flex items-center gap-2 sticky top-0 z-10"><span class="text-lg">📁</span>' + currentLargeCat + '</div>'; 
+          }
+          if (c.midCat && currentMidCat !== c.midCat) { 
+            currentMidCat = c.midCat; 
+            checkHtml += '<div class="font-bold text-xs text-slate-700 bg-slate-200 border-l-4 border-slate-500 px-2 py-1 mt-3 mb-1 ml-1 rounded-r shadow-sm w-max max-w-[95%]">' + currentMidCat + '</div>'; 
+          }
+          const itemKey = c.midCat + '_' + c.item; 
+          const isChecked = savedStatus[itemKey] ? 'checked' : '';
+          
+          checkHtml += '<div class="flex items-start text-sm pl-4 py-2 hover:bg-blue-50 rounded transition-colors border-b border-dashed border-slate-200 last:border-0">';
+          checkHtml += '<label class="flex items-start gap-2.5 cursor-pointer w-full">';
+          checkHtml += '<input type="checkbox" class="w-4 h-4 mt-[3px] cursor-pointer text-blue-600 rounded border-slate-300 shrink-0" ' + isChecked + ' onchange="handleDeliverableCheck(\'' + itemKey + '\', this.checked)" />';
+          checkHtml += '<div class="flex-1 leading-relaxed text-slate-800 font-medium">' + c.item + '</div>';
+          checkHtml += '</label></div>';
         });
         chkCont.innerHTML = checkHtml;
       }
@@ -1671,43 +1944,80 @@
     }
 
     window.renderRadioGroup = function(fieldName, options, currentVal) {
-      let html = `<div class="flex flex-nowrap overflow-hidden gap-x-2.5 gap-y-1.5">`;
+      let rHtml = '<div class="flex flex-col gap-y-2">';
       options.forEach(opt => {
         const checked = (opt === currentVal) ? 'checked' : '';
-        html += `<label class="flex items-center gap-1 cursor-pointer text-sm font-bold text-slate-700 hover:text-blue-600 transition-colors whitespace-nowrap"><input type="radio" name="radio-${fieldName}" value="${opt}" ${checked} class="w-4 h-4 cursor-pointer text-blue-600 focus:ring-blue-500 border-gray-300" onchange="handleRadioChange('${fieldName}', this.value)"><span>${opt}</span></label>`;
+        rHtml += '<label class="flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-700 hover:text-blue-600 transition-colors">';
+        rHtml += '<input type="radio" name="radio-' + fieldName + '" value="' + opt + '" ' + checked + ' class="w-4 h-4 cursor-pointer text-blue-600 focus:ring-blue-500 border-gray-300" onchange="handleRadioChange(\'' + fieldName + '\', this.value)" />';
+        rHtml += '<span>' + opt + '</span></label>';
       });
-      html += `</div>`; return html;
+      rHtml += '</div>'; 
+      return rHtml;
     }
+
     window.handleRadioChange = async function(fieldName, value) {
       if (!window.currentOpenTaskId) return;
-      try { await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [fieldName]: value }); showToast(`${fieldName}を更新しました`); } catch(e) { showToast('更新失敗', 'error'); }
+      try { await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [fieldName]: value }); showToast(fieldName + 'を更新しました'); } catch(e) { showToast('更新失敗', 'error'); }
     }
+
     window.openEditFromDetail = function() {
       const idToEdit = window.currentOpenTaskId; closeDetailModal(); window.openTaskModal(idToEdit);
     }
+
     window.closeDetailModal = function() { 
-      document.getElementById('detail-modal').classList.add('hidden'); window.currentOpenTaskId = null; document.removeEventListener('click', closeAllMultiSelects); 
-      const article = document.getElementById('detail-article'); const panel = document.getElementById('deliverable-check-panel');
-      panel.classList.remove('w-[420px]', 'opacity-100'); panel.classList.add('w-0', 'opacity-0'); article.classList.remove('max-w-[1420px]'); article.classList.add('max-w-[1000px]');
+      document.getElementById('detail-modal').classList.add('hidden'); 
+      window.currentOpenTaskId = null; 
+      document.removeEventListener('click', closeAllMultiSelects); 
+      const article = document.getElementById('detail-article'); 
+      const panel = document.getElementById('deliverable-check-panel');
+      if(panel && article) {
+        panel.classList.remove('w-[420px]', 'opacity-100'); 
+        panel.classList.add('w-0', 'opacity-0'); 
+        article.classList.remove('max-w-[1420px]'); 
+        article.classList.add('max-w-[1000px]');
+      }
     }
+
     window.toggleDeliverableCheck = function() {
-      const article = document.getElementById('detail-article'); const panel = document.getElementById('deliverable-check-panel');
-      if (panel.classList.contains('w-0')) { article.classList.remove('max-w-[1000px]'); article.classList.add('max-w-[1420px]'); panel.classList.remove('w-0', 'opacity-0'); panel.classList.add('w-[420px]', 'opacity-100'); } 
-      else { panel.classList.remove('w-[420px]', 'opacity-100'); panel.classList.add('w-0', 'opacity-0'); setTimeout(() => { article.classList.remove('max-w-[1420px]'); article.classList.add('max-w-[1000px]'); }, 300); }
+      const article = document.getElementById('detail-article'); 
+      const panel = document.getElementById('deliverable-check-panel');
+      if(!panel || !article) return;
+      
+      if (panel.classList.contains('w-0')) { 
+        article.classList.remove('max-w-[1000px]'); 
+        article.classList.add('max-w-[1420px]'); 
+        panel.classList.remove('w-0', 'opacity-0'); 
+        panel.classList.add('w-[420px]', 'opacity-100'); 
+      } else { 
+        panel.classList.remove('w-[420px]', 'opacity-100'); 
+        panel.classList.add('w-0', 'opacity-0'); 
+        setTimeout(() => { 
+          article.classList.remove('max-w-[1420px]'); 
+          article.classList.add('max-w-[1000px]'); 
+        }, 300); 
+      }
     }
+
     window.toggleMultiSelect = function(roleId) {
-      const m = document.getElementById(`menu-${roleId}`); const o = m.classList.contains('open');
+      const m = document.getElementById('menu-' + roleId); 
+      if(!m) return;
+      const o = m.classList.contains('open');
       document.querySelectorAll('.multi-select-menu').forEach(x => x.classList.remove('open'));
       if (!o) m.classList.add('open');
     }
+
     function closeAllMultiSelects(e) {
       if (e.target.closest('.multi-select-dropdown')) return;
       document.querySelectorAll('.multi-select-menu').forEach(m => m.classList.remove('open'));
     }
+
     window.openTaskModal = function(taskId) {
-      window.isEditMode = !!taskId; window.currentOpenTaskId = taskId; 
+      window.isEditMode = !!taskId; 
+      window.currentOpenTaskId = taskId; 
       document.getElementById('modal-title').innerHTML = window.isEditMode ? '📝 案件情報の編集' : '➕ 新規案件の追加';
-      document.getElementById('task-form').reset(); populateMasterDropdowns(); 
+      document.getElementById('task-form').reset(); 
+      populateMasterDropdowns(); 
+      
       if (window.isEditMode) {
         document.getElementById('btn-delete-task').classList.remove('hidden');
         const t = window.tasks.find(x => x.id === taskId);
@@ -1721,7 +2031,13 @@
           document.getElementById('fm-billing').value = t.billing || '';
           document.getElementById('fm-site').value = t.site || '';
           document.getElementById('fm-office').value = t.office || '';
-          const reps = window.masterData.offices[t.office] || []; const salesSelect = document.getElementById('fm-sales'); salesSelect.innerHTML = '<option value="">（未選択）</option>'; reps.forEach(r => salesSelect.innerHTML += `<option value="${r}">${r}</option>`);
+          
+          const reps = window.masterData.offices[t.office] || []; 
+          const salesSelect = document.getElementById('fm-sales'); 
+          let salesHtml = '<option value="">（未選択）</option>'; 
+          reps.forEach(r => { salesHtml += '<option value="' + r + '">' + r + '</option>'; });
+          if(salesSelect) salesSelect.innerHTML = salesHtml;
+          
           document.getElementById('fm-sales').value = t.salesperson || '';
           document.getElementById('fm-district').value = t.district || ''; 
           document.getElementById('fm-office-loc').value = t.officeLoc || ''; 
@@ -1743,102 +2059,194 @@
       }
       document.getElementById('task-modal').classList.remove('hidden');
     }
-    window.closeTaskModal = function() { document.getElementById('task-modal').classList.add('hidden'); window.currentOpenTaskId = null; }
-    document.getElementById('btn-new-task').addEventListener('click', () => window.openTaskModal(null));
+
+    window.closeTaskModal = function() { 
+      document.getElementById('task-modal').classList.add('hidden'); 
+      window.currentOpenTaskId = null; 
+    }
+
+    const btnNewTask = document.getElementById('btn-new-task');
+    if(btnNewTask) btnNewTask.addEventListener('click', () => window.openTaskModal(null));
+
     window.handleContextMenu = function(e, index) {
       e.preventDefault(); 
       const task = window.tasks.find(t => t.id === window.currentOpenTaskId);
       if (!task || (index === 1 && !task.image1) || (index === 2 && !task.image2) || (index === 3 && !task.slipImage)) return;
       window.targetImageIndex = index;
       const contextMenu = document.getElementById('image-context-menu');
-      contextMenu.style.left = `${e.clientX}px`; contextMenu.style.top = `${e.clientY}px`; contextMenu.classList.remove('hidden');
+      if(contextMenu) {
+        contextMenu.style.left = e.clientX + 'px'; 
+        contextMenu.style.top = e.clientY + 'px'; 
+        contextMenu.classList.remove('hidden');
+      }
     }
-    document.addEventListener('click', () => document.getElementById('image-context-menu').classList.add('hidden'));
+
+    document.addEventListener('click', () => {
+      const cMenu = document.getElementById('image-context-menu');
+      if(cMenu) cMenu.classList.add('hidden');
+    });
+
     window.viewImageFullscreen = function() {
       const task = window.tasks.find(t => t.id === window.currentOpenTaskId);
       const imgSrc = window.targetImageIndex === 1 ? task.image1 : (window.targetImageIndex === 2 ? task.image2 : task.slipImage);
-      if (imgSrc) { document.getElementById('viewer-img').src = imgSrc; document.getElementById('image-viewer-modal').classList.remove('hidden'); }
+      if (imgSrc) { 
+        document.getElementById('viewer-img').src = imgSrc; 
+        document.getElementById('image-viewer-modal').classList.remove('hidden'); 
+      }
     }
-    window.closeImageViewer = function() { document.getElementById('image-viewer-modal').classList.add('hidden'); document.getElementById('viewer-img').src = ''; }
+
+    window.closeImageViewer = function() { 
+      document.getElementById('image-viewer-modal').classList.add('hidden'); 
+      document.getElementById('viewer-img').src = ''; 
+    }
     
     // --- Calendar Views ---
     window.switchView = function(view) {
       window.currentView = view;
       ['kanban', 'calendar', 'logs'].forEach(v => {
-        document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
-        document.getElementById(`tab-${v}`).classList.toggle('bg-slate-50', v === view);
-        document.getElementById(`tab-${v}`).classList.toggle('bg-slate-300', v !== view);
+        const vEl = document.getElementById('view-' + v);
+        if(vEl) vEl.classList.toggle('hidden', v !== view);
+        
+        const tEl = document.getElementById('tab-' + v);
+        if(tEl) {
+          tEl.classList.toggle('bg-slate-50', v === view);
+          tEl.classList.toggle('bg-slate-300', v !== view);
+        }
       });
       if (view === 'logs') window.loadLogs();
       else window.updateCurrentView();
     }
+
     window.changeMonth = function(diff) {
       window.currentCalMonth += diff;
       if (window.currentCalMonth < 0) { window.currentCalMonth = 11; window.currentCalYear--; }
       else if (window.currentCalMonth > 11) { window.currentCalMonth = 0; window.currentCalYear++; }
       renderCalendar();
     }
+
     function renderCalendar() {
       if (window.currentView !== 'calendar') return;
-      const grid = document.getElementById('calendar-grid'); grid.innerHTML = '';
+      const grid = document.getElementById('calendar-grid'); 
+      if(!grid) return;
+      grid.innerHTML = '';
       const firstDay = new Date(window.currentCalYear, window.currentCalMonth, 1);
       const lastDay = new Date(window.currentCalYear, window.currentCalMonth + 1, 0);
-      document.getElementById('calendar-month-title').textContent = `${window.currentCalYear}年 ${window.currentCalMonth + 1}月`;
-      const startDayOfWeek = firstDay.getDay(); const totalDays = lastDay.getDate();
+      document.getElementById('calendar-month-title').textContent = window.currentCalYear + '年 ' + (window.currentCalMonth + 1) + '月';
+      
+      const startDayOfWeek = firstDay.getDay(); 
+      const totalDays = lastDay.getDate();
       const filteredTasks = getFilteredAndSortedTasks(); 
       const prevMonthLastDay = new Date(window.currentCalYear, window.currentCalMonth, 0).getDate();
-      let dayCount = 1; let nextMonthDayCount = 1; let html = '';
+      
+      let dayCount = 1; 
+      let nextMonthDayCount = 1; 
+      let gridHtml = '';
+      
       for (let i = 0; i < 42; i++) {
-        let displayDate = ""; let isCurrentMonth = false; let cellDateStr = "";
-        let targetYear = window.currentCalYear; let targetMonth = window.currentCalMonth;
-        if (i < startDayOfWeek) { displayDate = prevMonthLastDay - startDayOfWeek + i + 1; targetMonth = window.currentCalMonth - 1; } 
-        else if (dayCount <= totalDays) { displayDate = dayCount; isCurrentMonth = true; dayCount++; } 
-        else { displayDate = nextMonthDayCount; nextMonthDayCount++; targetMonth = window.currentCalMonth + 1; }
-        if (targetMonth < 0) { targetMonth = 11; targetYear--; } else if (targetMonth > 11) { targetMonth = 0; targetYear++; }
-        cellDateStr = `${targetYear}${String(targetMonth + 1).padStart(2, '0')}${String(displayDate).padStart(2, '0')}`;
+        let displayDate = ""; 
+        let isCurrentMonth = false; 
+        let cellDateStr = "";
+        let targetYear = window.currentCalYear; 
+        let targetMonth = window.currentCalMonth;
+        
+        if (i < startDayOfWeek) { 
+          displayDate = prevMonthLastDay - startDayOfWeek + i + 1; 
+          targetMonth = window.currentCalMonth - 1; 
+        } else if (dayCount <= totalDays) { 
+          displayDate = dayCount; 
+          isCurrentMonth = true; 
+          dayCount++; 
+        } else { 
+          displayDate = nextMonthDayCount; 
+          nextMonthDayCount++; 
+          targetMonth = window.currentCalMonth + 1; 
+        }
+        
+        if (targetMonth < 0) { targetMonth = 11; targetYear--; } 
+        else if (targetMonth > 11) { targetMonth = 0; targetYear++; }
+        
+        cellDateStr = targetYear + String(targetMonth + 1).padStart(2, '0') + String(displayDate).padStart(2, '0');
         const isToday = new Date().toDateString() === new Date(targetYear, targetMonth, displayDate).toDateString();
         const todayClass = isToday ? "bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md text-sm font-black" : (isCurrentMonth ? "text-slate-700 w-7 h-7 flex items-center justify-center text-sm font-bold" : "text-slate-400 w-7 h-7 flex items-center justify-center text-sm font-bold");
         const cellClass = isCurrentMonth ? "bg-white min-h-[120px] flex flex-col p-2 drop-zone-cal transition-colors border border-slate-100" : "bg-slate-50 min-h-[120px] flex flex-col p-2 drop-zone-cal transition-colors border border-slate-200 opacity-60";
+        
         const dayTasks = filteredTasks.filter(t => formatYYYYMMDD(t.date) === cellDateStr);
         let tasksHtml = '';
+        
         dayTasks.forEach(task => {
           let isDelayed = false;
-          if (["点群処理中", "横断作成中", "成果作成中", "設計待", "確認待"].includes(task.status)) { if ((new Date() - new Date(task.date)) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true; }
-          const dragAttr = `draggable="true" ondragstart="handleDragStartCalendar(event, '${task.id}')" ondragend="handleDragEndCalendar(event)"`;
+          if (["点群処理中", "横断作成中", "成果作成中", "設計待", "確認待"].includes(task.status)) { 
+            if ((new Date() - new Date(task.date)) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true; 
+          }
+          const dragAttr = 'draggable="true" ondragstart="handleDragStartCalendar(event, \'' + task.id + '\')" ondragend="handleDragEndCalendar(event)"';
+          
           let stColor = "bg-white border-slate-300 text-slate-800 hover:border-blue-500 hover:bg-blue-50";
           if(task.status === "予定") stColor = "bg-slate-100 border-slate-400 text-slate-700 hover:border-blue-500";
           else if(task.status === "設計待") stColor = "bg-cyan-100 border-cyan-300 text-cyan-900 hover:border-cyan-600";
           else if(task.status === "確認待") stColor = "bg-purple-100 border-purple-300 text-purple-900 hover:border-purple-600";
           else if(task.status === "０円請求未") stColor = "bg-red-100 border-red-300 text-red-900 hover:border-red-600";
-          tasksHtml += `<div class="${stColor} border-2 rounded shadow-sm p-2 mb-1.5 cursor-pointer transition-all truncate select-none ${isDelayed ? 'border-yellow-500 bg-yellow-100 shadow-yellow-200/50' : ''}" onclick="window.openDetailModalFromId('${task.id}')" ${dragAttr}><div class="flex items-center font-black text-xs mb-0.5">${getIconSvg(task.type, task.equipment, 'w-3.5 h-3.5 mr-1.5')}<span class="truncate leading-tight">${task.client || '-'}</span></div><div class="truncate text-slate-600 text-[11px] font-medium ml-5">${task.site || '-'}</div></div>`;
+          
+          let exClass = isDelayed ? 'border-yellow-500 bg-yellow-100 shadow-yellow-200/50' : '';
+          
+          tasksHtml += '<div class="' + stColor + ' border-2 rounded shadow-sm p-2 mb-1.5 cursor-pointer transition-all truncate select-none ' + exClass + '" onclick="window.openDetailModalFromId(\'' + task.id + '\')" ' + dragAttr + '>';
+          tasksHtml += '<div class="flex items-center font-black text-xs mb-0.5">' + getIconSvg(task.type, task.equipment, 'w-3.5 h-3.5 mr-1.5') + '<span class="truncate leading-tight">' + (task.client || '-') + '</span></div>';
+          tasksHtml += '<div class="truncate text-slate-600 text-[11px] font-medium ml-5">' + (task.site || '-') + '</div></div>';
         });
-        html += `<div class="${cellClass}" data-date="${targetYear}/${String(targetMonth + 1).padStart(2, '0')}/${String(displayDate).padStart(2, '0')}"><header class="mb-1.5 flex justify-end"><span class="${todayClass}">${displayDate}</span></header><div class="flex-1 overflow-y-auto px-0.5 pb-1 space-y-1">${tasksHtml}</div></div>`;
+        
+        const cDateAttr = targetYear + '/' + String(targetMonth + 1).padStart(2, '0') + '/' + String(displayDate).padStart(2, '0');
+        gridHtml += '<div class="' + cellClass + '" data-date="' + cDateAttr + '">';
+        gridHtml += '<header class="mb-1.5 flex justify-end"><span class="' + todayClass + '">' + displayDate + '</span></header>';
+        gridHtml += '<div class="flex-1 overflow-y-auto px-0.5 pb-1 space-y-1">' + tasksHtml + '</div></div>';
       }
-      grid.innerHTML = html;
+      
+      grid.innerHTML = gridHtml;
       setupCalendarDragAndDrop();
     }
+
     window.openDetailModalFromId = function(taskId) {
-      const task = window.tasks.find(t => t.id === taskId); if(task) openDetailModal(task);
+      const task = window.tasks.find(t => t.id === taskId); 
+      if(task) openDetailModal(task);
     }
-    window.handleDragStartCalendar = function(e, taskId) { e.dataTransfer.setData('taskId', taskId); setTimeout(() => e.target.classList.add('opacity-40'), 0); }
-    window.handleDragEndCalendar = function(e) { e.target.classList.remove('opacity-40'); }
+
+    window.handleDragStartCalendar = function(e, taskId) { 
+      e.dataTransfer.setData('taskId', taskId); 
+      setTimeout(() => e.target.classList.add('opacity-40'), 0); 
+    }
+
+    window.handleDragEndCalendar = function(e) { 
+      e.target.classList.remove('opacity-40'); 
+    }
+
     function setupCalendarDragAndDrop() {
       document.querySelectorAll('.drop-zone-cal').forEach(zone => {
         zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('bg-blue-50'); });
         zone.addEventListener('dragleave', () => { zone.classList.remove('bg-blue-50'); });
         zone.addEventListener('drop', (e) => {
-          e.preventDefault(); zone.classList.remove('bg-blue-50');
-          const taskId = e.dataTransfer.getData('taskId'); const newDateStr = zone.getAttribute('data-date');
+          e.preventDefault(); 
+          zone.classList.remove('bg-blue-50');
+          const taskId = e.dataTransfer.getData('taskId'); 
+          const newDateStr = zone.getAttribute('data-date');
           if(taskId && newDateStr) window.handleDropDate(taskId, newDateStr);
         });
       });
     }
+
     let toastTimeout;
-    function showToast(msg, type = 'success') {
-      const toast = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; document.getElementById('toast-icon').innerText = type === 'error' ? '⚠️' : '✅';
-      toast.className = `fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-2xl text-white flex items-center gap-3 z-[110] transition-all duration-300 transform translate-y-0 opacity-100 ${type === 'error' ? 'bg-red-600' : 'bg-slate-800'}`;
-      toast.classList.remove('hidden'); clearTimeout(toastTimeout);
-      toastTimeout = setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); setTimeout(() => toast.classList.add('hidden'), 300); }, 3000);
+    function showToast(msg, type) {
+      const isErr = (type === 'error');
+      const toast = document.getElementById('toast'); 
+      document.getElementById('toast-msg').innerText = msg; 
+      document.getElementById('toast-icon').innerText = isErr ? '⚠️' : '✅';
+      
+      toast.className = 'fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-2xl text-white flex items-center gap-3 z-[110] transition-all duration-300 transform translate-y-0 opacity-100 ' + (isErr ? 'bg-red-600' : 'bg-slate-800');
+      
+      toast.classList.remove('hidden'); 
+      clearTimeout(toastTimeout);
+      
+      toastTimeout = setTimeout(() => { 
+        toast.classList.add('translate-y-20', 'opacity-0'); 
+        setTimeout(() => toast.classList.add('hidden'), 300); 
+      }, 3000);
     }
   </script>
 </body>
