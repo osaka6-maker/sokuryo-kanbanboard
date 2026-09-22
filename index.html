@@ -976,8 +976,14 @@
     async function loadMasterDataFromFirebase() {
       try {
         const snap = await getDoc(doc(db, 'settings', 'masterData'));
-        if (snap.exists() && snap.data().masterJson) {
-          window.masterData = JSON.parse(snap.data().masterJson);
+        if (snap.exists()) {
+          const data = snap.data();
+          // 後方互換性：古い JSON 文字列が存在する場合はそれを解析し、新しいオブジェクト型がある場合は優先
+          if (data.masterData && typeof data.masterData === 'object') {
+             window.masterData = data.masterData;
+          } else if (data.masterJson) {
+             window.masterData = JSON.parse(data.masterJson);
+          }
           populateMasterDropdowns();
         }
         const descSnap = await getDoc(doc(db, 'settings', 'descriptions'));
@@ -999,7 +1005,6 @@
         snapshot.forEach(docSnap => {
           const rawD = docSnap.data();
           const d = {};
-          // ★修正：スプレッドシート由来の「見えない改行や空白」を自動で取り除いて読み取る
           for (let key in rawD) {
             const cleanKey = key.replace(/\r?\n/g, '').trim();
             d[cleanKey] = rawD[key];
@@ -1032,7 +1037,10 @@
             image2: d['画像2'] || '',
             slipImage: d['伝票画像'] || '',
             statusDate: d['ステータス変更日'] || '',
-            checkStatus: d['成果物チェック状況'] || '{}',
+            
+            // 旧文字列表現と新オブジェクト表現に対応
+            checkStatus: d['成果物チェック状況'] || {},
+            
             designRep: d['設計担当'] || '',
             planRep: d['施工計画'] || '',
             surveyRep: d['測量担当'] || '',
@@ -1041,17 +1049,19 @@
             earthRep: d['土量'] || '',
             outputRep: d['成果作成'] || '',
             zeroYenRep: d['０円請求'] || '',
-            '施工計画書': d['施工計画書'] || '',
-            'YS・Base': d['YS・Base'] || '',
-            '現況横断武蔵': d['現況横断武蔵'] || '',
-            '飛行ルート': d['飛行ルート'] || '',
-            'Photo・オルソ': d['Photo・オルソ'] || '',
-            '標定点配置武蔵': d['標定点配置武蔵'] || '',
-            'TSC観測データ': d['TSC観測データ'] || '',
-            'DGN': d['DGN'] || '',
-            '成果物ZIP': d['成果物ZIP'] || '',
-            'TLS_data': d['TLS_data'] || '',
-            'XPT・XPTC': d['XPT・XPTC'] || ''
+            
+            // アップロード状況（文字列/オブジェクト両対応）
+            '施工計画書': d['施工計画書'] || null,
+            'YS・Base': d['YS・Base'] || null,
+            '現況横断武蔵': d['現況横断武蔵'] || null,
+            '飛行ルート': d['飛行ルート'] || null,
+            'Photo・オルソ': d['Photo・オルソ'] || null,
+            '標定点配置武蔵': d['標定点配置武蔵'] || null,
+            'TSC観測データ': d['TSC観測データ'] || null,
+            'DGN': d['DGN'] || null,
+            '成果物ZIP': d['成果物ZIP'] || null,
+            'TLS_data': d['TLS_data'] || null,
+            'XPT・XPTC': d['XPT・XPTC'] || null
           });
         });
         updateCurrentView();
@@ -1168,11 +1178,24 @@
 
     window.handleUploadCheck = async function(fieldName, isChecked) {
       if (!window.currentOpenTaskId) return;
-      let val = '';
+      
+      let val = null;
       if (isChecked) {
         const now = new Date();
-        val = `済 ${window.currentUser.email.split('@')[0]} ${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        // 過去の会話履歴に基づき、ファイル名・日付形式は「YYYYMMDD」表記を内部でも使用
+        const yyyymmdd = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+        const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        val = {
+          isUploaded: true,
+          user: window.currentUser.email.split('@')[0],
+          date: yyyymmdd,
+          time: hhmm,
+          timestamp: serverTimestamp() // Firestore Timestampをセット
+        };
+      } else {
+        val = { isUploaded: false, user: '', date: '', time: '' };
       }
+      
       try {
         await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [fieldName]: val });
         showToast('アップロード状況を更新しました');
@@ -1182,12 +1205,21 @@
     window.handleDeliverableCheck = async function(itemKey, isChecked) {
       if (!window.currentOpenTaskId) return;
       const t = window.tasks.find(x => x.id === window.currentOpenTaskId);
+      
+      // 文字列/オブジェクト両対応で安全にパース
       let savedStatus = {};
-      try { savedStatus = JSON.parse(t.checkStatus || '{}'); } catch(e) {}
-      if (isChecked) savedStatus[itemKey] = true; else delete savedStatus[itemKey];
-      const jsonStr = JSON.stringify(savedStatus);
+      if (typeof t.checkStatus === 'object') {
+        savedStatus = { ...t.checkStatus };
+      } else if (typeof t.checkStatus === 'string') {
+        try { savedStatus = JSON.parse(t.checkStatus || '{}'); } catch(e) {}
+      }
+
+      if (isChecked) savedStatus[itemKey] = true; 
+      else delete savedStatus[itemKey];
+      
       try {
-        await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { '成果物チェック状況': jsonStr });
+        // Map型(オブジェクト)として直接保存する
+        await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { '成果物チェック状況': savedStatus });
       } catch(e) { showToast('チェック状態保存エラー', 'error'); }
     };
 
@@ -1319,7 +1351,7 @@
     });
 
     // ==========================================
-    // UI関数群 (変更なし)
+    // UI関数群
     // ==========================================
     const fontSizeSelect = document.getElementById('font-size-selector');
     fontSizeSelect.addEventListener('change', (e) => {
@@ -1513,6 +1545,7 @@
       document.getElementById('settings-modal').classList.remove('hidden'); 
     });
     document.getElementById('btn-cancel-settings').addEventListener('click', () => { document.getElementById('settings-modal').classList.add('hidden'); });
+    
     window.openDetailModal = function(task) {
       window.currentOpenTaskId = task.id; 
       document.getElementById('detail-title-icon').innerHTML = getIconSvg(task.type, task.equipment, 'w-10 h-10');
@@ -1543,6 +1576,7 @@
       if (task.image2) { img2.src = task.image2; img2.classList.remove('hidden'); ph2.classList.add('hidden'); } else { img2.src = ''; img2.classList.add('hidden'); ph2.classList.remove('hidden'); }
       const img3 = document.getElementById('detail-img-3'); const ph3 = document.getElementById('detail-img-ph-3');
       if (task.slipImage) { img3.src = task.slipImage; img3.classList.remove('hidden'); ph3.classList.add('hidden'); } else { img3.src = ''; img3.classList.add('hidden'); ph3.classList.remove('hidden'); }
+      
       const roles = [
         { id: 'design', key: 'designRep', jp: '設計担当', list: window.ASSIGNEES.design, selectColorClass: 'bg-white' },
         { id: 'plan', key: 'planRep', jp: '施工計画', list: window.ASSIGNEES.others, selectColorClass: 'bg-white' },
@@ -1570,20 +1604,37 @@
       document.getElementById('detail-office-loc').innerHTML = task.officeLoc ? `<div class="flex items-center gap-2"><span class="text-indigo-500 text-base">🏢</span><a href="${task.officeLoc}" target="_blank" class="text-indigo-600 font-bold hover:underline truncate">事務所位置 (Google Maps)</a></div>` : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">🏢</span><span class="text-slate-400 font-medium">事務所位置 未登録</span></div>`;
       document.getElementById('detail-pj-link').innerHTML = task.pjUrl ? `<div class="flex items-center gap-2"><span class="text-blue-500 text-base">📁</span><a href="${task.pjUrl}" target="_blank" class="text-blue-600 font-bold hover:underline truncate">プロジェクトを開く</a></div>` : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">📁</span><span class="text-slate-400 font-medium">プロジェクト 未登録</span></div>`;
       document.getElementById('detail-chat-link').innerHTML = task.chatUrl ? `<div class="flex items-center gap-2"><span class="text-emerald-500 text-base">💬</span><a href="${task.chatUrl}" target="_blank" class="text-emerald-600 font-bold hover:underline truncate">Google Chat を開く</a></div>` : `<div class="flex items-center gap-2"><span class="text-slate-300 text-base">💬</span><span class="text-slate-400 font-medium">Google Chat 未登録</span></div>`;
+      
       const uploadItems = ['施工計画書', 'YS・Base', '現況横断武蔵', '飛行ルート', 'Photo・オルソ', '標定点配置武蔵', 'TSC観測データ', 'DGN', '成果物ZIP', 'TLS_data', 'XPT・XPTC', ''];
       const uploadCont = document.getElementById('upload-status-container'); let uploadHtml = '';
+      
       uploadItems.forEach((item, idx) => {
         const isRightEdge = (idx % 3 === 2); const pipe = isRightEdge ? '' : '<span class="text-slate-300 font-bold ml-auto pl-2">｜</span>';
         if (item === '') { uploadHtml += `<div class="flex items-center text-sm ${isRightEdge ? '' : 'pr-3'}"></div>`; return; }
-        const rawVal = String(task[item] || ''); const isChecked = (rawVal.startsWith('済') || rawVal === 'true') ? 'checked' : '';
-        let infoHtml = '';
-        if (isChecked && rawVal.replace('済', '').trim().length > 0) {
-          let text = rawVal.replace(/^済\s*/, '').replace(/^\(/, '').replace(/\)$/, '');
-          infoHtml = `<span class="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded ml-1 shrink-0 shadow-sm">${text}</span>`;
+        
+        const rawVal = task[item];
+        let isChecked = false;
+        let text = '';
+        
+        // 互換性ロジック（旧：文字列、新：オブジェクト）
+        if (rawVal && typeof rawVal === 'object') {
+          isChecked = rawVal.isUploaded;
+          if (isChecked && rawVal.user) text = `${rawVal.user} ${rawVal.time || ''}`;
+        } else if (typeof rawVal === 'string') {
+          isChecked = (rawVal.startsWith('済') || rawVal === 'true');
+          if (isChecked && rawVal.replace('済', '').trim().length > 0) {
+            text = rawVal.replace(/^済\s*/, '').replace(/^\(/, '').replace(/\)$/, '');
+          }
         }
-        uploadHtml += `<div class="flex items-center text-sm ${isRightEdge ? '' : 'pr-3'} py-0.5"><label class="flex items-center gap-2 cursor-pointer text-slate-700 hover:text-blue-600 transition-colors font-bold flex-1 min-w-0"><input type="checkbox" class="w-4 h-4 cursor-pointer shrink-0" ${isChecked} onchange="handleUploadCheck('${item}', this.checked)"><span class="truncate" title="${item}">${item}</span>${infoHtml}</label>${pipe}</div>`;
+
+        let infoHtml = '';
+        if (text) {
+          infoHtml = `<span class="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded ml-1 shrink-0 shadow-sm">${text}</span>`;
+        }
+        uploadHtml += `<div class="flex items-center text-sm ${isRightEdge ? '' : 'pr-3'} py-0.5"><label class="flex items-center gap-2 cursor-pointer text-slate-700 hover:text-blue-600 transition-colors font-bold flex-1 min-w-0"><input type="checkbox" class="w-4 h-4 cursor-pointer shrink-0" ${isChecked ? 'checked' : ''} onchange="handleUploadCheck('${item}', this.checked)"><span class="truncate" title="${item}">${item}</span>${infoHtml}</label>${pipe}</div>`;
       });
       uploadCont.innerHTML = uploadHtml;
+
       const btnToggleCheck = document.getElementById('btn-toggle-check'); const chkCont = document.getElementById('deliverable-check-container'); const chkTitle = document.getElementById('deliverable-check-title'); 
       let eqType = '';
       if (task.equipment) {
@@ -1599,7 +1650,14 @@
       } else {
         btnToggleCheck.classList.remove('hidden'); btnToggleCheck.classList.add('flex'); 
         if (chkTitle) chkTitle.innerHTML = `📋 ${ministryType} ${eqType}${surveyType}成果チェック`;
-        let savedStatus = {}; try { savedStatus = JSON.parse(task.checkStatus || '{}'); } catch(e) {}
+        
+        let savedStatus = {}; 
+        if (typeof task.checkStatus === 'object') {
+          savedStatus = task.checkStatus;
+        } else if (typeof task.checkStatus === 'string') {
+          try { savedStatus = JSON.parse(task.checkStatus || '{}'); } catch(e) {}
+        }
+
         let checkHtml = ''; let currentLargeCat = ''; let currentMidCat = ''; 
         targetChecks.forEach(c => {
           if (currentLargeCat !== c.largeCat) { currentLargeCat = c.largeCat; checkHtml += `<div class="font-bold text-sm text-white bg-slate-600 px-3 py-1.5 rounded shadow-sm mt-4 mb-2 flex items-center gap-2 sticky top-0 z-10"><span class="text-lg">📁</span>${currentLargeCat}</div>`; }
@@ -1611,6 +1669,7 @@
       }
       document.getElementById('detail-modal').classList.remove('hidden');
     }
+
     window.renderRadioGroup = function(fieldName, options, currentVal) {
       let html = `<div class="flex flex-nowrap overflow-hidden gap-x-2.5 gap-y-1.5">`;
       options.forEach(opt => {
