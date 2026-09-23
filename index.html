@@ -1528,6 +1528,14 @@
       return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
     }
 
+    function formatDisplayDate(dateStr) {
+      if (!dateStr || dateStr === "未定" || dateStr === "") return "未定";
+      let cleanDate = dateStr.replace(/[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '');
+      const d = new Date(cleanDate);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.getFullYear() + '年' + String(d.getMonth() + 1).padStart(2, '0') + '月' + String(d.getDate()).padStart(2, '0') + '日';
+    }
+
     function formatDateForInput(dateStr) {
       if (!dateStr || dateStr === "未定" || dateStr === "") return "";
       const d = new Date(dateStr); if (isNaN(d.getTime())) return "";
@@ -1594,7 +1602,7 @@
           }
           
           const isSidebar = ["まとめて提出", "共有移動未"].includes(task.status) && zone.closest('#view-kanban') !== null;
-          const fDate = formatYYYYMMDD(task.date);
+          const fDate = formatDisplayDate(task.date);
           const dIcon = isDelayed ? '<span title="測量日から2週間超過">⚠️</span> ' : '';
           
           let cardHtml = '';
@@ -1729,7 +1737,7 @@
       document.getElementById('detail-title-icon').innerHTML = getIconSvg(task.type, task.equipment, 'w-10 h-10');
       document.getElementById('detail-title-main').textContent = task.client || 'お客様名未設定';
       document.getElementById('detail-subtitle').textContent = task.site || '現場名未設定';
-      document.getElementById('detail-date').textContent = formatYYYYMMDD(task.date); 
+      document.getElementById('detail-date').textContent = formatDisplayDate(task.date);
       
       const statusColors = { 
         "予定": "bg-slate-300 text-slate-800 border-slate-400", 
