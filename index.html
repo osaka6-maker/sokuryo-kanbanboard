@@ -197,11 +197,59 @@
       </div>
     </section>
 
-    <section id="search-bar-container" class="hidden bg-slate-200 border-b border-slate-300 px-4 py-3 flex flex-wrap gap-3 items-center shrink-0 shadow-inner z-10 animate-fade-in-down select-none">
-      <input type="search" id="search-text" placeholder="お客様名・現場名で検索..." class="border border-slate-300 rounded px-3 py-1.5 text-sm outline-none focus:border-blue-500 w-64 shadow-sm" />
-      <div class="flex items-center gap-2 border-l border-slate-400 pl-3 ml-1">
-        <span class="text-sm font-bold text-slate-600">担当者:</span>
-        <select id="search-role" class="border border-slate-300 rounded px-2 py-1.5 text-sm outline-none shadow-sm">
+    <section id="search-bar-container" class="hidden bg-slate-200 border-b border-slate-300 px-3 py-2.5 flex flex-wrap gap-x-3 gap-y-2 items-center shrink-0 shadow-inner z-10 animate-fade-in-down select-none">
+      <input type="search" id="search-text" placeholder="お客様名・現場名で検索..." class="border border-slate-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-blue-500 w-48 shadow-sm font-medium" />
+      
+      <div class="flex items-center gap-1.5 border-l border-slate-400 pl-3">
+        <select id="search-year" class="border border-slate-300 rounded px-1.5 py-1 text-xs outline-none shadow-sm cursor-pointer font-bold text-slate-700">
+          <option value="">年(すべて)</option>
+          <option value="2024">2024年</option>
+          <option value="2025">2025年</option>
+          <option value="2026">2026年</option>
+          <option value="2027">2027年</option>
+          <option value="2028">2028年</option>
+        </select>
+        <select id="search-month" class="border border-slate-300 rounded px-1.5 py-1 text-xs outline-none shadow-sm cursor-pointer font-bold text-slate-700">
+          <option value="">月</option>
+          <option value="01">1月</option>
+          <option value="02">2月</option>
+          <option value="03">3月</option>
+          <option value="04">4月</option>
+          <option value="05">5月</option>
+          <option value="06">6月</option>
+          <option value="07">7月</option>
+          <option value="08">8月</option>
+          <option value="09">9月</option>
+          <option value="10">10月</option>
+          <option value="11">11月</option>
+          <option value="12">12月</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-1.5 border-l border-slate-400 pl-3">
+        <select id="search-office" class="border border-slate-300 rounded px-1.5 py-1 text-xs outline-none shadow-sm cursor-pointer font-bold text-slate-700">
+          <option value="">営業所</option>
+        </select>
+        <select id="search-sales" class="border border-slate-300 rounded px-1.5 py-1 text-xs outline-none shadow-sm cursor-pointer font-bold text-slate-700">
+          <option value="">営業マン</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-1.5 border-l border-slate-400 pl-3">
+        <select id="search-type" class="border border-slate-300 rounded px-1.5 py-1 text-xs outline-none shadow-sm cursor-pointer font-bold text-slate-700">
+          <option value="">測量種別</option>
+          <option value="起工">起工</option>
+          <option value="出来形">出来形</option>
+          <option value="その他">その他</option>
+        </select>
+        <select id="search-eq" class="border border-slate-300 rounded px-1.5 py-1 text-xs outline-none shadow-sm cursor-pointer font-bold text-slate-700">
+          <option value="">機器</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-1.5 border-l border-slate-400 pl-3">
+        <span class="text-[11px] font-bold text-slate-600">担当者:</span>
+        <select id="search-role" class="border border-slate-300 rounded px-1.5 py-1 text-xs outline-none shadow-sm cursor-pointer">
           <option value="all">すべて</option>
           <option value="design">設計担当</option>
           <option value="plan">施工計画</option>
@@ -212,15 +260,25 @@
           <option value="output">成果作成</option>
           <option value="zeroyen">０円請求</option>
         </select>
-        <span class="text-slate-400 font-bold px-1 text-sm">×</span>
-        <select id="search-assignee" class="border border-slate-300 rounded px-2 py-1.5 text-sm font-bold outline-none shadow-sm text-blue-700 bg-blue-50">
+        <span class="text-slate-400 font-bold text-xs">×</span>
+        <select id="search-assignee" class="border border-slate-300 rounded px-1.5 py-1 text-xs font-bold outline-none shadow-sm text-blue-700 bg-blue-50 cursor-pointer">
           <option value="">（全員表示）</option>
           <option value="-">- (未設定)</option>
         </select>
       </div>
-      <div class="ml-auto flex items-center gap-3">
-        <button id="btn-clear-search" class="text-sm text-slate-500 hover:text-red-600 font-bold transition-colors">✖ クリア</button>
-        <div class="font-bold text-slate-600 bg-white px-3 py-1 rounded border border-slate-300 shadow-sm flex items-center gap-1.5">該当: <span id="filtered-count" class="text-red-600 text-lg leading-none">0</span> <span class="text-xs">件</span></div>
+
+      <div class="ml-auto flex items-center gap-2">
+        <div class="flex items-center gap-1.5 mr-2">
+          <button id="btn-apply-search" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded shadow-sm text-xs transition-colors tracking-wider">
+            適用
+          </button>
+          <button id="btn-clear-search" class="bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 font-bold px-3 py-1.5 rounded shadow-sm text-xs transition-colors tracking-wider flex items-center gap-1" title="検索を解除してバーを閉じます">
+            解除
+          </button>
+        </div>
+        <div class="font-bold text-slate-600 bg-white px-2.5 py-1 rounded border border-slate-300 shadow-sm flex items-center gap-1.5 text-xs">
+          該当: <span id="filtered-count" class="text-red-600 text-base leading-none">0</span> <span class="text-[10px]">件</span>
+        </div>
       </div>
     </section>
 
@@ -436,6 +494,7 @@
               <tr class="border-b border-slate-300 bg-slate-50 text-slate-600">
                 <th class="py-2.5 px-3 font-bold">日時</th>
                 <th class="py-2.5 px-3 font-bold">ユーザー</th>
+                <th class="py-2.5 px-3 font-bold">お客様・現場名</th>
                 <th class="py-2.5 px-3 font-bold">案件ID</th>
                 <th class="py-2.5 px-3 font-bold">操作種別</th>
                 <th class="py-2.5 px-3 font-bold">詳細</th>
@@ -1110,13 +1169,14 @@
     }
 
     // --- Firebase Logs ---
-    window.recordLog = async function(taskId, actionType, details) {
+    window.recordLog = async function(taskId, taskName, actionType, details) {
       if (!window.currentUser) return;
       try {
         await addDoc(collection(db, 'logs'), {
           timestamp: serverTimestamp(),
           userName: window.currentUser.email,
           taskId: taskId || '-',
+          taskName: taskName || '-',
           actionType: actionType,
           details: details || ''
         });
@@ -1135,15 +1195,17 @@
         snapshot.forEach(docSnap => {
           const d = docSnap.data();
           const dateStr = d.timestamp ? new Date(d.timestamp.toDate()).toLocaleString('ja-JP') : '-';
+          const tName = d.taskName ? d.taskName : '-';
           
           // 💡 VS Codeのエラー誤検知を防ぐため、文字列結合を安全な形に修正しました
           let rowHtml = '';
           rowHtml += '<tr class="hover:bg-slate-50 transition-colors">';
           rowHtml += '<td class="py-2.5 px-3 text-slate-500 whitespace-nowrap">' + dateStr + '</td>';
           rowHtml += '<td class="py-2.5 px-3 font-bold text-slate-700">' + d.userName + '</td>';
-          rowHtml += '<td class="py-2.5 px-3 text-blue-600 font-bold">' + d.taskId + '</td>';
+          rowHtml += '<td class="py-2.5 px-3 font-bold text-slate-800">' + tName + '</td>';
+          rowHtml += '<td class="py-2.5 px-3 text-blue-600 font-bold text-[10px]">' + d.taskId + '</td>';
           rowHtml += '<td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-200 font-bold text-slate-800">' + d.actionType + '</span></td>';
-          rowHtml += '<td class="py-2.5 px-3 text-slate-600">' + d.details + '</td>';
+          rowHtml += '<td class="py-2.5 px-3 text-slate-600 break-words max-w-[200px]">' + d.details + '</td>';
           rowHtml += '</tr>';
           
           tbody.innerHTML += rowHtml;
@@ -1165,7 +1227,8 @@
           updateData['ステータス変更日'] = '';
         }
         await updateDoc(doc(db, 'tasks', id), updateData);
-        await window.recordLog(id, 'ステータス変更', stat);
+        const tName = (window.tasks[idx].client || '') + ' ' + (window.tasks[idx].site || '');
+        await window.recordLog(id, tName, 'ステータス変更', stat);
         showToast('ステータスを変更しました');
       } catch(e) {
         showToast('更新失敗', 'error');
@@ -1182,7 +1245,8 @@
         const syncIcon = document.getElementById('sync-icon');
         if (syncIcon) syncIcon.classList.add('animate-spin', 'text-blue-400');
         await updateDoc(doc(db, 'tasks', id), { '測量日': newDateStr });
-        await window.recordLog(id, '測量日変更', newDateStr);
+        const tName = (window.tasks[idx].client || '') + ' ' + (window.tasks[idx].site || '');
+        await window.recordLog(id, tName, '測量日変更', newDateStr);
         showToast(`測量日を ${newDateStr} に変更しました`);
       } catch(e) { showToast('更新失敗', 'error'); }
       finally { 
@@ -1197,7 +1261,9 @@
         const roleMap = { 'design': '設計担当', 'plan': '施工計画', 'survey': '測量担当', 'pointcloud': '点群処理', 'cross': '現況横断', 'hyouteiten': '標定点配置図', 'output': '成果作成', 'zeroyen': '０円請求' };
         const dbField = roleMap[roleId];
         await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [dbField]: val });
-        await window.recordLog(window.currentOpenTaskId, '担当者更新', `${dbField} -> ${val}`);
+        const t = window.tasks.find(x => x.id === window.currentOpenTaskId);
+        const tName = t ? (t.client || '') + ' ' + (t.site || '') : '-';
+        await window.recordLog(window.currentOpenTaskId, tName, '担当者更新', `${dbField} -> ${val}`);
         showToast('担当者を更新しました');
       } catch(e) { showToast('担当者更新に失敗', 'error'); }
     };
@@ -1296,7 +1362,9 @@
         await uploadBytes(fileRef, webpBlob);
         const downloadUrl = await getDownloadURL(fileRef);
         await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [dbField]: downloadUrl });
-        await window.recordLog(window.currentOpenTaskId, '画像保存', dbField);
+        const t = window.tasks.find(x => x.id === window.currentOpenTaskId);
+        const tName = t ? (t.client || '') + ' ' + (t.site || '') : '-';
+        await window.recordLog(window.currentOpenTaskId, tName, '画像保存', dbField);
         showToast('画像を保存しました');
       } catch (err) {
         showToast('保存失敗', 'error');
@@ -1312,7 +1380,9 @@
       const gasField = window.targetImageIndex === 1 ? '画像1' : (window.targetImageIndex === 2 ? '画像2' : '伝票画像');
       try {
         await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [gasField]: '' });
-        await window.recordLog(window.currentOpenTaskId, '画像削除', targetName);
+        const t = window.tasks.find(x => x.id === window.currentOpenTaskId);
+        const tName = t ? (t.client || '') + ' ' + (t.site || '') : '-';
+        await window.recordLog(window.currentOpenTaskId, tName, '画像削除', targetName);
         showToast(targetName + "を削除しました");
         document.getElementById('detail-img-' + window.targetImageIndex).classList.add('hidden');
         document.getElementById('detail-img-ph-' + window.targetImageIndex).classList.remove('hidden');
@@ -1349,15 +1419,40 @@
       const btn = document.getElementById('btn-save-task');
       btn.innerHTML = '🔄 保存中...'; btn.disabled = true;
       try {
+        const tName = (taskData['お客様名'] || '') + ' ' + (taskData['現場名'] || '');
         if (window.isEditMode) {
+          const oldTask = window.tasks.find(x => x.id === window.currentOpenTaskId) || {};
+          const fieldMap = {
+            '測量日': 'date', 'ステータス': 'status', '測量種別': 'type', '使用機器': 'equipment',
+            'お客様名': 'client', '請求先名': 'billing', '現場名': 'site', '営業所': 'office',
+            '営業マン': 'salesperson', '現場地区名': 'district', '事務所位置': 'officeLoc',
+            '管轄省庁': 'ministry', '社内規格値': 'standard', '飛行ルート名': 'route',
+            'DIPS2.0登録': 'dips', '電子基準点名': 'refPoint', '現場位置': 'mapUrl',
+            '集合場所': 'meetUrl', 'PJ': 'pjUrl', 'Chat': 'chatUrl', '共有パス': 'sharePath'
+          };
+          let changes = [];
+          for (let jpKey in fieldMap) {
+            const enKey = fieldMap[jpKey];
+            let oldVal = String(oldTask[enKey] || '').trim();
+            let newVal = String(taskData[jpKey] || '').trim();
+            if(enKey === 'date') oldVal = oldVal.replace(/-/g, '/'); // 比較用に日付フォーマットを揃える
+            if (oldVal !== newVal) {
+              let sOld = oldVal.length > 10 ? oldVal.substring(0, 10) + '..' : (oldVal || '空');
+              let sNew = newVal.length > 10 ? newVal.substring(0, 10) + '..' : (newVal || '空');
+              changes.push(`${jpKey}: ${sOld}→${sNew}`);
+            }
+          }
+          let detailStr = changes.length > 0 ? changes.join(', ') : '変更なし';
+          if (detailStr.length > 100) detailStr = detailStr.substring(0, 100) + '...';
+
           await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), taskData);
-          await window.recordLog(window.currentOpenTaskId, '案件編集', '情報を更新');
+          await window.recordLog(window.currentOpenTaskId, tName, '案件編集', detailStr);
           showToast('案件を更新しました');
         } else {
           const newId = "PJ-" + new Date().getTime();
           taskData['ID'] = newId;
           await setDoc(doc(db, 'tasks', newId), taskData);
-          await window.recordLog(newId, '新規作成', taskData['お客様名']);
+          await window.recordLog(newId, tName, '新規作成', '新規作成しました');
           showToast('新規案件を追加しました');
         }
         closeTaskModal();
@@ -1372,7 +1467,9 @@
         if (!window.confirm('復元できません。本当に削除しますか？')) return;
         try {
           await deleteDoc(doc(db, 'tasks', window.currentOpenTaskId));
-          await window.recordLog(window.currentOpenTaskId, '案件削除', '削除しました');
+          const t = window.tasks.find(x => x.id === window.currentOpenTaskId);
+          const tName = t ? (t.client || '') + ' ' + (t.site || '') : '-';
+          await window.recordLog(window.currentOpenTaskId, tName, '案件削除', '削除しました');
           showToast('案件を削除しました');
           closeTaskModal();
         } catch (err) { showToast('削除失敗', 'error'); }
@@ -1428,14 +1525,26 @@
       const officeSelect = document.getElementById('fm-office');
       const eqSelect = document.getElementById('fm-equipment');
       const minSelect = document.getElementById('fm-ministry');
+      const searchOffice = document.getElementById('search-office');
+      const searchEq = document.getElementById('search-eq');
       
       let officeHtml = '<option value="">（未選択）</option>';
-      Object.keys(window.masterData.offices || {}).forEach(o => { officeHtml += '<option value="' + o + '">' + o + '</option>'; });
+      let sOfficeHtml = '<option value="">営業所</option>';
+      Object.keys(window.masterData.offices || {}).forEach(o => { 
+        officeHtml += '<option value="' + o + '">' + o + '</option>'; 
+        sOfficeHtml += '<option value="' + o + '">' + o + '</option>'; 
+      });
       if(officeSelect) officeSelect.innerHTML = officeHtml;
+      if(searchOffice) searchOffice.innerHTML = sOfficeHtml;
       
       let eqHtml = '<option value="">（未選択）</option>';
-      (window.masterData.equipments || []).forEach(e => { eqHtml += '<option value="' + e + '">' + e + '</option>'; });
+      let sEqHtml = '<option value="">機器</option>';
+      (window.masterData.equipments || []).forEach(e => { 
+        eqHtml += '<option value="' + e + '">' + e + '</option>'; 
+        sEqHtml += '<option value="' + e + '">' + e + '</option>'; 
+      });
       if(eqSelect) eqSelect.innerHTML = eqHtml;
+      if(searchEq) searchEq.innerHTML = sEqHtml;
       
       let minHtml = '<option value="">ー</option>';
       (window.masterData.ministries || []).forEach(m => { minHtml += '<option value="' + m + '">' + m + '</option>'; });
@@ -1454,6 +1563,18 @@
       });
     }
 
+    const searchOfficeSelect = document.getElementById('search-office');
+    if (searchOfficeSelect) {
+      searchOfficeSelect.addEventListener('change', (e) => {
+        const salesSelect = document.getElementById('search-sales');
+        if(!salesSelect) return;
+        let salesHtml = '<option value="">営業マン</option>';
+        const reps = window.masterData.offices[e.target.value] || [];
+        reps.forEach(r => { salesHtml += '<option value="' + r + '">' + r + '</option>'; });
+        salesSelect.innerHTML = salesHtml;
+      });
+    }
+
     const btnToggleSearch = document.getElementById('btn-toggle-search');
     if(btnToggleSearch) {
       btnToggleSearch.addEventListener('click', () => {
@@ -1466,26 +1587,53 @@
     }
 
     window.updateCurrentView = function() {
-      if (window.currentView === 'kanban') renderBoard();
-      else renderCalendar();
+      if (window.currentView === 'kanban' || window.currentView === 'shared') {
+        renderBoard();
+      } else if (window.currentView === 'calendar') {
+        renderCalendar();
+      }
     }
 
-    const searchText = document.getElementById('search-text');
-    if(searchText) searchText.addEventListener('input', (e) => { window.filterText = e.target.value.toLowerCase(); window.updateCurrentView(); });
-    
-    const searchRole = document.getElementById('search-role');
-    if(searchRole) searchRole.addEventListener('change', (e) => { window.filterRole = e.target.value; window.updateCurrentView(); });
-    
-    const searchAssignee = document.getElementById('search-assignee');
-    if(searchAssignee) searchAssignee.addEventListener('change', (e) => { window.filterAssignee = e.target.value; window.updateCurrentView(); });
-    
+    const btnApplySearch = document.getElementById('btn-apply-search');
+    if (btnApplySearch) {
+      btnApplySearch.addEventListener('click', () => {
+        window.filterText = document.getElementById('search-text').value.toLowerCase();
+        window.filterYear = document.getElementById('search-year').value;
+        window.filterMonth = document.getElementById('search-month').value;
+        window.filterOffice = document.getElementById('search-office').value;
+        window.filterSales = document.getElementById('search-sales').value;
+        window.filterType = document.getElementById('search-type').value;
+        window.filterEq = document.getElementById('search-eq').value;
+        window.filterRole = document.getElementById('search-role').value;
+        window.filterAssignee = document.getElementById('search-assignee').value;
+        window.updateCurrentView();
+      });
+    }
+
     const btnClearSearch = document.getElementById('btn-clear-search');
-    if(btnClearSearch) {
+    if (btnClearSearch) {
       btnClearSearch.addEventListener('click', () => {
-        document.getElementById('search-text').value = ''; 
-        document.getElementById('search-role').value = 'all'; 
+        document.getElementById('search-text').value = '';
+        document.getElementById('search-year').value = '';
+        document.getElementById('search-month').value = '';
+        document.getElementById('search-office').value = '';
+        document.getElementById('search-sales').innerHTML = '<option value="">営業マン</option>';
+        document.getElementById('search-type').value = '';
+        document.getElementById('search-eq').value = '';
+        document.getElementById('search-role').value = 'all';
         document.getElementById('search-assignee').value = '';
-        window.filterText = ''; window.filterRole = 'all'; window.filterAssignee = ''; window.updateCurrentView();
+
+        window.filterText = '';
+        window.filterYear = '';
+        window.filterMonth = '';
+        window.filterOffice = '';
+        window.filterSales = '';
+        window.filterType = '';
+        window.filterEq = '';
+        window.filterRole = 'all';
+        window.filterAssignee = '';
+
+        window.updateCurrentView();
       });
     }
 
@@ -1499,6 +1647,24 @@
     function getFilteredAndSortedTasks() {
       let f = window.tasks;
       if (window.filterText) f = f.filter(t => (t.client && t.client.toLowerCase().includes(window.filterText)) || (t.site && t.site.toLowerCase().includes(window.filterText)));
+      
+      if (window.filterYear || window.filterMonth) {
+        f = f.filter(t => {
+          const d = formatYYYYMMDD(t.date);
+          if (!d || d === '未定') return false;
+          const y = d.substring(0, 4);
+          const m = d.substring(4, 6);
+          if (window.filterYear && y !== window.filterYear) return false;
+          if (window.filterMonth && m !== window.filterMonth) return false;
+          return true;
+        });
+      }
+
+      if (window.filterOffice) f = f.filter(t => t.office === window.filterOffice);
+      if (window.filterSales) f = f.filter(t => t.salesperson === window.filterSales);
+      if (window.filterType) f = f.filter(t => t.type === window.filterType);
+      if (window.filterEq) f = f.filter(t => t.equipment === window.filterEq);
+
       if (window.filterAssignee) {
         f = f.filter(t => {
           const isUnassigned = (v1, v2) => { const s1 = String(v1||'').trim(); const s2 = String(v2||'').trim(); return (s1===''||s1==='ー') && (s2===''||s2==='ー'); };
@@ -1567,7 +1733,9 @@
       const countEl = document.getElementById('filtered-count');
       if(!btn || !countEl) return;
       const count = countEl.textContent;
-      if (window.filterText !== '' || window.filterAssignee !== '') {
+      const isFiltered = window.filterText !== '' || window.filterAssignee !== '' || window.filterYear !== '' || window.filterMonth !== '' || window.filterOffice !== '' || window.filterSales !== '' || window.filterType !== '' || window.filterEq !== '';
+
+      if (isFiltered) {
         btn.classList.add('bg-blue-600', 'text-white', 'border-blue-500'); 
         btn.classList.remove('bg-slate-700', 'text-blue-200', 'border-slate-600'); 
         btn.innerHTML = '🔍 検索中 (' + count + '件)';
@@ -2173,7 +2341,17 @@
         cellDateStr = targetYear + String(targetMonth + 1).padStart(2, '0') + String(displayDate).padStart(2, '0');
         const isToday = new Date().toDateString() === new Date(targetYear, targetMonth, displayDate).toDateString();
         const todayClass = isToday ? "bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md text-sm font-black" : (isCurrentMonth ? "text-slate-700 w-7 h-7 flex items-center justify-center text-sm font-bold" : "text-slate-400 w-7 h-7 flex items-center justify-center text-sm font-bold");
-        const cellClass = isCurrentMonth ? "bg-white min-h-[120px] flex flex-col p-2 drop-zone-cal transition-colors border border-slate-100" : "bg-slate-50 min-h-[120px] flex flex-col p-2 drop-zone-cal transition-colors border border-slate-200 opacity-60";
+        
+        let cellClass = "min-h-[120px] flex flex-col p-2 drop-zone-cal transition-colors border ";
+        if (!isCurrentMonth) {
+          cellClass += "bg-slate-50 border-slate-200 opacity-60";
+        } else if (i % 7 === 0) { // 日曜日
+          cellClass += "bg-red-50 border-slate-100";
+        } else if (i % 7 === 6) { // 土曜日
+          cellClass += "bg-blue-50 border-slate-100";
+        } else {
+          cellClass += "bg-white border-slate-100";
+        }
         
         const dayTasks = filteredTasks.filter(t => formatYYYYMMDD(t.date) === cellDateStr);
         let tasksHtml = '';
@@ -2193,9 +2371,12 @@
           
           let exClass = isDelayed ? 'border-yellow-500 bg-yellow-100 shadow-yellow-200/50' : '';
           
-          tasksHtml += '<div class="' + stColor + ' border-2 rounded shadow-sm p-2 mb-1.5 cursor-pointer transition-all truncate select-none ' + exClass + '" onclick="window.openDetailModalFromId(\'' + task.id + '\')" ' + dragAttr + '>';
-          tasksHtml += '<div class="flex items-center font-black text-xs mb-0.5">' + getIconSvg(task.type, task.equipment, 'w-3.5 h-3.5 mr-1.5') + '<span class="truncate leading-tight">' + (task.client || '-') + '</span></div>';
-          tasksHtml += '<div class="truncate text-slate-600 text-[11px] font-medium ml-5">' + (task.site || '-') + '</div></div>';
+          tasksHtml += '<div class="' + stColor + ' border-2 rounded shadow-sm px-1.5 py-1 mb-1.5 cursor-pointer transition-all select-none ' + exClass + '" onclick="window.openDetailModalFromId(\'' + task.id + '\')" ' + dragAttr + '>';
+          tasksHtml += '<div class="flex items-center text-[11px] min-w-0">';
+          tasksHtml += getIconSvg(task.type, task.equipment, 'w-3.5 h-3.5 mr-1 shrink-0');
+          tasksHtml += '<span class="font-bold truncate mr-1.5 shrink-0 max-w-[50%]">' + (task.client || '-') + '</span>';
+          tasksHtml += '<span class="text-slate-600 font-medium truncate">' + (task.site || '-') + '</span>';
+          tasksHtml += '</div></div>';
         });
         
         const cDateAttr = targetYear + '/' + String(targetMonth + 1).padStart(2, '0') + '/' + String(displayDate).padStart(2, '0');
