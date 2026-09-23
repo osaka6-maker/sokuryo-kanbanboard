@@ -172,6 +172,7 @@
     <section class="bg-slate-200 border-b border-slate-300 flex flex-wrap items-end shrink-0 shadow-sm z-10 text-slate-700 select-none pt-2 px-2">
       <div class="flex gap-1 ml-2">
         <button id="tab-kanban" onclick="switchView('kanban')" class="px-5 py-2 bg-slate-50 border-t border-l border-r border-slate-300 rounded-t-lg font-bold text-blue-700 relative top-[1px] shadow-sm z-10 transition-colors cursor-pointer">📋 カンバン</button>
+        <button id="tab-shared" onclick="switchView('shared')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">📁 共有管理</button>
         <button id="tab-calendar" onclick="switchView('calendar')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">📅 カレンダー</button>
         <button id="tab-logs" onclick="switchView('logs')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">📜 更新ログ</button>
       </div>
@@ -225,7 +226,7 @@
 
     <main class="flex-1 overflow-hidden p-3 bg-slate-50 min-h-0 select-none relative">
       <!-- ===== 1. カンバン表示 ===== -->
-      <div id="view-kanban" class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] grid-rows-2 gap-3 h-full pb-2 min-h-0">
+      <div id="view-kanban" class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_240px] grid-rows-2 gap-3 h-full pb-2 min-h-0">
         
         <section class="row-span-1 col-start-1 row-start-1 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="予定">
           <div class="bg-slate-300 shrink-0">
@@ -331,70 +332,76 @@
           <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
         </section>
 
-        <!-- サイドバー -->
-        <aside id="collapsed-sidebar" class="hidden row-span-2 col-start-5 row-start-1 flex flex-col bg-slate-700 text-slate-300 hover:text-white hover:bg-slate-600 rounded-xl w-10 cursor-pointer transition-all duration-300 items-center py-4 shadow-md min-h-0" onclick="toggleSidebar()">
-          <span class="writing-vertical font-bold tracking-widest text-xs flex items-center gap-3"><span>◀</span> <span>その他・保管庫</span></span>
+        <!-- 右側：まとめて提出・共有移動未 -->
+        <aside class="row-span-2 col-start-5 row-start-1 flex flex-col gap-3 bg-slate-300 rounded-xl p-2.5 overflow-hidden shadow-inner border border-slate-300 min-h-0">
+          <section class="flex-1 min-h-0 bg-gray-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm" data-status="まとめて提出">
+            <div class="bg-gray-200 shrink-0">
+              <header class="text-sm font-bold text-gray-800 px-3 py-2 flex justify-between items-center">
+                <div class="flex items-baseline gap-2 truncate">
+                  <span>まとめて提出</span>
+                  <span class="status-desc text-[11px] font-medium text-gray-600 empty:hidden truncate" data-status-key="まとめて提出"></span>
+                </div>
+                <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
+              </header>
+            </div>
+            <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+          </section>
+          
+          <section class="flex-1 min-h-0 bg-pink-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm" data-status="共有移動未">
+            <div class="bg-pink-200 shrink-0">
+              <header class="text-sm font-bold text-pink-800 px-3 py-2 flex justify-between items-center">
+                <div class="flex items-baseline gap-2 truncate">
+                  <span>共有移動未</span>
+                  <span class="status-desc text-[11px] font-medium text-pink-700 empty:hidden truncate" data-status-key="共有移動未"></span>
+                </div>
+                <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
+              </header>
+            </div>
+            <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+          </section>
         </aside>
+      </div>
 
-        <aside id="expanded-sidebar" class="row-span-2 col-start-5 row-start-1 flex flex-col w-[260px] bg-slate-200 rounded-xl overflow-hidden transition-all duration-300 shadow-xl border border-slate-300 min-h-0">
-          <header class="flex justify-between items-center bg-slate-700 text-white px-3 py-2 shrink-0 cursor-pointer hover:bg-slate-600" onclick="toggleSidebar()">
-            <span class="font-bold text-sm">その他・保管庫</span>
-            <span class="text-base leading-none">▶</span>
-          </header>
-          <div class="flex-1 overflow-hidden flex flex-col gap-2 p-2 bg-slate-300 min-h-0">
-            <section style="flex: 1;" class="min-h-0 bg-gray-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm shrink-0" data-status="まとめて提出">
-              <div class="bg-gray-200 shrink-0">
-                <header class="text-sm font-bold text-gray-800 px-2.5 py-2 flex justify-between items-center">
-                  <div class="flex items-baseline gap-2 truncate">
-                    <span>まとめて提出</span>
-                    <span class="status-desc text-[11px] font-medium text-gray-600 empty:hidden truncate" data-status-key="まとめて提出"></span>
-                  </div>
-                  <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
-                </header>
+      <!-- ===== 1.5. 共有管理表示 ===== -->
+      <div id="view-shared" class="hidden grid grid-cols-[1fr_2fr_1fr] gap-4 h-full pb-2 min-h-0">
+        <section class="bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="共有移動未">
+          <div class="bg-pink-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-pink-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>共有移動未</span>
+                <span class="status-desc text-xs font-medium text-pink-700 empty:hidden truncate" data-status-key="共有移動未"></span>
               </div>
-              <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1.5 task-list min-h-0"></div>
-            </section>
-            
-            <section style="flex: 2;" class="min-h-0 bg-pink-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm shrink-0" data-status="共有移動未">
-              <div class="bg-pink-200 shrink-0">
-                <header class="text-sm font-bold text-pink-800 px-2.5 py-2 flex justify-between items-center">
-                  <div class="flex items-baseline gap-2 truncate">
-                    <span>共有移動未</span>
-                    <span class="status-desc text-[11px] font-medium text-pink-700 empty:hidden truncate" data-status-key="共有移動未"></span>
-                  </div>
-                  <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
-                </header>
-              </div>
-              <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1.5 task-list min-h-0"></div>
-            </section>
-
-            <section style="flex: 3;" class="min-h-0 bg-green-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm shrink-0" data-status="共有に移動済">
-              <div class="bg-green-200 shrink-0">
-                <header class="text-sm font-bold text-green-800 px-2.5 py-2 flex justify-between items-center">
-                  <div class="flex items-baseline gap-2 truncate">
-                    <span>共有に移動済</span>
-                    <span class="status-desc text-[11px] font-medium text-green-700 empty:hidden truncate" data-status-key="共有に移動済"></span>
-                  </div>
-                  <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
-                </header>
-              </div>
-              <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1.5 task-list min-h-0"></div>
-            </section>
-
-            <section style="flex: 2;" class="min-h-0 bg-teal-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm shrink-0" data-status="新宮担当">
-              <div class="bg-teal-200 shrink-0">
-                <header class="text-sm font-bold text-teal-800 px-2.5 py-2 flex justify-between items-center">
-                  <div class="flex items-baseline gap-2 truncate">
-                    <span>新宮担当</span>
-                    <span class="status-desc text-[11px] font-medium text-teal-700 empty:hidden truncate" data-status-key="新宮担当"></span>
-                  </div>
-                  <span class="count text-xs bg-white px-2 py-0.5 rounded-full shadow-sm">0</span>
-                </header>
-              </div>
-              <div class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1.5 task-list min-h-0"></div>
-            </section>
+              <span class="count bg-white text-pink-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
           </div>
-        </aside>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
+
+        <section class="bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="共有に移動済">
+          <div class="bg-green-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-green-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>共有に移動済</span>
+                <span class="status-desc text-xs font-medium text-green-700 empty:hidden truncate" data-status-key="共有に移動済"></span>
+              </div>
+              <span class="count bg-white text-green-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-3 grid grid-cols-3 gap-3 content-start task-list min-h-0"></div>
+        </section>
+
+        <section class="bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="新宮担当">
+          <div class="bg-teal-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-teal-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>新宮担当</span>
+                <span class="status-desc text-xs font-medium text-teal-700 empty:hidden truncate" data-status-key="新宮担当"></span>
+              </div>
+              <span class="count bg-white text-teal-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+        </section>
       </div>
 
       <!-- ===== 2. カレンダー表示 ===== -->
@@ -1571,78 +1578,81 @@
       if(countEl) countEl.textContent = filtered.length;
       
       filtered.forEach(task => {
-        const zone = document.querySelector('.drop-zone[data-status="' + task.status + '"]');
-        if (!zone) return;
-        const countSpan = zone.querySelector('.count');
-        if(countSpan) countSpan.textContent = parseInt(countSpan.textContent) + 1;
+        const zones = document.querySelectorAll('.drop-zone[data-status="' + task.status + '"]');
+        if (zones.length === 0) return;
         
-        const card = document.createElement('article');
-        card.draggable = true; 
-        let isDelayed = false;
-        
-        if (task.date && ["点群処理中", "横断作成中", "成果作成中", "設計待", "確認待"].includes(task.status)) {
-          if ((new Date() - new Date(task.date)) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true;
-        }
-        
-        const isSidebar = ["新宮担当", "共有移動未", "共有に移動済", "まとめて提出"].includes(task.status);
-        const fDate = formatYYYYMMDD(task.date);
-        const dIcon = isDelayed ? '<span title="測量日から2週間超過">⚠️</span> ' : '';
-        
-        let cardHtml = '';
-        if (isSidebar) { 
-          card.className = "bg-white p-2 rounded shadow border border-slate-200 cursor-pointer hover:border-blue-400 transition-all flex flex-col shrink-0 select-none"; 
-          cardHtml += '<header class="flex justify-between items-center text-slate-500 mb-0.5 gap-1 shrink-0">';
-          cardHtml += '<div class="flex items-center shrink-0 min-w-0 text-slate-800">' + getIconSvg(task.type, task.equipment) + '<span class="font-bold text-[11px] truncate leading-none">' + (task.client || '-') + '</span></div>';
-          cardHtml += '<span class="font-bold text-slate-500 text-[10px] shrink-0">' + fDate + '</span></header>';
-          cardHtml += '<div class="truncate text-slate-600 text-[11px] leading-tight">' + (task.site || '-') + '</div>';
-        } else { 
-          card.className = "select-none " + (isDelayed ? "bg-yellow-100 border-yellow-400 shadow-yellow-300" : "bg-white border-slate-200") + " rounded-lg shadow-sm border cursor-pointer hover:shadow-md hover:border-blue-400 transition-all flex flex-row overflow-hidden shrink-0 min-h-[85px]"; 
+        zones.forEach(zone => {
+          const countSpan = zone.querySelector('.count');
+          if(countSpan) countSpan.textContent = parseInt(countSpan.textContent) + 1;
           
-          let thumbHtml = '';
-          if(task.image1) {
-             thumbHtml += '<div class="w-20 shrink-0 bg-slate-200 border-r ' + (isDelayed ? 'border-yellow-300' : 'border-slate-200') + '">';
-             thumbHtml += '<img src="' + task.image1 + '" class="w-full h-full object-cover" /></div>';
+          const card = document.createElement('article');
+          card.draggable = true; 
+          let isDelayed = false;
+          
+          if (task.date && ["点群処理中", "横断作成中", "成果作成中", "設計待", "確認待"].includes(task.status)) {
+            if ((new Date() - new Date(task.date)) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true;
           }
           
-          let footerCenterHtml = '';
-          if (task.status === '設計待') {
-            const designRep = task.designRep || '未設定'; 
-            let daysPassedText = '-日'; 
-            if (task.statusDate) {
-              const today = new Date(); const startDate = new Date(task.statusDate);
-              today.setHours(0,0,0,0); startDate.setHours(0,0,0,0);
-              const diffTime = today.getTime() - startDate.getTime(); 
-              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-              daysPassedText = diffDays + '日'; 
+          const isSidebar = ["まとめて提出", "共有移動未"].includes(task.status) && zone.closest('#view-kanban') !== null;
+          const fDate = formatYYYYMMDD(task.date);
+          const dIcon = isDelayed ? '<span title="測量日から2週間超過">⚠️</span> ' : '';
+          
+          let cardHtml = '';
+          if (isSidebar) { 
+            card.className = "bg-white p-2 rounded shadow border border-slate-200 cursor-pointer hover:border-blue-400 transition-all flex flex-col shrink-0 select-none"; 
+            cardHtml += '<header class="flex justify-between items-center text-slate-500 mb-0.5 gap-1 shrink-0">';
+            cardHtml += '<div class="flex items-center shrink-0 min-w-0 text-slate-800">' + getIconSvg(task.type, task.equipment) + '<span class="font-bold text-[11px] truncate leading-none">' + (task.client || '-') + '</span></div>';
+            cardHtml += '<span class="font-bold text-slate-500 text-[10px] shrink-0">' + fDate + '</span></header>';
+            cardHtml += '<div class="truncate text-slate-600 text-[11px] leading-tight">' + (task.site || '-') + '</div>';
+          } else { 
+            card.className = "select-none " + (isDelayed ? "bg-yellow-100 border-yellow-400 shadow-yellow-300" : "bg-white border-slate-200") + " rounded-lg shadow-sm border cursor-pointer hover:shadow-md hover:border-blue-400 transition-all flex flex-row overflow-hidden shrink-0 min-h-[85px]"; 
+            
+            let thumbHtml = '';
+            if(task.image1) {
+               thumbHtml += '<div class="w-20 shrink-0 bg-slate-200 border-r ' + (isDelayed ? 'border-yellow-300' : 'border-slate-200') + '">';
+               thumbHtml += '<img src="' + task.image1 + '" class="w-full h-full object-cover" /></div>';
             }
-            footerCenterHtml += '<div class="flex items-center gap-1 min-w-0 shrink px-1 justify-center">';
-            footerCenterHtml += '<span class="text-[10px] font-bold text-cyan-800 bg-cyan-100 border border-cyan-300 px-1 py-0.5 rounded truncate max-w-[60px]" title="' + designRep + '">📐' + designRep + '</span>';
-            footerCenterHtml += '<span class="text-[10px] font-bold text-red-600 bg-white border border-red-200 px-1 py-0.5 rounded shadow-sm shrink-0 whitespace-nowrap">' + daysPassedText + '経過</span></div>';
+            
+            let footerCenterHtml = '';
+            if (task.status === '設計待') {
+              const designRep = task.designRep || '未設定'; 
+              let daysPassedText = '-日'; 
+              if (task.statusDate) {
+                const today = new Date(); const startDate = new Date(task.statusDate);
+                today.setHours(0,0,0,0); startDate.setHours(0,0,0,0);
+                const diffTime = today.getTime() - startDate.getTime(); 
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                daysPassedText = diffDays + '日'; 
+              }
+              footerCenterHtml += '<div class="flex items-center gap-1 min-w-0 shrink px-1 justify-center">';
+              footerCenterHtml += '<span class="text-[10px] font-bold text-cyan-800 bg-cyan-100 border border-cyan-300 px-1 py-0.5 rounded truncate max-w-[60px]" title="' + designRep + '">📐' + designRep + '</span>';
+              footerCenterHtml += '<span class="text-[10px] font-bold text-red-600 bg-white border border-red-200 px-1 py-0.5 rounded shadow-sm shrink-0 whitespace-nowrap">' + daysPassedText + '経過</span></div>';
+            }
+            
+            let contentHtml = '';
+            contentHtml += '<div class="flex-1 flex flex-col min-w-0 p-2.5">';
+            contentHtml += '<header class="text-[11px] text-slate-500 mb-1 flex justify-between items-center font-medium shrink-0 gap-1">';
+            contentHtml += '<div class="flex items-center min-w-0 ' + (isDelayed ? 'text-yellow-800' : 'text-slate-800') + '">' + getIconSvg(task.type, task.equipment) + '<span class="font-black text-[13px] truncate leading-tight">' + (task.client || '-') + '</span></div>';
+            contentHtml += '<span class="font-bold tracking-tighter leading-none shrink-0 ' + (isDelayed ? 'text-yellow-700' : 'text-slate-500') + '">' + dIcon + fDate + '</span></header>';
+            contentHtml += '<div class="text-[13px] font-bold ' + (isDelayed ? 'text-yellow-900' : 'text-slate-700') + ' mb-1.5 line-clamp-2 flex-1">' + (task.site || '-') + '</div>';
+            contentHtml += '<footer class="flex items-center justify-between shrink-0 border-t ' + (isDelayed ? 'border-yellow-200' : 'border-slate-100') + ' pt-1 mt-auto w-full gap-1">';
+            contentHtml += '<span class="text-[11px] font-bold ' + (isDelayed ? 'bg-yellow-50 text-yellow-700' : 'bg-slate-100 text-slate-600') + ' px-1.5 py-0.5 rounded truncate shrink-0 max-w-[35%]">' + (task.office || '-') + '</span>';
+            contentHtml += footerCenterHtml;
+            contentHtml += '<span class="text-[11px] font-bold ' + (isDelayed ? 'text-yellow-800' : 'text-slate-500') + ' truncate shrink-0 max-w-[35%] text-right ml-auto">👤 ' + (task.salesperson || '-') + '</span></footer></div>';
+            
+            cardHtml = thumbHtml + contentHtml;
           }
           
-          let contentHtml = '';
-          contentHtml += '<div class="flex-1 flex flex-col min-w-0 p-2.5">';
-          contentHtml += '<header class="text-[11px] text-slate-500 mb-1 flex justify-between items-center font-medium shrink-0 gap-1">';
-          contentHtml += '<div class="flex items-center min-w-0 ' + (isDelayed ? 'text-yellow-800' : 'text-slate-800') + '">' + getIconSvg(task.type, task.equipment) + '<span class="font-black text-[13px] truncate leading-tight">' + (task.client || '-') + '</span></div>';
-          contentHtml += '<span class="font-bold tracking-tighter leading-none shrink-0 ' + (isDelayed ? 'text-yellow-700' : 'text-slate-500') + '">' + dIcon + fDate + '</span></header>';
-          contentHtml += '<div class="text-[13px] font-bold ' + (isDelayed ? 'text-yellow-900' : 'text-slate-700') + ' mb-1.5 line-clamp-2 flex-1">' + (task.site || '-') + '</div>';
-          contentHtml += '<footer class="flex items-center justify-between shrink-0 border-t ' + (isDelayed ? 'border-yellow-200' : 'border-slate-100') + ' pt-1 mt-auto w-full gap-1">';
-          contentHtml += '<span class="text-[11px] font-bold ' + (isDelayed ? 'bg-yellow-50 text-yellow-700' : 'bg-slate-100 text-slate-600') + ' px-1.5 py-0.5 rounded truncate shrink-0 max-w-[35%]">' + (task.office || '-') + '</span>';
-          contentHtml += footerCenterHtml;
-          contentHtml += '<span class="text-[11px] font-bold ' + (isDelayed ? 'text-yellow-800' : 'text-slate-500') + ' truncate shrink-0 max-w-[35%] text-right ml-auto">👤 ' + (task.salesperson || '-') + '</span></footer></div>';
-          
-          cardHtml = thumbHtml + contentHtml;
-        }
-        
-        card.innerHTML = cardHtml;
-        card.addEventListener('click', () => openDetailModal(task)); 
-        card.addEventListener('dragstart', (e) => { 
-          e.dataTransfer.setData('taskId', task.id); 
-          setTimeout(() => card.classList.add('opacity-40'), 0); 
-        }); 
-        card.addEventListener('dragend', () => card.classList.remove('opacity-40')); 
-        const tList = zone.querySelector('.task-list');
-        if(tList) tList.appendChild(card);
+          card.innerHTML = cardHtml;
+          card.addEventListener('click', () => openDetailModal(task)); 
+          card.addEventListener('dragstart', (e) => { 
+            e.dataTransfer.setData('taskId', task.id); 
+            setTimeout(() => card.classList.add('opacity-40'), 0); 
+          }); 
+          card.addEventListener('dragend', () => card.classList.remove('opacity-40')); 
+          const tList = zone.querySelector('.task-list');
+          if(tList) tList.appendChild(card);
+        });
       }); 
       updateSearchButtonState();
     }
@@ -1656,20 +1666,7 @@
           window.handleDrop(e.dataTransfer.getData('taskId'), zone.getAttribute('data-status'));
         });
       });
-      const cSide = document.getElementById('collapsed-sidebar');
-      if(cSide) {
-        cSide.addEventListener('dragover', (e) => { 
-          e.preventDefault(); 
-          if (!window.isSidebarOpen) window.toggleSidebar(); 
-        });
       }
-    }
-
-    window.toggleSidebar = function() {
-      window.isSidebarOpen = !window.isSidebarOpen;
-      document.getElementById('collapsed-sidebar').classList.toggle('hidden', window.isSidebarOpen);
-      document.getElementById('expanded-sidebar').classList.toggle('hidden', !window.isSidebarOpen);
-    }
 
     function loadStatusDescriptions() {
       const descs = window.globalStatusDescriptions; 
@@ -2103,7 +2100,7 @@
     // --- Calendar Views ---
     window.switchView = function(view) {
       window.currentView = view;
-      ['kanban', 'calendar', 'logs'].forEach(v => {
+      ['kanban', 'shared', 'calendar', 'logs'].forEach(v => {
         const vEl = document.getElementById('view-' + v);
         if(vEl) vEl.classList.toggle('hidden', v !== view);
         
