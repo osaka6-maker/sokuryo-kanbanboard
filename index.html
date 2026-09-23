@@ -119,6 +119,218 @@
       pointer-events: none;
       filter: grayscale(100%);
     }
+    /* =========================================================
+   Googleスタイル（Material Design）リデザイン用 上書きCSS
+   ========================================================= */
+
+/* =========================================================
+   【1】フォントのインポート
+   ========================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+
+/* =========================================================
+   【2】全画面テキストの現代化（一括適用）
+   ========================================================= */
+body {
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif !important;
+  background-color: #F8FAFC !important;
+  font-weight: 400 !important;
+}
+
+* {
+  font-variant-emoji: text !important;
+}
+
+/* =========================================================
+   【3】文字の太さと色のメリハリ
+   ========================================================= */
+header h1 {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+h2, h3, h4, h5, h6, 
+.task-list article span.text-\[13px\], 
+#detail-title-main, 
+#detail-status, 
+.status-desc,
+th {
+  font-weight: 700 !important;
+  color: #0F172A !important; 
+}
+
+.task-list article header > span,
+.task-list article footer > span.text-right,
+.task-list article .text-\[11px\],
+label,
+#detail-subtitle,
+#detail-date,
+td,
+.text-xs.text-slate-500 {
+  font-weight: 500 !important; 
+  color: #334155 !important;
+}
+
+/* =========================================================
+   【4】ヘッダーとプルダウンの視認性確保
+   ========================================================= */
+header nav button,
+header nav select,
+#btn-settings,
+#btn-logout {
+  color: #FFFFFF !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  font-weight: 500 !important;
+}
+header nav button:hover,
+header nav select:hover {
+  background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+select option {
+  color: #1E293B !important;
+  background-color: #FFFFFF !important;
+}
+
+#btn-new-task {
+  background-color: #10B981 !important; 
+  color: #FFFFFF !important;
+  border: none !important;
+}
+#btn-new-task:hover { background-color: #059669 !important; }
+
+/* =========================================================
+   【5】絵文字の「完全削除」と「文字のみ」への置換
+   ========================================================= */
+#tab-kanban, #tab-shared, #tab-calendar, #tab-logs,
+#btn-new-task, #btn-settings, #btn-logout,
+#btn-edit-detail, #btn-toggle-check, #detail-btn-chat, #detail-btn-pj,
+#view-logs header h2 {
+  font-size: 0 !important; 
+}
+
+#sync-icon,
+#login-screen header,
+#detail-img-ph-1 span:first-child,
+#detail-img-ph-2 span:first-child,
+#task-form .text-slate-300,
+#detail-img-ph-3 span:first-child,
+#task-form .text-emerald-300,
+span[title="測量日から2週間超過"] {
+  display: none !important;
+}
+
+.bg-yellow-100.border-yellow-400.text-yellow-800 {
+  font-variant-emoji: text !important;
+}
+
+#tab-kanban::after, #tab-shared::after, #tab-calendar::after, #tab-logs::after,
+#btn-new-task::after, #btn-settings::after, #btn-logout::after,
+#btn-edit-detail::after, #btn-toggle-check::after, #detail-btn-chat::after, #detail-btn-pj::after,
+#view-logs header h2::after {
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif !important;
+  font-size: 14px !important;
+}
+
+#tab-kanban::after { content: 'カンバン'; font-weight: 700; color: inherit; }
+#tab-shared::after { content: '共有管理'; font-weight: 700; color: inherit; }
+#tab-calendar::after { content: 'カレンダー'; font-weight: 700; color: inherit; }
+#tab-logs::after { content: '更新ログ'; font-weight: 700; color: inherit; }
+#btn-new-task::after { content: '新規作成'; font-weight: 700; color: #FFFFFF !important; }
+#btn-settings::after { content: '設定'; font-weight: 600; font-size: 13px !important; color: #FFFFFF !important; }
+#btn-logout::after { content: 'ログアウト'; font-weight: 600; font-size: 13px !important; color: #FFFFFF !important; }
+#btn-edit-detail::after { content: '編集'; font-weight: 700; color: inherit; }
+#btn-toggle-check::after { content: '成果物チェックを開く'; font-weight: 700; color: inherit; }
+#detail-btn-chat::after { content: 'Googleチャット'; font-weight: 700; color: inherit; }
+#detail-btn-pj::after { content: 'PJ'; font-weight: 700; color: inherit; }
+#view-logs header h2::after { content: '操作・更新履歴 (リアルタイム)'; font-weight: 700; color: #0F172A; font-size: 18px !important; }
+
+#btn-toggle-search, #btn-apply-search, #btn-save-task, #btn-login-submit, #btn-save-settings {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+/* =========================================================
+   【6】工程グループごとの背景色設定
+   ========================================================= */
+#view-kanban > section, #view-kanban > aside, #view-kanban > aside > section, #view-shared > section {
+  border: none !important; box-shadow: none !important;
+}
+#view-kanban > section > div, #view-kanban > aside > section > div, #view-shared > section > div {
+  background-color: transparent !important; border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+#view-kanban > aside {
+  background-color: transparent !important;
+}
+
+/* ▽ カンバンタブの4グループ分け ▽ */
+section[data-status="予定"], section[data-status="測量前準備"] { background-color: #F1F5F9 !important; }
+section[data-status="点群処理中"], section[data-status="横断作成中"], section[data-status="成果作成中"], section[data-status="設計待"] { background-color: #E0F2FE !important; }
+section[data-status="確認待"], section[data-status="０円請求未"] { background-color: #F3E8FF !important; }
+section[data-status="まとめて提出"], section[data-status="共有移動未"] { background-color: #FCE7F3 !important; }
+
+/* ▽ 共有管理タブの3グループ独立分け ▽ */
+section[data-status="共有移動未"] { background-color: #FCE7F3 !important; }
+section[data-status="共有に移動済"] { background-color: #DCFCE7 !important; }
+section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
+
+/* =========================================================
+   【7】カードデザインとバッジの調整
+   ========================================================= */
+.task-list article {
+  background-color: #FFFFFF !important; 
+  border: 1px solid #E2E8F0 !important; 
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important; 
+  border-radius: 8px !important;
+}
+
+.task-list article.bg-yellow-100 {
+  background-color: #FEF9C3 !important; 
+  border: 1px solid #FACC15 !important; 
+}
+
+.count {
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+  width: 22px !important; height: 22px !important; border-radius: 50% !important; padding: 0 !important;
+  font-size: 12px !important; font-weight: 700 !important; background-color: rgba(0,0,0,0.06) !important; color: #334155 !important;
+}
+
+/* =========================================================
+   【8】★ 修正：ラベルの文字改行防止 ＋ 項目の頭揃え（固定幅の復元）
+   ========================================================= */
+/* 元のTailwindの幅（96px, 80px等）を強制的に復元し、文字が縮まないようにする */
+#detail-modal .w-24, #task-modal .w-24 {
+  width: 96px !important;
+  min-width: 96px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+#detail-modal .w-20, #task-modal .w-20 {
+  width: 80px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+#detail-modal .w-16, #task-modal .w-16 {
+  width: 64px !important;
+  min-width: 64px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+#detail-modal .w-12, #task-modal .w-12 {
+  width: 48px !important;
+  min-width: 48px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
   </style>
 </head>
 <body class="bg-slate-100 font-sans h-screen flex flex-col overflow-hidden text-slate-800">
@@ -529,7 +741,7 @@
         </div>
         <div class="flex items-center gap-4">
           <button id="btn-toggle-check" onclick="toggleDeliverableCheck()" class="hidden text-sm text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-1.5 rounded-lg transition-colors items-center gap-2 font-bold shadow-sm">
-            📋 成果物チェックを開く
+            📋 成果物チェック
           </button>
           <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-800 text-3xl leading-none px-2 font-bold transition-colors">&times;</button>
         </div>
@@ -1805,16 +2017,48 @@
               footerCenterHtml += '<span class="text-[10px] font-bold text-red-600 bg-white border border-red-200 px-1 py-0.5 rounded shadow-sm shrink-0 whitespace-nowrap">' + daysPassedText + '経過</span></div>';
             }
             
+            // 標定点配置図のアップロード判定ロジック
+            let isHyouteiUploaded = false;
+            const rawHyoutei = task['標定点配置武蔵'];
+            if (rawHyoutei && typeof rawHyoutei === 'object') {
+              isHyouteiUploaded = rawHyoutei.isUploaded;
+            } else if (typeof rawHyoutei === 'string') {
+              isHyouteiUploaded = (rawHyoutei.startsWith('済') || rawHyoutei === 'true');
+            }
+
+            // バッジのクラス切り替え（文字を11pxにして潰れを解消・文字間隔広め）
+            const hyouteiBadgeClass = isHyouteiUploaded
+              ? 'bg-blue-600 text-white border border-blue-600 shadow-sm'
+              : 'bg-slate-50 text-slate-600 border border-dashed border-slate-400';
+
             let contentHtml = '';
-            contentHtml += '<div class="flex-1 flex flex-col min-w-0 p-2.5">';
+            contentHtml += '<div class="flex-1 flex flex-col min-w-0 p-2.5 h-full">';
             contentHtml += '<header class="text-[11px] text-slate-500 mb-1 flex justify-between items-center font-medium shrink-0 gap-1">';
             contentHtml += '<div class="flex items-center min-w-0 ' + (isDelayed ? 'text-yellow-800' : 'text-slate-800') + '">' + getIconSvg(task.type, task.equipment) + '<span class="font-black text-[13px] truncate leading-tight">' + (task.client || '-') + '</span></div>';
-            contentHtml += '<span class="font-bold tracking-tighter leading-none shrink-0 ' + (isDelayed ? 'text-yellow-700' : 'text-slate-500') + '">' + dIcon + fDate + '</span></header>';
-            contentHtml += '<div class="text-[13px] font-bold ' + (isDelayed ? 'text-yellow-900' : 'text-slate-700') + ' mb-1.5 line-clamp-2 flex-1">' + (task.site || '-') + '</div>';
-            contentHtml += '<footer class="flex items-center justify-between shrink-0 border-t ' + (isDelayed ? 'border-yellow-200' : 'border-slate-100') + ' pt-1 mt-auto w-full gap-1">';
-            contentHtml += '<span class="text-[11px] font-bold ' + (isDelayed ? 'bg-yellow-50 text-yellow-700' : 'bg-slate-100 text-slate-600') + ' px-1.5 py-0.5 rounded truncate shrink-0 max-w-[35%]">' + (task.office || '-') + '</span>';
+            contentHtml += '<span class="font-bold tracking-tighter leading-none shrink-0 ' + (isDelayed ? 'text-yellow-700' : 'text-slate-500') + '">' + fDate + '</span></header>';
+            
+            // ★ 現場名を1行表示（はみ出す場合は「...」）にするため、line-clamp-2 を truncate に変更し、高さ指定を解除
+            contentHtml += '<div class="text-[13px] font-bold ' + (isDelayed ? 'text-yellow-900' : 'text-slate-700') + ' mb-1.5 truncate flex-1">' + (task.site || '-') + '</div>';
+            
+            // 新しいフッターレイアウト
+            contentHtml += '<footer class="flex items-center shrink-0 border-t ' + (isDelayed ? 'border-yellow-200' : 'border-slate-100') + ' pt-1.5 mt-auto w-full gap-2">';
+            
+            // 左側：営業所 ＋ 営業マンを隣接させる
+            contentHtml += '<div class="flex items-center gap-1.5 min-w-0 flex-1">';
+            contentHtml += '<span class="text-[10px] font-bold ' + (isDelayed ? 'bg-yellow-50 text-yellow-700' : 'bg-slate-100 text-slate-600') + ' px-1.5 py-0.5 rounded truncate shrink-0 max-w-[55%]">' + (task.office || '-') + '</span>';
+            contentHtml += '<span class="text-[10px] font-bold ' + (isDelayed ? 'text-yellow-800' : 'text-slate-500') + ' truncate shrink-0 max-w-[45%]">👤 ' + (task.salesperson || '-') + '</span>';
+            contentHtml += '</div>';
+
+            // 中央：設計待の日数など（既存の仕組みを維持）
             contentHtml += footerCenterHtml;
-            contentHtml += '<span class="text-[11px] font-bold ' + (isDelayed ? 'text-yellow-800' : 'text-slate-500') + ' truncate shrink-0 max-w-[35%] text-right ml-auto">👤 ' + (task.salesperson || '-') + '</span></footer></div>';
+
+            // 右側：標定点配置図バッジ（★ 共有管理タブ以外の場合のみ表示）
+            const isSharedView = zone.closest('#view-shared') !== null;
+            if (!isSharedView) {
+              contentHtml += '<span class="text-[11px] font-bold tracking-wider px-2 py-0.5 rounded shrink-0 ml-auto ' + hyouteiBadgeClass + '">標定点配置図</span>';
+            }
+            
+            contentHtml += '</footer></div>';
             
             cardHtml = thumbHtml + contentHtml;
           }
