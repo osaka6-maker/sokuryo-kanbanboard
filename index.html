@@ -331,6 +331,20 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
   white-space: nowrap !important;
   flex-shrink: 0 !important;
 }
+/* =========================================================
+   【9】リロード時のログイン画面チラつき完全防止
+   ========================================================= */
+/* JSが未ログインと判定して「show-login」クラスを付けるまで強制非表示にする */
+#login-screen:not(.show-login) {
+  display: none !important;
+}
+/* =========================================================
+   【9】標定点配置図バッジ（作成済）の視認性修正
+   ========================================================= */
+/* 補足テキストのグレー指定（#334155）を打ち消し、青背景時は強制的に白文字にする */
+.task-list article span.bg-blue-600 {
+  color: #FFFFFF !important;
+}
   </style>
 </head>
 <body class="bg-slate-100 font-sans h-screen flex flex-col overflow-hidden text-slate-800">
@@ -1181,7 +1195,7 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
   <!-- ================= JavaScript (Firebase連携版) ================= -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
@@ -1198,8 +1212,24 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    
+    // ★ Chromeのタブを閉じたときに自動ログアウト（セッションストレージに認証を保持）
+    setPersistence(auth, browserSessionPersistence).catch((err) => {
+      console.error("Persistence error:", err);
+    });
+
     const db = getFirestore(app);
     const storage = getStorage(app);
+
+    // ★ リロード時のログイン画面のチラつきを完全防止（CSSと連動）
+    if (sessionStorage.getItem('isLoggedIn') === 'true') {
+      const mainApp = document.getElementById('main-app');
+      if (mainApp) mainApp.classList.remove('hidden');
+    } else {
+      // 未ログイン状態ならログイン画面を表示させる
+      const loginScreen = document.getElementById('login-screen');
+      if (loginScreen) loginScreen.classList.add('show-login');
+    }
 
     window.ASSIGNEES = {
       design: ['ー', '桒名', '丸岡', '鈴木', '西山', '奥山', '平岡', '武井', '酒井', '金原'],
@@ -1247,6 +1277,7 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
         if (document.getElementById('user-display-name')) {
           document.getElementById('user-display-name').textContent = `👤 ${user.email}`;
         }
+        document.getElementById('login-screen').classList.remove('show-login');
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         
@@ -1255,6 +1286,7 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
       } else {
         window.currentUser = null;
         sessionStorage.removeItem('isLoggedIn');
+        document.getElementById('login-screen').classList.add('show-login');
         document.getElementById('login-screen').classList.remove('hidden');
         document.getElementById('main-app').classList.add('hidden');
       }
