@@ -1282,6 +1282,7 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
         document.getElementById('main-app').classList.remove('hidden');
         
         await loadMasterDataFromFirebase();
+        await loadUserNamesFromFirebase();
         setupRealtimeTasks();
       } else {
         window.currentUser = null;
@@ -1314,6 +1315,21 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
       signOut(auth);
     });
         // --- Firestore Data Fetching ---
+    window.userNamesMap = {};
+
+    async function loadUserNamesFromFirebase() {
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        window.userNamesMap = {};
+        snap.forEach(docSnap => {
+          const emailPrefix = docSnap.id.split('@')[0];
+          window.userNamesMap[emailPrefix] = docSnap.data().name;
+        });
+      } catch (e) {
+        console.error('User names load error:', e);
+      }
+    }
+
     async function loadMasterDataFromFirebase() {
       try {
         const snap = await getDoc(doc(db, 'settings', 'masterData'));
@@ -1536,6 +1552,10 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
     window.handleUploadCheck = async function(fieldName, isChecked) {
       if (!window.currentOpenTaskId) return;
       
+      // ① チェックされたユーザーのIDと名前を取得
+      const userPrefix = window.currentUser.email.split('@')[0];
+      const displayName = (window.userNamesMap && window.userNamesMap[userPrefix]) ? window.userNamesMap[userPrefix] : userPrefix;
+      
       let val = null;
       if (isChecked) {
         const now = new Date();
@@ -1543,7 +1563,7 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
         const hhmm = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
         val = {
           isUploaded: true,
-          user: window.currentUser.email.split('@')[0],
+          user: userPrefix,
           date: yyyymmdd,
           time: hhmm,
           timestamp: serverTimestamp() 
@@ -1552,9 +1572,35 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
         val = { isUploaded: false, user: '', date: '', time: '' };
       }
       
+      // ② アップロード項目と「各担当者」のプルダウン（データベースのフィールド名）の対応表
+      const autoAssignMap = {
+        '施工計画書': '施工計画',
+        '成果物ZIP': '成果作成',
+        '標定点配置武蔵': '標定点配置図',
+        '現況横断武蔵': '現況横断'
+      };
+
       try {
-        await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [fieldName]: val });
+        // ③ アップロード状況を更新するデータ
+        const updateData = { [fieldName]: val };
+        
+        // ④ 対応する項目がチェックされた場合、担当者も同時に更新する
+        let autoAssignedRole = null;
+        if (isChecked && autoAssignMap[fieldName]) {
+          autoAssignedRole = autoAssignMap[fieldName];
+          updateData[autoAssignedRole] = displayName; // Firebaseの担当者フィールドを上書き
+        }
+
+        await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), updateData);
         showToast('アップロード状況を更新しました');
+        
+        // ⑤ ログにも担当者自動割り当てを記録
+        if (autoAssignedRole) {
+          const t = window.tasks.find(x => x.id === window.currentOpenTaskId);
+          const tName = t ? (t.client || '') + ' ' + (t.site || '') : '-';
+          await window.recordLog(window.currentOpenTaskId, tName, '担当者自動更新', `${autoAssignedRole} -> ${displayName}`);
+          showToast(`${autoAssignedRole}の担当者を${displayName}さんに自動設定しました`);
+        }
       } catch(e) { showToast('更新失敗', 'error'); }
     };
 
@@ -1605,11 +1651,35 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
         const fileRef = ref(storage, 'tasks/' + window.currentOpenTaskId + '/' + dbField + '_' + Date.now() + '.webp');
         await uploadBytes(fileRef, webpBlob);
         const downloadUrl = await getDownloadURL(fileRef);
-        await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [dbField]: downloadUrl });
+        
+        // ① 更新するデータをまとめる（まずは画像のURL）
+        const updateData = { [dbField]: downloadUrl };
+        let autoAssignedRole = null;
+        let displayName = '';
+        
+        // ② 伝票画像（index === 3）がアップロードされた場合、0円請求の担当者を自動設定する
+        if (index === 3) {
+          autoAssignedRole = '０円請求';
+          const userPrefix = window.currentUser.email.split('@')[0];
+          // Firebaseから取得済みの名前一覧から自分の表示名を取り出す
+          displayName = (window.userNamesMap && window.userNamesMap[userPrefix]) ? window.userNamesMap[userPrefix] : userPrefix;
+          updateData[autoAssignedRole] = displayName;
+        }
+
+        // ③ 画像URLと担当者を同時にFirebaseへ保存
+        await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), updateData);
+        
         const t = window.tasks.find(x => x.id === window.currentOpenTaskId);
         const tName = t ? (t.client || '') + ' ' + (t.site || '') : '-';
         await window.recordLog(window.currentOpenTaskId, tName, '画像保存', dbField);
         showToast('画像を保存しました');
+        
+        // ④ 担当者自動更新が行われた場合、ログと画面通知（トースト）を出す
+        if (autoAssignedRole) {
+          await window.recordLog(window.currentOpenTaskId, tName, '担当者自動更新', `${autoAssignedRole} -> ${displayName}`);
+          showToast(`${autoAssignedRole}の担当者を${displayName}さんに自動設定しました`);
+        }
+        
       } catch (err) {
         showToast('保存失敗', 'error');
       } finally {
@@ -2310,11 +2380,24 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
         // オブジェクトと文字列の両対応ロジック
         if (rawVal && typeof rawVal === 'object') {
           isChecked = rawVal.isUploaded;
-          if (isChecked && rawVal.user) text = (rawVal.user + ' ' + (rawVal.date || '') + ' ' + (rawVal.time || '')).trim();
+          if (isChecked && rawVal.user) {
+            // ★ window.userNamesMap から取得。取れなければ rawVal.user をそのまま使う
+            const displayName = (window.userNamesMap && window.userNamesMap[rawVal.user]) ? window.userNamesMap[rawVal.user] : rawVal.user;
+            const dateTimeStr = ((rawVal.date || '') + ' ' + (rawVal.time || '')).trim();
+            text = dateTimeStr ? (displayName + ' ｜ ' + dateTimeStr) : displayName;
+          }
         } else if (typeof rawVal === 'string') {
           isChecked = (rawVal.startsWith('済') || rawVal === 'true');
           if (isChecked && rawVal.replace('済', '').trim().length > 0) {
             text = rawVal.replace(/^済\s*/, '').replace(/^\(/, '').replace(/\)$/, '');
+            if (window.userNamesMap) {
+              for (const [prefix, name] of Object.entries(window.userNamesMap)) {
+                if (text.includes(prefix)) {
+                  text = text.replace(new RegExp(prefix + '\\s*'), name + ' ｜ ');
+                  break;
+                }
+              }
+            }
           }
         }
 
