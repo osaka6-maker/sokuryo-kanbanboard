@@ -5,7 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>測量DB カンバンボード</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Material Icons の読み込み -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <style>
+    /* ToDo用追加スタイル */
+    .todo-completed .todo-text { text-decoration: line-through; color: #94a3b8; }
+    .todo-item.dragging { opacity: 0.5; background-color: #f8fafc; }
+    .todo-list.drag-over { background-color: #f1f5f9; }
+    .material-icons-outlined { font-size: 20px; line-height: 1; }
+
     .hidden {
       display: none !important;
     }
@@ -339,12 +347,23 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
   display: none !important;
 }
 /* =========================================================
-   【9】標定点配置図バッジ（作成済）の視認性修正
-   ========================================================= */
-/* 補足テキストのグレー指定（#334155）を打ち消し、青背景時は強制的に白文字にする */
-.task-list article span.bg-blue-600 {
-  color: #FFFFFF !important;
-}
+    【9】標定点配置図バッジ（作成済）の視認性修正
+    ========================================================= */
+    .task-list article span.bg-blue-600 { color: #FFFFFF !important; }
+
+    /* =========================================================
+    【10】タスク（ToDo）用の追加スタイル
+    ========================================================= */
+    .task-checkbox { appearance: none; width: 18px; height: 18px; border: 1.5px solid #94a3b8; border-radius: 50%; cursor: pointer; position: relative; transition: all 0.1s ease; margin-top: 2px; }
+    .task-checkbox:hover { background-color: #f1f5f9; }
+    .task-checkbox:checked { border-color: #3b82f6; }
+    .task-checkbox:checked::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; background-color: #3b82f6; border-radius: 50%; }
+    .todo-item.dragging { opacity: 0.4; background-color: #f1f5f9; border: 1px dashed #94a3b8; }
+    .task-column.drag-over { background-color: #f8fafc; box-shadow: inset 0 0 0 2px #bfdbfe; }
+    .completed-section.open .completed-list { display: grid; }
+    .completed-section:not(.open) .completed-list { display: none; }
+    .completed-section.open .toggle-icon { transform: rotate(90deg); }
+    .auto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
   </style>
 </head>
 <body class="bg-slate-100 font-sans h-screen flex flex-col overflow-hidden text-slate-800">
@@ -399,6 +418,8 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
       <div class="flex gap-1 ml-2">
         <button id="tab-kanban" onclick="switchView('kanban')" class="px-5 py-2 bg-slate-50 border-t border-l border-r border-slate-300 rounded-t-lg font-bold text-blue-700 relative top-[1px] shadow-sm z-10 transition-colors cursor-pointer">📋 カンバン</button>
         <button id="tab-shared" onclick="switchView('shared')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">📁 共有管理</button>
+      <!-- ★新規追加：タスクタブ -->
+        <button id="tab-tasks" onclick="switchView('tasks')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">タスク</button>
         <button id="tab-calendar" onclick="switchView('calendar')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">📅 カレンダー</button>
         <button id="tab-logs" onclick="switchView('logs')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">📜 更新ログ</button>
       </div>
@@ -709,6 +730,11 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
         </div>
       </div>
 
+      <!-- ===== ★新規追加: タスク表示 ===== -->
+      <div id="view-tasks" class="hidden flex h-full divide-x divide-slate-200 pb-2 min-h-0">
+        <!-- JSで担当者ごとのカラムを動的に生成します -->
+      </div>
+
       <!-- ===== 3. 更新ログ表示 ===== -->
       <div id="view-logs" class="hidden flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <header class="flex justify-between items-center px-6 py-3 bg-slate-100 border-b border-slate-200 shrink-0">
@@ -735,11 +761,57 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
     </main>
   </div>
 
-  <!-- ================= 案件詳細モーダル (画像アップロード機能付き) ================= -->
-  <section id="detail-modal" class="hidden fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
-    <article id="detail-article" class="bg-white rounded-2xl w-full max-w-[1000px] shadow-2xl flex flex-col relative select-text overflow-hidden transition-all duration-300" style="max-height: 95vh;">
+  <!-- ================= 案件詳細モーダル ================= -->
+  <section id="detail-modal" class="hidden fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-x-auto" role="dialog" aria-modal="true">
+    <!-- 完全に分離した2つのカードを並べるラッパー -->
+    <div class="flex gap-4 h-full max-h-[95vh] w-max items-stretch mx-auto my-auto transition-all duration-300">
       
-      <!-- ヘッダー -->
+      <!-- 【独立エリア】左側：案件タスク (ToDo) -->
+      <aside id="todo-panel" class="w-[320px] bg-white rounded-2xl shadow-2xl flex flex-col shrink-0 overflow-hidden border border-slate-200 relative">
+        <header class="px-5 py-4 border-b border-slate-200 shrink-0 flex justify-between items-center bg-white">
+          <h3 class="font-bold text-slate-800 text-[15px]">案件タスク</h3>
+        </header>
+        <div class="px-3 py-2 shrink-0">
+          <button id="btn-show-todo-form" class="w-full flex items-center gap-3 px-2 py-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-600 font-medium group">
+            <span class="material-icons-outlined text-slate-400 group-hover:text-blue-600 transition-colors">add</span>
+            <span class="text-[13px] group-hover:text-blue-600 transition-colors">タスクを追加</span>
+          </button>
+        </div>
+        <!-- 入力フォーム（複数担当者対応） -->
+          <div id="todo-edit-form" class="hidden absolute top-[110px] left-3 right-3 bg-white border border-blue-400 shadow-lg rounded-lg p-3 z-30 flex flex-col gap-3">
+            <input type="hidden" id="form-todo-id">
+            <input type="text" id="form-todo-title" placeholder="タスクを入力" class="w-full border-b border-transparent focus:border-blue-500 px-1 py-1 text-[13px] font-bold outline-none text-slate-800 bg-slate-50 focus:bg-white rounded transition-colors">
+            <div class="flex items-center gap-2">
+              <div class="relative w-full max-w-[130px]">
+                <span class="material-icons-outlined absolute left-2 top-[6px] text-slate-400" style="font-size: 15px;">calendar_today</span>
+                <input type="date" id="form-todo-date" class="w-full border border-slate-200 rounded p-1.5 pl-7 text-[11px] outline-none focus:border-blue-500 bg-white text-slate-600 font-medium">
+              </div>
+            </div>
+            <!-- 複数担当者選択エリア -->
+            <div class="border border-slate-200 rounded p-2 bg-slate-50">
+              <span class="text-[10px] font-bold text-slate-500 block mb-1.5">担当者（複数選択可）</span>
+              <div id="form-todo-assignees" class="flex flex-wrap gap-x-3 gap-y-2">
+                <!-- JSでチェックボックス一覧を展開 -->
+              </div>
+            </div>
+            <div class="flex justify-between items-center mt-1">
+              <button id="btn-delete-todo" class="hidden text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50" title="タスクを削除"><span class="material-icons-outlined" style="font-size: 18px;">delete</span></button>
+              <div class="flex gap-2 ml-auto">
+                <button id="btn-cancel-todo" class="px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-200 rounded transition-colors">キャンセル</button>
+                <button id="btn-save-todo" class="px-4 py-1.5 text-[11px] font-bold bg-blue-600 text-white hover:bg-blue-700 rounded shadow-sm transition-colors">保存</button>
+              </div>
+            </div>
+          </div>
+        <!-- バックドロップ -->
+        <div id="todo-form-backdrop" class="hidden absolute inset-0 bg-slate-900/10 z-20"></div>
+        <!-- ToDoリスト -->
+        <ul id="todo-list-container" class="todo-list flex-1 overflow-y-auto px-3 pb-4 flex flex-col"></ul>
+      </aside>
+
+      <!-- 右側：既存のメインコンテンツ -->
+      <article id="detail-article" class="bg-white rounded-2xl w-[1000px] shadow-2xl flex flex-col relative select-text overflow-hidden transition-all duration-300">
+        
+        <!-- ヘッダー -->
       <header class="flex justify-between items-center px-6 py-3 border-b border-slate-100 shrink-0 select-none z-30 bg-white relative shadow-sm">
         <div class="flex items-center gap-3">
           <button id="btn-edit-detail" onclick="openEditFromDetail()" class="text-sm text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2 font-bold shadow-sm">
@@ -764,8 +836,8 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
       <!-- コンテンツエリア -->
       <div class="flex flex-1 overflow-hidden relative">
         
-        <!-- 左側：メインコンテンツ -->
-        <div class="flex-1 overflow-y-auto p-5 md:p-6 flex flex-col gap-4 bg-white min-w-[600px]">
+        <!-- メインコンテンツ (1000px固定で縮まないように設定) -->
+        <div class="w-[1000px] shrink-0 overflow-y-auto p-5 md:p-6 flex flex-col gap-4 bg-white">
           <!-- ヘッダー情報（お客様名など）と画像 -->
           <section class="flex flex-col md:flex-row justify-between items-start gap-6 border-b border-slate-100 pb-4">
             <div class="flex-1 flex flex-col gap-3">
@@ -942,7 +1014,8 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
 
       </div>
     </article>
-  </section>
+  </div>
+</section>
 
   <!-- ================= フル編集・新規作成モーダル ================= -->
   <section id="task-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -1160,8 +1233,20 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
       <header class="text-lg font-bold mb-4 flex items-center gap-2 shrink-0">⚙️ システム設定</header>
       
       <div class="flex-1 overflow-y-auto pr-2 space-y-6">
+        <!-- ★新規追加：タスクタブ表示設定 -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h3 class="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+            <span class="material-icons-outlined text-slate-500" style="font-size: 18px;">view_column</span>
+            タスクタブの表示担当者設定
+          </h3>
+          <p class="text-xs text-slate-500 mb-4">タスクタブにカラムとして表示したい担当者を選択してください。（お使いのブラウザでのみ保存されます）</p>
+          <div id="settings-task-assignees" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <!-- JSでユーザー一覧を展開 -->
+          </div>
+        </div>
+
         <div>
-          <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">各ボードの説明文設定</h3>
+          <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1 mt-4">各ボードの説明文設定</h3>
           <p class="text-xs text-slate-500 mb-4">ボードタイトルの横に表示する説明文を自由に設定できます。</p>
           <div id="status-desc-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3"></div>
         </div>
@@ -2420,17 +2505,34 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
       const chkCont = document.getElementById('deliverable-check-container'); 
       const chkTitle = document.getElementById('deliverable-check-title'); 
       
-      let eqType = '';
-      if (task.equipment) {
-        if (task.equipment.indexOf('TLS') !== -1) eqType = 'TLS'; 
-        else if (task.equipment.indexOf('M400') !== -1 || task.equipment.indexOf('M600') !== -1) eqType = 'ULS';
+      // 機材が未設定、またはTLS以外の別機材（Hovermap等）の場合は、デフォルトでULSとして扱う
+      let eqType = 'ULS'; 
+      if (task.equipment && task.equipment.indexOf('TLS') !== -1) {
+        eqType = 'TLS';
       }
-      const ministryType = task.ministry || '民間'; 
-      const surveyType = task.type || '起工'; 
+      // 余計な空白が入っている場合を考慮して trim() で取り除く
+      const ministryType = (task.ministry || '民間').trim(); 
+      const surveyType = (task.type || '起工').trim();
+      const baseSurveyType = surveyType.replace('測量', '');
+      
       let targetChecks = [];
       if (eqType) {
-        const judgeKey = ministryType + '_' + eqType + '_' + surveyType;
-        targetChecks = (window.masterData.checkMaster || []).filter(c => c.key === judgeKey);
+        targetChecks = (window.masterData.checkMaster || []).filter(c => {
+          if (!c.key) return false;
+          return c.key.indexOf(ministryType) !== -1 && 
+                 c.key.indexOf(eqType) !== -1 && 
+                 c.key.indexOf(baseSurveyType) !== -1;
+        });
+
+        // ★追加: 国交省や農水省で専用のリストが登録されていない場合は、「民間」のリストを代替表示する
+        if (targetChecks.length === 0 && ministryType !== '民間') {
+          targetChecks = (window.masterData.checkMaster || []).filter(c => {
+            if (!c.key) return false;
+            return c.key.indexOf('民間') !== -1 && 
+                   c.key.indexOf(eqType) !== -1 && 
+                   c.key.indexOf(baseSurveyType) !== -1;
+          });
+        }
       }
       
       if (targetChecks.length === 0) {
@@ -2505,9 +2607,14 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
       if(panel && article) {
         panel.classList.remove('w-[420px]', 'opacity-100'); 
         panel.classList.add('w-0', 'opacity-0'); 
-        article.classList.remove('max-w-[1420px]'); 
-        article.classList.add('max-w-[1000px]');
+        article.classList.remove('w-[1420px]', 'max-w-[1420px]'); 
+        article.classList.add('w-[1000px]', 'max-w-[1000px]');
       }
+      if (currentTodoUnsubscribe) {
+        currentTodoUnsubscribe();
+        currentTodoUnsubscribe = null;
+      }
+      closeTodoForm();
     }
 
     window.toggleDeliverableCheck = function() {
@@ -2516,16 +2623,16 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
       if(!panel || !article) return;
       
       if (panel.classList.contains('w-0')) { 
-        article.classList.remove('max-w-[1000px]'); 
-        article.classList.add('max-w-[1420px]'); 
+        article.classList.remove('w-[1000px]', 'max-w-[1000px]'); 
+        article.classList.add('w-[1420px]', 'max-w-[1420px]'); 
         panel.classList.remove('w-0', 'opacity-0'); 
         panel.classList.add('w-[420px]', 'opacity-100'); 
       } else { 
         panel.classList.remove('w-[420px]', 'opacity-100'); 
         panel.classList.add('w-0', 'opacity-0'); 
         setTimeout(() => { 
-          article.classList.remove('max-w-[1420px]'); 
-          article.classList.add('max-w-[1000px]'); 
+          article.classList.remove('w-[1420px]', 'max-w-[1420px]'); 
+          article.classList.add('w-[1000px]', 'max-w-[1000px]'); 
         }, 300); 
       }
     }
@@ -2789,10 +2896,445 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
       clearTimeout(toastTimeout);
       
       toastTimeout = setTimeout(() => { 
-        toast.classList.add('translate-y-20', 'opacity-0'); 
-        setTimeout(() => toast.classList.add('hidden'), 300); 
-      }, 3000);
-    }
+          toast.classList.add('translate-y-20', 'opacity-0'); 
+          setTimeout(() => toast.classList.add('hidden'), 300); 
+        }, 3000);
+      }
+
+      // ==========================================
+      // ToDo機能のロジック
+      // ==========================================
+      let currentTodoUnsubscribe = null;
+      window.allTodos = []; // 全タスクデータを保持
+
+      // ====== タブ切り替えの拡張 ======
+      window.switchView = function(view) {
+        window.currentView = view;
+        ['kanban', 'shared', 'tasks', 'calendar', 'logs'].forEach(v => {
+          const vEl = document.getElementById('view-' + v);
+          if(vEl) vEl.classList.toggle('hidden', v !== view);
+          
+          const tEl = document.getElementById('tab-' + v);
+          if(tEl) {
+            // アクティブタブのスタイル
+            if (v === view) {
+              tEl.className = "px-5 py-2 bg-white border-t border-l border-r border-slate-300 rounded-t-lg font-bold text-blue-700 relative top-[1px] shadow-sm z-10 transition-colors cursor-pointer";
+            } else {
+              tEl.className = "px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer";
+            }
+          }
+        });
+        
+        if (view === 'logs') window.loadLogs();
+        else if (view === 'tasks') renderTasksTab();
+        else window.updateCurrentView();
+      }
+
+      // ====== アプリ起動時に全ToDoを監視 ======
+      function setupRealtimeTodos() {
+        const q = query(collection(db, 'todos'), orderBy('createdAt', 'desc'));
+        onSnapshot(q, (snapshot) => {
+          window.allTodos = [];
+          snapshot.forEach(docSnap => {
+            window.allTodos.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          // 開いている画面に合わせて再描画
+          if (window.currentView === 'tasks') renderTasksTab();
+          if (window.currentOpenTaskId) loadTodosForTask(window.currentOpenTaskId);
+        });
+      }
+
+      // ログイン後に呼び出し
+      const originalAuthChanged = onAuthStateChanged;
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          window.currentUser = user;
+          sessionStorage.setItem('isLoggedIn', 'true');
+          sessionStorage.setItem('userName', user.email);
+          sessionStorage.setItem('userRole', '編集者');
+          document.getElementById('login-screen').classList.add('hidden');
+          document.getElementById('main-app').classList.remove('hidden');
+          
+          await loadMasterDataFromFirebase();
+          await loadUserNamesFromFirebase(); // ← これが終わるのを待ってから下を実行する
+          
+          // ユーザー名マップが取得できたらプルダウンや設定画面を初期化する
+          initTaskSettings();   
+          populateTodoAssignees(); 
+          
+          setupRealtimeTasks();
+          setupRealtimeTodos(); 
+        } else {
+          document.getElementById('login-screen').classList.remove('hidden');
+          document.getElementById('main-app').classList.add('hidden');
+        }
+      });
+
+      // ====== 案件詳細モーダル用 ======
+      const originalOpenDetailModal = window.openDetailModal;
+      window.openDetailModal = function(task) {
+        originalOpenDetailModal(task);
+        loadTodosForTask(task.id);
+        populateTodoAssignees(null); // モーダル内のフォーム用
+      };
+
+      const originalCloseDetailModal = window.closeDetailModal;
+      window.closeDetailModal = function() {
+        originalCloseDetailModal();
+        closeTodoForm();
+      };
+
+      // 複数選択チェックボックスの生成
+      function populateTodoAssignees(selectedArray) {
+        const container = document.getElementById('form-todo-assignees');
+        if (!container) return;
+        let html = '';
+        const selected = selectedArray || [];
+        if (window.userNamesMap) {
+          for (const [emailPrefix, name] of Object.entries(window.userNamesMap)) {
+            const isChecked = selected.includes(emailPrefix) ? 'checked' : '';
+            html += `<label class="flex items-center gap-1 text-[11px] font-bold text-slate-700 cursor-pointer">
+                      <input type="checkbox" value="${emailPrefix}" ${isChecked} class="todo-assignee-cb w-3 h-3 text-blue-600">
+                      ${name}
+                    </label>`;
+          }
+        }
+        container.innerHTML = html;
+      }
+
+      // 詳細モーダル用ToDoリストの描画
+      function loadTodosForTask(taskId) {
+        const container = document.getElementById('todo-list-container');
+        if(!container) return;
+        const taskTodos = window.allTodos.filter(t => t.taskId === taskId).sort((a,b) => a.order - b.order);
+
+        if (taskTodos.length === 0) {
+          container.innerHTML = '<div class="text-center text-[11px] text-slate-400 mt-6">タスクはありません</div>';
+          return;
+        }
+
+        container.innerHTML = '';
+        taskTodos.forEach(todo => {
+          const li = document.createElement('li');
+          li.className = `todo-item relative py-3 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 transition-colors ${todo.isCompleted ? 'todo-completed opacity-60 bg-slate-50' : 'hover:bg-slate-50 cursor-pointer'}`;
+          
+          // 担当者表示の生成
+          let assigneesHtml = '';
+          const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
+          if (assignees.length > 0) {
+            assigneesHtml += `<span class="flex items-center gap-1">`;
+            // ★ window.userNamesMap が存在するかチェックしてから変換する
+            const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
+            assigneesHtml += `<span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}`;
+            if(assignees.length > 1) {
+              assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 1} 名">+${assignees.length - 1}</span>`;
+            }
+            assigneesHtml += `</span>`;
+          }
+
+          let dateHtml = '';
+          if (todo.dueDate) {
+            const d = new Date(todo.dueDate);
+            dateHtml = `<span class="flex items-center gap-1 ${!todo.isCompleted && new Date() > d ? 'text-red-500' : ''}"><span class="material-icons-outlined" style="font-size: 14px;">calendar_today</span>${d.getMonth()+1}/${d.getDate()}</span>`;
+          }
+
+          li.innerHTML = `
+            <div class="pt-0.5">
+              <input type="checkbox" ${todo.isCompleted ? 'checked' : ''} onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
+            </div>
+            <div class="flex-1 min-w-0 flex flex-col" onclick="openTodoEditForm('${todo.id}')">
+              <span class="text-[13px] font-medium text-slate-700 leading-snug ${todo.isCompleted ? 'line-through' : ''}">${todo.title}</span>
+              <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-1">
+                ${assigneesHtml}
+                ${dateHtml}
+              </div>
+            </div>
+          `;
+          container.appendChild(li);
+        });
+      }
+
+      // 詳細モーダル用：フォーム開閉
+      const btnShowTodo = document.getElementById('btn-show-todo-form');
+      const todoForm = document.getElementById('todo-edit-form');
+      const todoBackdrop = document.getElementById('todo-form-backdrop');
+      const btnCancelTodo = document.getElementById('btn-cancel-todo');
+      const btnSaveTodo = document.getElementById('btn-save-todo');
+      const btnDeleteTodo = document.getElementById('btn-delete-todo');
+
+      if(btnShowTodo) {
+        btnShowTodo.addEventListener('click', () => {
+          document.getElementById('form-todo-id').value = '';
+          document.getElementById('form-todo-title').value = '';
+          document.getElementById('form-todo-date').value = '';
+          populateTodoAssignees([]);
+          btnDeleteTodo.classList.add('hidden');
+          todoForm.classList.remove('hidden');
+          todoBackdrop.classList.remove('hidden');
+          document.getElementById('form-todo-title').focus();
+        });
+      }
+
+      window.openTodoEditForm = function(id) {
+        const todo = window.allTodos.find(t => t.id === id);
+        if(!todo) return;
+        document.getElementById('form-todo-id').value = id;
+        document.getElementById('form-todo-title').value = todo.title;
+        document.getElementById('form-todo-date').value = todo.dueDate || '';
+        const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
+        populateTodoAssignees(assignees);
+        
+        btnDeleteTodo.classList.remove('hidden');
+        todoForm.classList.remove('hidden');
+        todoBackdrop.classList.remove('hidden');
+        document.getElementById('form-todo-title').focus();
+      };
+
+      function closeTodoForm() {
+        if(todoForm) todoForm.classList.add('hidden');
+        if(todoBackdrop) todoBackdrop.classList.add('hidden');
+      }
+      if(btnCancelTodo) btnCancelTodo.addEventListener('click', closeTodoForm);
+      if(todoBackdrop) todoBackdrop.addEventListener('click', closeTodoForm);
+
+      // モーダルからの保存処理
+      if(btnSaveTodo) {
+        btnSaveTodo.addEventListener('click', async () => {
+          const title = document.getElementById('form-todo-title').value.trim();
+          if (!title) return;
+          const dueDate = document.getElementById('form-todo-date').value;
+          const todoId = document.getElementById('form-todo-id').value;
+          
+          const selectedAssignees = [];
+          document.querySelectorAll('.todo-assignee-cb:checked').forEach(cb => selectedAssignees.push(cb.value));
+
+          btnSaveTodo.disabled = true;
+          btnSaveTodo.innerHTML = '保存中...';
+          try {
+            if (todoId) {
+              await updateDoc(doc(db, 'todos', todoId), { title, assignees: selectedAssignees, dueDate });
+            } else {
+              const order = document.getElementById('todo-list-container').children.length;
+              await addDoc(collection(db, 'todos'), {
+                taskId: window.currentOpenTaskId,
+                title,
+                assignees: selectedAssignees,
+                dueDate,
+                isCompleted: false,
+                order: order,
+                createdAt: serverTimestamp()
+              });
+            }
+            closeTodoForm();
+          } catch(e) {
+            showToast('ToDoの保存に失敗', 'error');
+          } finally {
+            btnSaveTodo.disabled = false;
+            btnSaveTodo.innerHTML = '保存';
+          }
+        });
+      }
+
+      if(btnDeleteTodo) {
+        btnDeleteTodo.addEventListener('click', async () => {
+          const todoId = document.getElementById('form-todo-id').value;
+          if(!todoId) return;
+          try {
+            await deleteDoc(doc(db, 'todos', todoId));
+            closeTodoForm();
+          } catch(e) { showToast('削除失敗', 'error'); }
+        });
+      }
+
+      window.toggleTodoComplete = async function(todoId, isCompleted) {
+        try { await updateDoc(doc(db, 'todos', todoId), { isCompleted }); } catch(e) {}
+      };
+
+
+      // ==========================================
+      // タスクタブ（一覧表示）のロジック
+      // ==========================================
+      let visibleAssignees = [];
+
+      function initTaskSettings() {
+        // ローカルストレージから表示設定を読み込み
+        const saved = localStorage.getItem('taskTabAssignees');
+        if (saved) {
+          visibleAssignees = JSON.parse(saved);
+        } else {
+          // デフォルトは自分だけ表示
+          if (window.currentUser) {
+            visibleAssignees = [window.currentUser.email.split('@')[0]];
+          }
+        }
+        renderTaskSettings();
+      }
+
+      function renderTaskSettings() {
+        const container = document.getElementById('settings-task-assignees');
+        if (!container || !window.userNamesMap) return;
+        let html = '';
+        for (const [emailPrefix, name] of Object.entries(window.userNamesMap)) {
+          const isChecked = visibleAssignees.includes(emailPrefix) ? 'checked' : '';
+          html += `<label class="flex items-center gap-2 cursor-pointer bg-slate-50 p-2 rounded border border-slate-200 hover:bg-blue-50 transition-colors">
+                    <input type="checkbox" value="${emailPrefix}" ${isChecked} class="settings-assignee-cb w-3.5 h-3.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                    <span class="text-[12px] font-bold text-slate-700">${name}</span>
+                  </label>`;
+        }
+        container.innerHTML = html;
+      }
+
+      // 設定モーダルの保存ボタンに連動させる
+      document.getElementById('btn-save-settings').addEventListener('click', () => {
+        // 元の説明文保存処理は既存のままなので、その前に担当者設定を保存
+        const cbs = document.querySelectorAll('.settings-assignee-cb:checked');
+        visibleAssignees = Array.from(cbs).map(cb => cb.value);
+        localStorage.setItem('taskTabAssignees', JSON.stringify(visibleAssignees));
+        
+        if(window.currentView === 'tasks') renderTasksTab(); // 再描画
+      });
+
+      window.renderTasksTab = function() {
+        const container = document.getElementById('view-tasks');
+        if (!container) return;
+        container.innerHTML = ''; // クリア
+
+        if (visibleAssignees.length === 0) {
+          container.innerHTML = '<div class="p-10 w-full text-center text-slate-400 font-bold">設定から表示する担当者を選択してください。</div>';
+          return;
+        }
+
+        visibleAssignees.forEach(assigneeId => {
+          const name = window.userNamesMap[assigneeId] || assigneeId;
+          const section = document.createElement('section');
+          section.className = "flex-1 flex flex-col h-full overflow-hidden px-4 task-column transition-all";
+          section.dataset.assignee = assigneeId;
+          
+          // その担当者に関わるタスクを抽出（未完了と完了）
+          const myTodos = window.allTodos.filter(t => {
+            const arr = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : []);
+            return arr.includes(assigneeId);
+          });
+          const activeTodos = myTodos.filter(t => !t.isCompleted);
+          const completedTodos = myTodos.filter(t => t.isCompleted);
+
+          let activeHtml = '';
+          if (activeTodos.length === 0) {
+            activeHtml = `<div class="p-4 text-center text-slate-400 text-[11px] font-bold">タスクはありません</div>`;
+          } else {
+            activeTodos.forEach(todo => {
+              // 関連案件情報の取得
+              const parentTask = window.tasks.find(pt => pt.id === todo.taskId);
+              let clientName = parentTask ? parentTask.client : '案件未設定';
+              let dateStr = parentTask && parentTask.date ? formatYYYYMMDD(parentTask.date) : '';
+              let isDelayed = false;
+              if (dateStr && dateStr !== '未定') {
+                const dateVal = new Date(dateStr.substring(0,4), parseInt(dateStr.substring(4,6))-1, dateStr.substring(6,8));
+                if ((new Date() - dateVal) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true;
+              }
+
+              // カードHTML
+              activeHtml += `
+                <article class="todo-item flex items-start gap-3 py-2.5 px-2.5 ${isDelayed ? 'bg-yellow-100 hover:bg-yellow-200 border-yellow-400' : 'bg-white hover:bg-slate-50 border-slate-200'} border rounded-lg shadow-sm transition-all cursor-pointer group" draggable="true" data-id="${todo.id}">
+                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5 ${isDelayed ? 'border-yellow-500' : ''}">
+                  <div class="flex-1 min-w-0 flex flex-col gap-2" onclick="openDetailModalFromId('${todo.taskId}')">
+                    <span class="text-[13px] font-bold ${isDelayed ? 'text-yellow-900' : 'text-slate-800'} leading-snug">${todo.title}</span>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                      <span class="${isDelayed ? 'text-yellow-800' : 'text-slate-500'} flex items-center gap-1 truncate max-w-[150px]">
+                        <span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}
+                      </span>
+                      ${dateStr ? `<span class="${isDelayed ? 'text-red-600 bg-red-50 px-1 font-bold' : 'text-slate-500'} flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">${isDelayed ? 'warning_amber' : 'event'}</span>${dateStr}</span>` : ''}
+                    </div>
+                  </div>
+                </article>
+              `;
+            });
+          }
+
+          let compHtml = '';
+          completedTodos.forEach(todo => {
+            const parentTask = window.tasks.find(pt => pt.id === todo.taskId);
+            let clientName = parentTask ? parentTask.client : '-';
+            compHtml += `
+              <article class="flex items-start gap-3 py-2.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60">
+                <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5">
+                <div class="flex-1 min-w-0 flex flex-col gap-1">
+                  <span class="text-[13px] font-bold text-slate-500 line-through leading-snug">${todo.title}</span>
+                  <div class="flex text-[11px] text-slate-400 gap-1"><span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}</div>
+                </div>
+              </article>
+            `;
+          });
+
+          section.innerHTML = `
+            <header class="py-3 shrink-0 flex justify-between items-center mb-1">
+              <div class="font-bold text-[15px] text-slate-800 flex items-center gap-2">${name}</div>
+            </header>
+            <div class="flex-1 overflow-y-auto pb-4">
+              <div class="auto-grid content-start mb-6 drop-target-list">
+                ${activeHtml}
+              </div>
+              <div class="completed-section">
+                <button class="flex items-center gap-2 text-[12px] font-bold text-slate-500 hover:text-slate-700 transition-colors py-2 px-1 w-full text-left" onclick="this.parentElement.classList.toggle('open')">
+                  <span class="material-icons-outlined toggle-icon transition-transform" style="font-size: 16px;">play_arrow</span>
+                  完了 (${completedTodos.length}件)
+                </button>
+                <div class="completed-list auto-grid mt-1 pt-2 border-t border-slate-100">
+                  ${compHtml}
+                </div>
+              </div>
+            </div>
+          `;
+          container.appendChild(section);
+        });
+
+        setupTaskTabDragAndDrop();
+      };
+
+      // タスクタブ用：担当者変更ドラッグ＆ドロップ
+      function setupTaskTabDragAndDrop() {
+        const columns = document.querySelectorAll('.task-column');
+        let draggedTodoEl = null;
+
+        document.querySelectorAll('.drop-target-list .todo-item').forEach(item => {
+          item.addEventListener('dragstart', (e) => {
+            draggedTodoEl = item;
+            setTimeout(() => item.classList.add('dragging'), 0);
+          });
+          item.addEventListener('dragend', () => {
+            if(draggedTodoEl) draggedTodoEl.classList.remove('dragging');
+            draggedTodoEl = null;
+            columns.forEach(col => col.classList.remove('drag-over'));
+          });
+        });
+
+        columns.forEach(column => {
+          column.addEventListener('dragover', (e) => { e.preventDefault(); column.classList.add('drag-over'); });
+          column.addEventListener('dragleave', () => { column.classList.remove('drag-over'); });
+          column.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            column.classList.remove('drag-over');
+            if (draggedTodoEl) {
+              const todoId = draggedTodoEl.dataset.id;
+              const targetAssignee = column.dataset.assignee;
+              const sourceAssignee = draggedTodoEl.closest('.task-column').dataset.assignee;
+              if (targetAssignee && targetAssignee !== sourceAssignee) {
+                // Firebaseのデータを更新 (配列内の担当者を入れ替える)
+                const todoData = window.allTodos.find(t => t.id === todoId);
+                if (todoData) {
+                  let assignees = Array.isArray(todoData.assignees) ? todoData.assignees : (todoData.assignee ? [todoData.assignee] : []);
+                  assignees = assignees.filter(a => a !== sourceAssignee); // 元の担当者を外す
+                  if (!assignees.includes(targetAssignee)) assignees.push(targetAssignee); // 新しい担当者を追加
+                  try {
+                    await updateDoc(doc(db, 'todos', todoId), { assignees });
+                    showToast('担当者を変更しました');
+                  } catch(err) { showToast('変更失敗', 'error'); }
+                }
+              }
+            }
+          });
+        });
+      }
   </script>
 </body>
 </html>
