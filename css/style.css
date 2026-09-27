@@ -203,57 +203,6 @@ select option {
 #btn-new-task:hover { background-color: #059669 !important; }
 
 /* =========================================================
-   【5】絵文字の「完全削除」と「文字のみ」への置換
-   ========================================================= */
-#tab-kanban, #tab-shared, #tab-calendar, #tab-logs,
-#btn-new-task, #btn-settings, #btn-logout,
-#btn-edit-detail, #btn-toggle-check, #detail-btn-chat, #detail-btn-pj,
-#view-logs header h2 {
-  font-size: 0 !important; 
-}
-
-#sync-icon,
-#login-screen header,
-#detail-img-ph-1 span:first-child,
-#detail-img-ph-2 span:first-child,
-#task-form .text-slate-300,
-#detail-img-ph-3 span:first-child,
-#task-form .text-emerald-300,
-span[title="測量日から2週間超過"] {
-  display: none !important;
-}
-
-.bg-yellow-100.border-yellow-400.text-yellow-800 {
-  font-variant-emoji: text !important;
-}
-
-#tab-kanban::after, #tab-shared::after, #tab-calendar::after, #tab-logs::after,
-#btn-new-task::after, #btn-settings::after, #btn-logout::after,
-#btn-edit-detail::after, #btn-toggle-check::after, #detail-btn-chat::after, #detail-btn-pj::after,
-#view-logs header h2::after {
-  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif !important;
-  font-size: 14px !important;
-}
-
-#tab-kanban::after { content: 'カンバン'; font-weight: 700; color: inherit; }
-#tab-shared::after { content: '共有管理'; font-weight: 700; color: inherit; }
-#tab-calendar::after { content: 'カレンダー'; font-weight: 700; color: inherit; }
-#tab-logs::after { content: '更新ログ'; font-weight: 700; color: inherit; }
-#btn-new-task::after { content: '新規作成'; font-weight: 700; color: #FFFFFF !important; }
-#btn-settings::after { content: '設定'; font-weight: 600; font-size: 13px !important; color: #FFFFFF !important; }
-#btn-logout::after { content: 'ログアウト'; font-weight: 600; font-size: 13px !important; color: #FFFFFF !important; }
-#btn-edit-detail::after { content: '編集'; font-weight: 700; color: inherit; }
-#btn-toggle-check::after { content: '成果物チェックを開く'; font-weight: 700; color: inherit; }
-#detail-btn-chat::after { content: 'Googleチャット'; font-weight: 700; color: inherit; }
-#detail-btn-pj::after { content: 'PJ'; font-weight: 700; color: inherit; }
-#view-logs header h2::after { content: '操作・更新履歴 (リアルタイム)'; font-weight: 700; color: #0F172A; font-size: 18px !important; }
-
-#btn-toggle-search, #btn-apply-search, #btn-save-task, #btn-login-submit, #btn-save-settings {
-  font-size: 14px !important;
-  font-weight: 600 !important;
-}
-
-/* =========================================================
    【6】工程グループごとの背景色設定
    ========================================================= */
 #view-kanban > section, #view-kanban > aside, #view-kanban > aside > section, #view-shared > section {
