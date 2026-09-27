@@ -1867,7 +1867,25 @@
       }
 
       window.toggleTodoComplete = async function(todoId, isCompleted) {
-        try { await updateDoc(doc(db, 'todos', todoId), { isCompleted }); } catch(e) {}
+        try {
+          const updateData = { isCompleted };
+          
+          if (isCompleted) {
+            // 完了になった場合は、今日の日付を YYYY/MM/DD 形式で記録する
+            const now = new Date();
+            const todayStr = now.getFullYear() + '/' + 
+                             String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+                             String(now.getDate()).padStart(2, '0');
+            updateData.completedAt = todayStr;
+          } else {
+            // 未完了に戻された場合は、完了日をクリアする
+            updateData.completedAt = "";
+          }
+
+          await updateDoc(doc(db, 'todos', todoId), updateData);
+        } catch(e) {
+          console.error("ToDoの完了状態の更新に失敗しました:", e);
+        }
       };
 
 
