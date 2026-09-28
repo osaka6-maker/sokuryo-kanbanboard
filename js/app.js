@@ -1935,118 +1935,97 @@
       window.renderTasksTab = function() {
         const container = document.getElementById('view-tasks');
         if (!container) return;
-        
-        let html = '';
-        
-        // ヘッダー部分（シンプルなタスク追加ボタン）
-        html += `
-          <div class="w-full px-4 py-3 flex justify-between items-center border-b border-slate-200 bg-white sticky top-0 z-10 shrink-0">
-            <h2 class="text-lg font-bold text-slate-800">タスク一覧</h2>
-            <button onclick="openGlobalTodoForm()" class="px-4 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded shadow-sm text-[13px] font-bold transition-colors">
-              タスクを追加
-            </button>
-          </div>
-        `;
-        
-        html += `<div class="flex-1 flex overflow-x-auto w-full pt-4">`;
+        container.innerHTML = ''; // クリア
 
         if (visibleAssignees.length === 0) {
-          html += '<div class="p-10 w-full text-center text-slate-400 font-bold">設定から表示する担当者を選択してください。</div>';
-        } else {
-          visibleAssignees.forEach(assigneeId => {
-            const name = window.userNamesMap[assigneeId] || assigneeId;
-            
-            const myTodos = window.allTodos.filter(t => {
-              const arr = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : []);
-              return arr.includes(assigneeId);
-            });
-            const activeTodos = myTodos.filter(t => !t.isCompleted);
-            const completedTodos = myTodos.filter(t => t.isCompleted);
+          container.innerHTML = '<div class="p-10 w-full text-center text-slate-400 font-bold">設定から表示する担当者を選択してください。</div>';
+          return;
+        }
 
-            let activeHtml = '';
-            if (activeTodos.length === 0) {
-              activeHtml = `<div class="p-4 text-center text-slate-400 text-[11px] font-bold">タスクはありません</div>`;
-            } else {
-              activeTodos.forEach(todo => {
-                const parentTask = window.tasks.find(pt => pt.id === todo.taskId);
-                let clientName = '';
-                let dateStr = '';
-                let isDelayed = false;
-                
-                if (parentTask) {
-                  clientName = parentTask.client || '-';
-                  dateStr = parentTask.date ? formatYYYYMMDD(parentTask.date) : '';
-                  if (dateStr && dateStr !== '未定') {
-                    const dateVal = new Date(dateStr.substring(0,4), parseInt(dateStr.substring(4,6))-1, dateStr.substring(6,8));
-                    if ((new Date() - dateVal) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true;
-                  }
-                }
+        visibleAssignees.forEach(assigneeId => {
+          const name = window.userNamesMap[assigneeId] || assigneeId;
+          const section = document.createElement('section');
+          section.className = "flex-1 flex flex-col h-full overflow-hidden px-4 task-column transition-all";
+          section.dataset.assignee = assigneeId;
+          
+          // その担当者に関わるタスクを抽出（未完了と完了）
+          const myTodos = window.allTodos.filter(t => {
+            const arr = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : []);
+            return arr.includes(assigneeId);
+          });
+          const activeTodos = myTodos.filter(t => !t.isCompleted);
+          const completedTodos = myTodos.filter(t => t.isCompleted);
 
-                // 改行コードをHTMLの <br> に変換
-                const displayTitle = todo.title.replace(/\n/g, '<br>');
-
-                // taskIdがあれば案件詳細を開き、なければグローバルフォーム(編集)を開く
-                const clickAction = todo.taskId ? `openDetailModalFromId('${todo.taskId}')` : `openGlobalTodoForm('${todo.id}')`;
-
-                activeHtml += `
-                  <article class="todo-item flex items-start gap-3 py-2.5 px-2.5 ${isDelayed ? 'bg-yellow-100 hover:bg-yellow-200 border-yellow-400' : 'bg-white hover:bg-slate-50 border-slate-200'} border rounded-lg shadow-sm transition-all cursor-pointer group" draggable="true" data-id="${todo.id}">
-                    <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5 ${isDelayed ? 'border-yellow-500' : ''}">
-                    <div class="flex-1 min-w-0 flex flex-col gap-2" onclick="${clickAction}">
-                      <span class="text-[13px] font-bold ${isDelayed ? 'text-yellow-900' : 'text-slate-800'} leading-snug">${displayTitle}</span>
-                      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                        ${clientName ? `<span class="${isDelayed ? 'text-yellow-800' : 'text-slate-500'} flex items-center gap-1 truncate max-w-[150px]"><span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}</span>` : ''}
-                        ${todo.dueDate ? `<span class="${isDelayed ? 'text-red-600 bg-red-50 px-1 font-bold' : 'text-slate-500'} flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">${isDelayed ? 'warning_amber' : 'event'}</span>${todo.dueDate}</span>` : ''}
-                      </div>
-                    </div>
-                  </article>
-                `;
-              });
-            }
-
-            let compHtml = '';
-            completedTodos.forEach(todo => {
+          let activeHtml = '';
+          if (activeTodos.length === 0) {
+            activeHtml = `<div class="p-4 text-center text-slate-400 text-[11px] font-bold">タスクはありません</div>`;
+          } else {
+            activeTodos.forEach(todo => {
+              // 関連案件情報の取得
               const parentTask = window.tasks.find(pt => pt.id === todo.taskId);
-              const clientName = parentTask ? parentTask.client : '';
-              const displayTitle = todo.title.replace(/\n/g, '<br>');
-              const clickAction = todo.taskId ? '' : `openGlobalTodoForm('${todo.id}')`;
-              
-              compHtml += `
-                <article class="flex items-start gap-3 py-2.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60">
-                  <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5">
-                  <div class="flex-1 min-w-0 flex flex-col gap-1" onclick="${clickAction}">
-                    <span class="text-[13px] font-bold text-slate-500 line-through leading-snug">${displayTitle}</span>
-                    ${clientName ? `<div class="flex text-[11px] text-slate-400 gap-1"><span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}</div>` : ''}
+              let clientName = parentTask ? parentTask.client : '案件未設定';
+              let dateStr = parentTask && parentTask.date ? formatYYYYMMDD(parentTask.date) : '';
+              let isDelayed = false;
+              if (dateStr && dateStr !== '未定') {
+                const dateVal = new Date(dateStr.substring(0,4), parseInt(dateStr.substring(4,6))-1, dateStr.substring(6,8));
+                if ((new Date() - dateVal) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true;
+              }
+
+              // カードHTML
+              activeHtml += `
+                <article class="todo-item flex items-start gap-3 py-2.5 px-2.5 ${isDelayed ? 'bg-yellow-100 hover:bg-yellow-200 border-yellow-400' : 'bg-white hover:bg-slate-50 border-slate-200'} border rounded-lg shadow-sm transition-all cursor-pointer group" draggable="true" data-id="${todo.id}">
+                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5 ${isDelayed ? 'border-yellow-500' : ''}">
+                  <div class="flex-1 min-w-0 flex flex-col gap-2" onclick="openDetailModalFromId('${todo.taskId}')">
+                    <span class="text-[13px] font-bold ${isDelayed ? 'text-yellow-900' : 'text-slate-800'} leading-snug">${todo.title}</span>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                      <span class="${isDelayed ? 'text-yellow-800' : 'text-slate-500'} flex items-center gap-1 truncate max-w-[150px]">
+                        <span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}
+                      </span>
+                      ${dateStr ? `<span class="${isDelayed ? 'text-red-600 bg-red-50 px-1 font-bold' : 'text-slate-500'} flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">${isDelayed ? 'warning_amber' : 'event'}</span>${dateStr}</span>` : ''}
+                    </div>
                   </div>
                 </article>
               `;
             });
+          }
 
-            html += `
-              <section class="flex-1 flex flex-col h-full overflow-hidden px-4 task-column transition-all min-w-[300px]" data-assignee="${assigneeId}">
-                <header class="py-3 shrink-0 flex justify-between items-center mb-1">
-                  <div class="font-bold text-[15px] text-slate-800 flex items-center gap-2">${name}</div>
-                </header>
-                <div class="flex-1 overflow-y-auto pb-4 pr-1">
-                  <div class="auto-grid content-start mb-6 drop-target-list">
-                    ${activeHtml}
-                  </div>
-                  <div class="completed-section">
-                    <button class="flex items-center gap-2 text-[12px] font-bold text-slate-500 hover:text-slate-700 transition-colors py-2 px-1 w-full text-left" onclick="this.parentElement.classList.toggle('open')">
-                      <span class="material-icons-outlined toggle-icon transition-transform" style="font-size: 16px;">play_arrow</span>
-                      完了 (${completedTodos.length}件)
-                    </button>
-                    <div class="completed-list auto-grid mt-1 pt-2 border-t border-slate-100">
-                      ${compHtml}
-                    </div>
-                  </div>
+          let compHtml = '';
+          completedTodos.forEach(todo => {
+            const parentTask = window.tasks.find(pt => pt.id === todo.taskId);
+            let clientName = parentTask ? parentTask.client : '-';
+            compHtml += `
+              <article class="flex items-start gap-3 py-2.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60">
+                <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5">
+                <div class="flex-1 min-w-0 flex flex-col gap-1">
+                  <span class="text-[13px] font-bold text-slate-500 line-through leading-snug">${todo.title}</span>
+                  <div class="flex text-[11px] text-slate-400 gap-1"><span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}</div>
                 </div>
-              </section>
+              </article>
             `;
           });
-        }
-        
-        html += `</div>`;
-        container.innerHTML = html;
+
+          section.innerHTML = `
+            <header class="py-3 shrink-0 flex justify-between items-center mb-1">
+              <div class="font-bold text-[15px] text-slate-800 flex items-center gap-2">${name}</div>
+            </header>
+            <div class="flex-1 overflow-y-auto pb-4">
+              <div class="auto-grid content-start mb-6 drop-target-list">
+                ${activeHtml}
+              </div>
+              <div class="completed-section">
+                <button class="flex items-center gap-2 text-[12px] font-bold text-slate-500 hover:text-slate-700 transition-colors py-2 px-1 w-full text-left" onclick="this.parentElement.classList.toggle('open')">
+                  <span class="material-icons-outlined toggle-icon transition-transform" style="font-size: 16px;">play_arrow</span>
+                  完了 (${completedTodos.length}件)
+                </button>
+                <div class="completed-list auto-grid mt-1 pt-2 border-t border-slate-100">
+                  ${compHtml}
+                </div>
+              </div>
+            </div>
+          `;
+          container.appendChild(section);
+        });
+
         setupTaskTabDragAndDrop();
       };
 
@@ -2092,141 +2071,5 @@
               }
             }
           });
-        });
-      }
-
-      // ==========================================
-      // タスク入力時のキーボードショートカット制御
-      // ==========================================
-      function setupTodoKeydown(textareaId, saveBtnId) {
-        const textarea = document.getElementById(textareaId);
-        if (!textarea) return;
-        textarea.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') {
-            if (e.altKey) {
-              // Alt + Enter で改行を挿入
-              e.preventDefault();
-              const start = this.selectionStart;
-              const end = this.selectionEnd;
-              this.value = this.value.substring(0, start) + "\n" + this.value.substring(end);
-              this.selectionStart = this.selectionEnd = start + 1;
-            } else if (!e.shiftKey && !e.ctrlKey) {
-              // Enter 単独で保存ボタンをクリックした扱いにし、デフォルトの改行を防ぐ
-              e.preventDefault();
-              document.getElementById(saveBtnId).click();
-            }
-          }
-        });
-      }
-
-      // 既存フォームと新規グローバルフォームの両方にキーボード制御を適用
-      setupTodoKeydown('form-todo-title', 'btn-save-todo');
-      setupTodoKeydown('g-todo-title', 'g-btn-save');
-
-      // ==========================================
-      // 共通タスク追加モーダル (独立タスク用) の処理
-      // ==========================================
-      window.openGlobalTodoForm = function(todoId = null) {
-        document.getElementById('global-todo-modal').classList.remove('hidden');
-        const titleEl = document.getElementById('g-todo-title-text');
-        const inputId = document.getElementById('g-todo-id');
-        const inputTitle = document.getElementById('g-todo-title');
-        const inputDate = document.getElementById('g-todo-date');
-        const btnDelete = document.getElementById('g-btn-delete');
-        
-        // 担当者チェックボックスの生成
-        const assigneesCont = document.getElementById('g-todo-assignees');
-        let assigneesHtml = '';
-        
-        if (todoId) {
-          // 既存タスクの編集モード
-          titleEl.textContent = 'タスクを編集';
-          btnDelete.classList.remove('hidden');
-          const todo = window.allTodos.find(t => t.id === todoId);
-          if (todo) {
-            inputId.value = todoId;
-            inputTitle.value = todo.title;
-            inputDate.value = todo.dueDate || '';
-            const selected = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
-            
-            for (const [emailPrefix, name] of Object.entries(window.userNamesMap)) {
-              const isChecked = selected.includes(emailPrefix) ? 'checked' : '';
-              assigneesHtml += `<label class="flex items-center gap-1 text-[11px] font-bold text-slate-700 cursor-pointer"><input type="checkbox" value="${emailPrefix}" ${isChecked} class="g-todo-assignee-cb w-3 h-3 text-blue-600">${name}</label>`;
-            }
-          }
-        } else {
-          // 完全新規モード
-          titleEl.textContent = 'タスクを追加';
-          btnDelete.classList.add('hidden');
-          inputId.value = '';
-          inputTitle.value = '';
-          // 期限のデフォルトを本日にする
-          const today = new Date();
-          inputDate.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-          
-          // 自分をデフォルトでチェック
-          const myPrefix = window.currentUser ? window.currentUser.email.split('@')[0] : '';
-          for (const [emailPrefix, name] of Object.entries(window.userNamesMap)) {
-            const isChecked = (emailPrefix === myPrefix) ? 'checked' : '';
-            assigneesHtml += `<label class="flex items-center gap-1 text-[11px] font-bold text-slate-700 cursor-pointer"><input type="checkbox" value="${emailPrefix}" ${isChecked} class="g-todo-assignee-cb w-3 h-3 text-blue-600">${name}</label>`;
-          }
-        }
-        assigneesCont.innerHTML = assigneesHtml;
-        
-        // 開いた瞬間にテキストエリアにフォーカスを当てる（すぐに文字が打てるように）
-        setTimeout(() => inputTitle.focus(), 100);
-      };
-
-      window.closeGlobalTodoForm = function() {
-        document.getElementById('global-todo-modal').classList.add('hidden');
-      };
-
-      const btnGlobalSave = document.getElementById('g-btn-save');
-      if (btnGlobalSave) {
-        btnGlobalSave.addEventListener('click', async () => {
-          const title = document.getElementById('g-todo-title').value.trim();
-          if (!title) return;
-          const dueDate = document.getElementById('g-todo-date').value;
-          const todoId = document.getElementById('g-todo-id').value;
-          
-          const selectedAssignees = [];
-          document.querySelectorAll('.g-todo-assignee-cb:checked').forEach(cb => selectedAssignees.push(cb.value));
-
-          btnGlobalSave.disabled = true;
-          btnGlobalSave.innerHTML = '保存中...';
-          try {
-            if (todoId) {
-              await updateDoc(doc(db, 'todos', todoId), { title, assignees: selectedAssignees, dueDate });
-            } else {
-              // 単独タスクとして追加（taskIdを持たせない）
-              await addDoc(collection(db, 'todos'), {
-                taskId: "", 
-                title,
-                assignees: selectedAssignees,
-                dueDate,
-                isCompleted: false,
-                order: 999,
-                createdAt: serverTimestamp()
-              });
-            }
-            closeGlobalTodoForm();
-          } catch(e) {
-            showToast('タスクの保存に失敗', 'error');
-          } finally {
-            btnGlobalSave.disabled = false;
-            btnGlobalSave.innerHTML = '保存';
-          }
-        });
-      }
-      
-      const btnGlobalDel = document.getElementById('g-btn-delete');
-      if (btnGlobalDel) {
-        btnGlobalDel.addEventListener('click', async () => {
-          const todoId = document.getElementById('g-todo-id').value;
-          if(!todoId) return;
-          try {
-            await deleteDoc(doc(db, 'todos', todoId));
-            closeGlobalTodoForm();
-          } catch(e) { showToast('削除失敗', 'error'); }
         });
       }
