@@ -185,7 +185,7 @@
             district: d['現場地区名'] || '',
             refPoint: d['電子基準点名'] || '',
             route: d['飛行ルート名'] || '',
-            dips: d['DIPS2.0登録'] || '',
+            dips: d['DIPS登録'] || '',
             ministry: d['管轄省庁'] || '',
             standard: d['社内規格値'] || '',
             mapUrl: d['現場位置'] || '',
@@ -527,7 +527,7 @@
         '管轄省庁': document.getElementById('fm-ministry').value,
         '社内規格値': document.getElementById('fm-standard').value,
         '飛行ルート名': document.getElementById('fm-route').value,
-        'DIPS2.0登録': document.getElementById('fm-dips').value,
+        'DIPS登録': document.getElementById('fm-dips').value,
         '電子基準点名': document.getElementById('fm-ref-point').value,
         '現場位置': document.getElementById('fm-mapUrl').value,
         '集合場所': document.getElementById('fm-meetUrl').value,
@@ -546,7 +546,7 @@
             'お客様名': 'client', '請求先名': 'billing', '現場名': 'site', '営業所': 'office',
             '営業マン': 'salesperson', '現場地区名': 'district', '事務所位置': 'officeLoc',
             '管轄省庁': 'ministry', '社内規格値': 'standard', '飛行ルート名': 'route',
-            'DIPS2.0登録': 'dips', '電子基準点名': 'refPoint', '現場位置': 'mapUrl',
+            'DIPS登録': 'dips', '電子基準点名': 'refPoint', '現場位置': 'mapUrl',
             '集合場所': 'meetUrl', 'PJ': 'pjUrl', 'Chat': 'chatUrl', '共有パス': 'sharePath'
           };
           let changes = [];
@@ -1086,7 +1086,7 @@
       document.getElementById('detail-ref-point').textContent = task.refPoint || '未設定';
       document.getElementById('detail-route').textContent = task.route || '未設定';
       
-      document.getElementById('detail-dips-container').innerHTML = renderRadioGroup('DIPS2.0登録', ['未登録', '登録済'], task.dips);
+      document.getElementById('detail-dips-container').innerHTML = renderRadioGroup('DIPS登録', ['未登録', '登録済'], task.dips);
       const ministriesOpts = window.masterData.ministries.length > 0 ? window.masterData.ministries : ['国交省', '農水省', '民間'];
       document.getElementById('detail-ministry-container').innerHTML = renderRadioGroup('管轄省庁', ministriesOpts, task.ministry);
       document.getElementById('detail-standard-container').innerHTML = renderRadioGroup('社内規格値', ['なし', '80％', '50％'], task.standard);
