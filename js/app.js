@@ -924,18 +924,35 @@
               footerCenterHtml += '<span class="text-[10px] font-bold text-red-600 bg-white border border-red-200 px-1 py-0.5 rounded shadow-sm shrink-0 whitespace-nowrap">' + daysPassedText + '経過</span></div>';
             }
             
-            // 標定点配置図のアップロード判定ロジック
-            let isHyouteiUploaded = false;
-            const rawHyoutei = task['標定点配置武蔵'];
-            if (rawHyoutei && typeof rawHyoutei === 'object') {
-              isHyouteiUploaded = rawHyoutei.isUploaded;
-            } else if (typeof rawHyoutei === 'string') {
-              isHyouteiUploaded = (rawHyoutei.startsWith('済') || rawHyoutei === 'true');
+            // バッジの表示内容と状態を判定するロジック
+            let badgeText = '標定点配置図';
+            let isBadgeActive = false;
+            let badgeActiveClass = 'bg-blue-600 text-white border border-blue-600 shadow-sm';
+
+            if (task.status === '予定' || task.status === '測量前準備') {
+              // 予定・測量前準備の場合は「施工計画書」バッジにする（有効時は黄緑色）
+              badgeText = '施工計画書';
+              badgeActiveClass = 'bg-lime-500 text-white border border-lime-500 shadow-sm'; 
+              
+              const rawPlan = task['施工計画書'];
+              if (rawPlan && typeof rawPlan === 'object') {
+                isBadgeActive = rawPlan.isUploaded;
+              } else if (typeof rawPlan === 'string') {
+                isBadgeActive = (rawPlan.startsWith('済') || rawPlan === 'true');
+              }
+            } else {
+              // それ以外のステータスは従来の「標定点配置図」バッジ
+              const rawHyoutei = task['標定点配置武蔵'];
+              if (rawHyoutei && typeof rawHyoutei === 'object') {
+                isBadgeActive = rawHyoutei.isUploaded;
+              } else if (typeof rawHyoutei === 'string') {
+                isBadgeActive = (rawHyoutei.startsWith('済') || rawHyoutei === 'true');
+              }
             }
 
-            // バッジのクラス切り替え（文字を11pxにして潰れを解消・文字間隔広め）
-            const hyouteiBadgeClass = isHyouteiUploaded
-              ? 'bg-blue-600 text-white border border-blue-600 shadow-sm'
+            // バッジのクラス切り替え
+            const dynamicBadgeClass = isBadgeActive
+              ? badgeActiveClass
               : 'bg-slate-50 text-slate-600 border border-dashed border-slate-400';
 
             let contentHtml = '';
@@ -959,10 +976,12 @@
             // 中央：設計待の日数など（既存の仕組みを維持）
             contentHtml += footerCenterHtml;
 
-            // 右側：標定点配置図バッジ（★ 共有管理タブ以外の場合のみ表示）
+            // 右側：動的バッジ（★ 共有管理タブ以外の場合のみ表示）
             const isSharedView = zone.closest('#view-shared') !== null;
             if (!isSharedView) {
-              contentHtml += '<span class="text-[11px] font-bold tracking-wider px-2 py-0.5 rounded shrink-0 ml-auto ' + hyouteiBadgeClass + '">標定点配置図</span>';
+              // CSSの文字色強制ルール（#334155）を打ち消すため、有効時のみ直接白色を指定する
+              const activeStyle = isBadgeActive ? ' style="color: #FFFFFF !important;"' : '';
+              contentHtml += '<span class="text-[11px] font-bold tracking-wider px-2 py-0.5 rounded shrink-0 ml-auto ' + dynamicBadgeClass + '"' + activeStyle + '>' + badgeText + '</span>';
             }
             
             contentHtml += '</footer></div>';
