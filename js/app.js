@@ -1743,11 +1743,19 @@
           const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
           if (assignees.length > 0) {
             assigneesHtml += `<span class="flex items-center gap-1">`;
-            // ★ window.userNamesMap が存在するかチェックしてから変換する
+            // ★ 1人目の名前
             const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
             assigneesHtml += `<span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}`;
-            if(assignees.length > 1) {
-              assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 1} 名">+${assignees.length - 1}</span>`;
+            
+            // ★ 2人目の名前（いれば追加）
+            if (assignees.length > 1) {
+              const secondaryName = (window.userNamesMap && window.userNamesMap[assignees[1]]) ? window.userNamesMap[assignees[1]] : assignees[1];
+              assigneesHtml += `、${secondaryName}`;
+            }
+            
+            // ★ 3人目以降はバッジ化
+            if (assignees.length > 2) {
+              assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 2} 名">+${assignees.length - 2}</span>`;
             }
             assigneesHtml += `</span>`;
           }
