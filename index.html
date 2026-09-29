@@ -67,6 +67,25 @@
         <button id="tab-logs" onclick="switchView('logs')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">更新ログ</button>
       </div>
       <div class="ml-auto flex flex-wrap items-center gap-4 px-2 pb-2 text-xs">
+        <!-- ★変更：iPhone風トグルスイッチ（独立2つ） -->
+        <div id="task-sort-container" class="hidden items-center gap-4 border-r border-slate-300 pr-4 mr-1">
+          <span class="font-bold text-slate-500">並び替え:</span>
+          
+          <div class="flex items-center gap-1.5 select-none cursor-pointer group" id="btn-toggle-client">
+            <span class="text-[11px] font-bold text-slate-500 transition-colors">お客様順</span>
+            <div class="w-10 h-5 bg-slate-300 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg">
+              <div class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 translate-x-0 toggle-circle"></div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 select-none cursor-pointer group" id="btn-toggle-date">
+            <span class="text-[11px] font-bold text-slate-500 transition-colors">期限順</span>
+            <div class="w-10 h-5 bg-slate-300 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg">
+              <div class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 translate-x-0 toggle-circle"></div>
+            </div>
+          </div>
+        </div>
+
         <span class="font-bold text-slate-800 bg-white border border-slate-300 px-2 py-1 rounded shadow-sm">アイコンの見方</span>
         <div class="flex items-center gap-2 border-r border-slate-300 pr-4">
           <span class="font-bold text-slate-500">色(測量):</span>
@@ -424,6 +443,10 @@
           <div id="todo-edit-form" class="hidden absolute top-[110px] left-3 right-3 bg-white border border-blue-400 shadow-lg rounded-lg p-3 z-30 flex flex-col gap-3">
             <input type="hidden" id="form-todo-id">
             <input type="text" id="form-todo-title" placeholder="タスクを入力" class="w-full border-b border-transparent focus:border-blue-500 px-1 py-1 text-[13px] font-bold outline-none text-slate-800 bg-slate-50 focus:bg-white rounded transition-colors">
+            
+            <!-- ★追加：詳細（メモ）入力用のテキストエリア -->
+            <textarea id="form-todo-details" placeholder="詳細を追加" class="w-full border border-slate-200 rounded p-2 text-[12px] font-medium text-slate-700 outline-none focus:border-blue-500 bg-white resize-y min-h-[60px]"></textarea>
+            
             <div class="flex items-center gap-2">
               <div class="relative w-full max-w-[130px]">
                 <span class="material-icons-outlined absolute left-2 top-[6px] text-slate-400" style="font-size: 15px;">calendar_today</span>
@@ -906,6 +929,41 @@
   <section id="image-viewer-modal" class="hidden fixed inset-0 z-[80] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4" onclick="closeImageViewer()">
     <img id="viewer-img" src="" class="max-w-full max-h-full object-contain shadow-2xl rounded" onclick="event.stopPropagation()" />
     <button onclick="closeImageViewer()" class="absolute top-4 right-6 text-white text-4xl font-bold hover:text-slate-300 transition-colors">&times;</button>
+  </section>
+
+  <!-- ================= 汎用タスク追加・編集モーダル ================= -->
+  <section id="global-todo-modal" class="hidden fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 flex flex-col gap-4">
+      <h3 class="font-bold text-slate-800 text-[15px] border-b border-slate-100 pb-2 flex items-center gap-2">
+        <span class="material-icons-outlined text-blue-600">assignment</span> 汎用タスクの編集
+      </h3>
+      <input type="hidden" id="gt-todo-id">
+      
+      <input type="text" id="gt-todo-title" placeholder="タスクを入力" class="w-full border border-slate-300 rounded p-2 text-[14px] font-bold outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors">
+      <textarea id="gt-todo-details" placeholder="詳細を追加" class="w-full border border-slate-200 rounded p-2 text-[12px] font-medium text-slate-700 outline-none focus:border-blue-500 bg-white resize-y min-h-[80px]"></textarea>
+      
+      <div class="flex items-center gap-3">
+        <div class="relative flex-1">
+          <span class="material-icons-outlined absolute left-2 top-[8px] text-slate-400" style="font-size: 16px;">calendar_today</span>
+          <input type="date" id="gt-todo-date" class="w-full border border-slate-200 rounded p-2 pl-8 text-[12px] outline-none focus:border-blue-500 bg-white text-slate-600 font-medium">
+        </div>
+      </div>
+      
+      <div class="border border-slate-200 rounded p-3 bg-slate-50">
+        <span class="text-[11px] font-bold text-slate-500 block mb-2">担当者（複数選択可）</span>
+        <div id="gt-todo-assignees" class="flex flex-wrap gap-x-4 gap-y-2">
+          <!-- JSで展開 -->
+        </div>
+      </div>
+      
+      <div class="flex justify-between items-center mt-2 pt-3 border-t border-slate-100">
+        <button id="btn-delete-gt" class="hidden text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded hover:bg-red-50" title="タスクを削除"><span class="material-icons-outlined" style="font-size: 20px;">delete</span></button>
+        <div class="flex gap-2 ml-auto">
+          <button onclick="document.getElementById('global-todo-modal').classList.add('hidden')" class="px-4 py-2 text-[12px] font-bold text-slate-500 hover:bg-slate-200 rounded transition-colors">キャンセル</button>
+          <button id="btn-save-gt" class="px-5 py-2 text-[12px] font-bold bg-blue-600 text-white hover:bg-blue-700 rounded shadow-sm transition-colors">保存</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ================= 右クリックメニュー ================= -->
