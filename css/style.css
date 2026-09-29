@@ -1,4 +1,4 @@
-<style>
+
     /* ToDo用追加スタイル */
     .todo-completed .todo-text { text-decoration: line-through; color: #94a3b8; }
     .todo-item.dragging { opacity: 0.5; background-color: #f8fafc; }
@@ -304,4 +304,4 @@ section[data-status="新宮担当"] { background-color: #CCFBF1 !important; }
     .completed-section:not(.open) .completed-list { display: none; }
     .completed-section.open .toggle-icon { transform: rotate(90deg); }
     .auto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-  </style>
+
