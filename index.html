@@ -178,12 +178,13 @@
 
       <div class="ml-auto flex items-center gap-2">
         <div class="flex items-center gap-1.5 mr-2">
-          <button id="btn-apply-search" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded shadow-sm text-xs transition-colors tracking-wider">
-            適用
-          </button>
-          <button id="btn-clear-search" class="bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 font-bold px-3 py-1.5 rounded shadow-sm text-xs transition-colors tracking-wider flex items-center gap-1" title="検索を解除してバーを閉じます">
-            解除
-          </button>
+          <!-- ★変更：適用・解除ボタンをトグルスイッチに変更 -->
+          <div class="flex items-center gap-1.5 select-none cursor-pointer group shrink-0 mx-2" id="btn-toggle-search-filter">
+            <span class="text-[12px] font-bold text-slate-500 transition-colors filter-label">絞り込み</span>
+            <div class="w-10 h-5 bg-slate-300 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg">
+              <div class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 translate-x-0 toggle-circle"></div>
+            </div>
+          </div>
         </div>
         <div class="font-bold text-slate-600 bg-white px-2.5 py-1 rounded border border-slate-300 shadow-sm flex items-center gap-1.5 text-xs">
           該当: <span id="filtered-count" class="text-red-600 text-base leading-none">0</span> <span class="text-[10px]">件</span>
