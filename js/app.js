@@ -1663,6 +1663,18 @@
             }
           }
         });
+
+        // ★追加：並び替えボタンの表示/非表示の切り替え
+        const sortContainer = document.getElementById('task-sort-container');
+        if (sortContainer) {
+          if (view === 'tasks') {
+            sortContainer.classList.remove('hidden');
+            sortContainer.classList.add('flex');
+          } else {
+            sortContainer.classList.add('hidden');
+            sortContainer.classList.remove('flex');
+          }
+        }
         
         if (view === 'logs') window.loadLogs();
         else if (view === 'tasks') renderTasksTab();
@@ -1710,6 +1722,16 @@
       });
 
       // ====== 案件詳細モーダル用 ======
+      
+      // ★追加：案件タスク（左側）の縦幅を、案件編集（右側）の高さに合わせて制限・同期する処理
+      const detailArticle = document.getElementById('detail-article');
+      const todoPanel = document.getElementById('todo-panel');
+      if (detailArticle && todoPanel) {
+        new ResizeObserver(() => {
+          todoPanel.style.height = detailArticle.offsetHeight + 'px';
+        }).observe(detailArticle);
+      }
+
       const originalOpenDetailModal = window.openDetailModal;
       window.openDetailModal = function(task) {
         originalOpenDetailModal(task);
@@ -1741,7 +1763,7 @@
         container.innerHTML = html;
       }
 
-      // 詳細モーダル用ToDoリストの描画
+      // 詳細モーダル用ToDoリストの描画（★変更：完了タスクの分離と無効化の自由化）
       function loadTodosForTask(taskId) {
         const container = document.getElementById('todo-list-container');
         if(!container) return;
@@ -1752,29 +1774,19 @@
           return;
         }
 
-        container.innerHTML = '';
-        taskTodos.forEach(todo => {
-          const li = document.createElement('li');
-          li.className = `todo-item relative py-3 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 transition-colors ${todo.isCompleted ? 'todo-completed opacity-60 bg-slate-50' : 'hover:bg-slate-50 cursor-pointer'}`;
-          
-          // 担当者表示の生成
+        const activeTodos = taskTodos.filter(t => !t.isCompleted);
+        const completedTodos = taskTodos.filter(t => t.isCompleted);
+
+        let activeHtml = '';
+        activeTodos.forEach(todo => {
           let assigneesHtml = '';
           const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
           if (assignees.length > 0) {
             assigneesHtml += `<span class="flex items-center gap-1">`;
-            // ★ 1人目の名前
             const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
             assigneesHtml += `<span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}`;
-            
-            // ★ 2人目の名前（いれば追加）
-            if (assignees.length > 1) {
-              const secondaryName = (window.userNamesMap && window.userNamesMap[assignees[1]]) ? window.userNamesMap[assignees[1]] : assignees[1];
-              assigneesHtml += `、${secondaryName}`;
-            }
-            
-            // ★ 3人目以降はバッジ化
-            if (assignees.length > 2) {
-              assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 2} 名">+${assignees.length - 2}</span>`;
+            if(assignees.length > 1) {
+              assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 1} 名">+${assignees.length - 1}</span>`;
             }
             assigneesHtml += `</span>`;
           }
@@ -1782,23 +1794,86 @@
           let dateHtml = '';
           if (todo.dueDate) {
             const d = new Date(todo.dueDate);
-            dateHtml = `<span class="flex items-center gap-1 ${!todo.isCompleted && new Date() > d ? 'text-red-500' : ''}"><span class="material-icons-outlined" style="font-size: 14px;">calendar_today</span>${d.getMonth()+1}/${d.getDate()}</span>`;
+            dateHtml = `<span class="flex items-center gap-1 ${new Date() > d ? 'text-red-500' : ''}"><span class="material-icons-outlined" style="font-size: 14px;">calendar_today</span>${d.getMonth()+1}/${d.getDate()}</span>`;
           }
 
-          li.innerHTML = `
-            <div class="pt-0.5">
-              <input type="checkbox" ${todo.isCompleted ? 'checked' : ''} onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
-            </div>
-            <div class="flex-1 min-w-0 flex flex-col" onclick="openTodoEditForm('${todo.id}')">
-              <span class="text-[13px] font-medium text-slate-700 leading-snug ${todo.isCompleted ? 'line-through' : ''}">${todo.title}</span>
-              <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-1">
-                ${assigneesHtml}
-                ${dateHtml}
+          let detailsHtml = '';
+          if (todo.details) {
+            const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+            detailsHtml = `<div class="text-[12px] text-slate-600 font-medium mt-1 leading-relaxed pl-1">${escapedDetails}</div>`;
+          }
+
+          activeHtml += `
+            <li class="todo-item relative py-3 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 hover:bg-slate-50 cursor-pointer transition-colors">
+              <div class="pt-0.5 shrink-0">
+                <!-- ★ onchangeでトグル処理を呼び出し、自由にチェック付け外し可能に -->
+                <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
               </div>
+              <div class="flex-1 min-w-0 flex flex-col" onclick="openTodoEditForm('${todo.id}')">
+                <span class="text-[13px] font-bold text-slate-700 leading-snug">${todo.title}</span>
+                ${detailsHtml}
+                <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-1">
+                  ${assigneesHtml}
+                  ${dateHtml}
+                </div>
+              </div>
+            </li>
+          `;
+        });
+
+        let compHtml = '';
+        if (completedTodos.length > 0) {
+          let compItemsHtml = '';
+          completedTodos.forEach(todo => {
+            let assigneesHtml = '';
+            const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
+            if (assignees.length > 0) {
+              assigneesHtml += `<span class="flex items-center gap-1">`;
+              const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
+              assigneesHtml += `<span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}`;
+              if(assignees.length > 1) {
+                assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 1} 名">+${assignees.length - 1}</span>`;
+              }
+              assigneesHtml += `</span>`;
+            }
+
+            let detailsHtml = '';
+            if (todo.details) {
+              const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+              detailsHtml = `<div class="text-[12px] text-slate-400 font-medium mt-1 leading-relaxed pl-1 line-through">${escapedDetails}</div>`;
+            }
+
+            compItemsHtml += `
+              <li class="todo-item relative py-2.5 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 bg-slate-50 opacity-70 transition-colors">
+                <div class="pt-0.5 shrink-0">
+                  <!-- ★ checked状態で出力。外すと未完了に戻り、上のリストへ移動する -->
+                  <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
+                </div>
+                <div class="flex-1 min-w-0 flex flex-col cursor-pointer" onclick="openTodoEditForm('${todo.id}')">
+                  <span class="text-[13px] font-bold text-slate-500 leading-snug line-through">${todo.title}</span>
+                  ${detailsHtml}
+                  <div class="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
+                    ${assigneesHtml}
+                  </div>
+                </div>
+              </li>
+            `;
+          });
+
+          compHtml = `
+            <div class="completed-section mt-4 mb-2">
+              <button class="flex items-center gap-2 text-[12px] font-bold text-slate-500 hover:text-slate-700 transition-colors py-2 px-1 w-full text-left" onclick="this.parentElement.classList.toggle('open')">
+                <span class="material-icons-outlined toggle-icon transition-transform" style="font-size: 16px;">play_arrow</span>
+                完了 (${completedTodos.length}件)
+              </button>
+              <ul class="completed-list mt-1 pt-1 border-t border-slate-100">
+                ${compItemsHtml}
+              </ul>
             </div>
           `;
-          container.appendChild(li);
-        });
+        }
+
+        container.innerHTML = `<ul>${activeHtml}</ul>${compHtml}`;
       }
 
       // 詳細モーダル用：フォーム開閉
@@ -1813,6 +1888,7 @@
         btnShowTodo.addEventListener('click', () => {
           document.getElementById('form-todo-id').value = '';
           document.getElementById('form-todo-title').value = '';
+          document.getElementById('form-todo-details').value = ''; // ★追加
           document.getElementById('form-todo-date').value = '';
           populateTodoAssignees([]);
           btnDeleteTodo.classList.add('hidden');
@@ -1827,6 +1903,7 @@
         if(!todo) return;
         document.getElementById('form-todo-id').value = id;
         document.getElementById('form-todo-title').value = todo.title;
+        document.getElementById('form-todo-details').value = todo.details || ''; // ★追加
         document.getElementById('form-todo-date').value = todo.dueDate || '';
         const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
         populateTodoAssignees(assignees);
@@ -1849,6 +1926,7 @@
         btnSaveTodo.addEventListener('click', async () => {
           const title = document.getElementById('form-todo-title').value.trim();
           if (!title) return;
+          const details = document.getElementById('form-todo-details').value.trim(); // ★追加
           const dueDate = document.getElementById('form-todo-date').value;
           const todoId = document.getElementById('form-todo-id').value;
           
@@ -1859,12 +1937,13 @@
           btnSaveTodo.innerHTML = '保存中...';
           try {
             if (todoId) {
-              await updateDoc(doc(db, 'todos', todoId), { title, assignees: selectedAssignees, dueDate });
+              await updateDoc(doc(db, 'todos', todoId), { title, details, assignees: selectedAssignees, dueDate }); // ★details追加
             } else {
               const order = document.getElementById('todo-list-container').children.length;
               await addDoc(collection(db, 'todos'), {
                 taskId: window.currentOpenTaskId,
                 title,
+                details, // ★追加
                 assignees: selectedAssignees,
                 dueDate,
                 isCompleted: false,
@@ -1959,6 +2038,53 @@
         if(window.currentView === 'tasks') renderTasksTab(); // 再描画
       });
 
+      // ★変更：独立した2つのトグルスイッチ用状態とイベント（設定の保存機能付き）
+      // 前回保存された設定を読み込む（保存されていなければオフにする）
+      window.isSortClient = localStorage.getItem('taskSortClient') === 'true';
+      window.isSortDate = localStorage.getItem('taskSortDate') === 'true';
+
+      // UIの見た目を更新する共通関数
+      function updateToggleUI(btnId, isActive) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        const bg = btn.querySelector('.toggle-bg');
+        const circle = btn.querySelector('.toggle-circle');
+        const label = btn.querySelector('span');
+        
+        if (isActive) {
+          bg.className = 'w-10 h-5 bg-green-500 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg';
+          circle.className = 'w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 translate-x-5 toggle-circle';
+          label.className = 'text-[11px] font-bold text-slate-800 transition-colors';
+        } else {
+          bg.className = 'w-10 h-5 bg-slate-300 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg';
+          circle.className = 'w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 translate-x-0 toggle-circle';
+          label.className = 'text-[11px] font-bold text-slate-500 transition-colors';
+        }
+      }
+
+      const btnToggleClient = document.getElementById('btn-toggle-client');
+      const btnToggleDate = document.getElementById('btn-toggle-date');
+
+      if (btnToggleClient && btnToggleDate) {
+        // ロード時に前回の設定をUIへ反映
+        updateToggleUI('btn-toggle-client', window.isSortClient);
+        updateToggleUI('btn-toggle-date', window.isSortDate);
+
+        btnToggleClient.addEventListener('click', () => {
+          window.isSortClient = !window.isSortClient;
+          localStorage.setItem('taskSortClient', window.isSortClient); // 状態を保存
+          updateToggleUI('btn-toggle-client', window.isSortClient);
+          if (window.currentView === 'tasks') window.renderTasksTab();
+        });
+
+        btnToggleDate.addEventListener('click', () => {
+          window.isSortDate = !window.isSortDate;
+          localStorage.setItem('taskSortDate', window.isSortDate); // 状態を保存
+          updateToggleUI('btn-toggle-date', window.isSortDate);
+          if (window.currentView === 'tasks') window.renderTasksTab();
+        });
+      }
+
       window.renderTasksTab = function() {
         const container = document.getElementById('view-tasks');
         if (!container) return;
@@ -1980,35 +2106,104 @@
             const arr = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : []);
             return arr.includes(assigneeId);
           });
-          const activeTodos = myTodos.filter(t => !t.isCompleted);
+          
+          let activeTodos = myTodos.filter(t => !t.isCompleted);
           const completedTodos = myTodos.filter(t => t.isCompleted);
+
+          // ★変更：独立した2つのソート条件を組み合わせた並び替え処理
+          activeTodos.sort((a, b) => {
+            // 1. 両方オフの場合は追加された順（元のオーダー）
+            if (!window.isSortClient && !window.isSortDate) {
+              return (a.order || 0) - (b.order || 0);
+            }
+
+            const pTaskA = window.tasks.find(pt => pt.id === a.taskId);
+            const pTaskB = window.tasks.find(pt => pt.id === b.taskId);
+            const clientA = pTaskA ? (pTaskA.client || '') : '';
+            const clientB = pTaskB ? (pTaskB.client || '') : '';
+            const dateA = a.dueDate ? a.dueDate : '9999-99-99';
+            const dateB = b.dueDate ? b.dueDate : '9999-99-99';
+
+            if (window.isSortClient && window.isSortDate) {
+              // 2. 両方オン：お客様順 → 期限順 のレイヤーでソート
+              if (clientA !== clientB) return clientA.localeCompare(clientB, 'ja');
+              if (dateA !== dateB) return dateA.localeCompare(dateB);
+              return (a.order || 0) - (b.order || 0);
+            } else if (window.isSortClient) {
+              // 3. お客様順のみ
+              if (clientA !== clientB) return clientA.localeCompare(clientB, 'ja');
+              return (a.order || 0) - (b.order || 0);
+            } else if (window.isSortDate) {
+              // 4. 期限順のみ
+              if (dateA !== dateB) return dateA.localeCompare(dateB);
+              return (a.order || 0) - (b.order || 0);
+            }
+          });
 
           let activeHtml = '';
           if (activeTodos.length === 0) {
             activeHtml = `<div class="p-4 text-center text-slate-400 text-[11px] font-bold">タスクはありません</div>`;
           } else {
             activeTodos.forEach(todo => {
-              // 関連案件情報の取得
               const parentTask = window.tasks.find(pt => pt.id === todo.taskId);
               let clientName = parentTask ? parentTask.client : '案件未設定';
-              let dateStr = parentTask && parentTask.date ? formatYYYYMMDD(parentTask.date) : '';
+              let dateStr = todo.dueDate ? todo.dueDate.replace(/-/g, '/') : '';
               let isDelayed = false;
-              if (dateStr && dateStr !== '未定') {
-                const dateVal = new Date(dateStr.substring(0,4), parseInt(dateStr.substring(4,6))-1, dateStr.substring(6,8));
-                if ((new Date() - dateVal) / (1000 * 60 * 60 * 24) >= 14) isDelayed = true;
+
+              if (dateStr) {
+                const dateVal = new Date(dateStr);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                if (dateVal < today) isDelayed = true;
               }
 
-              // カードHTML
+              let otherAssignees = [];
+              const todoAssignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
+              todoAssignees.forEach(aId => {
+                if (aId !== assigneeId) {
+                  const name = (window.userNamesMap && window.userNamesMap[aId]) ? window.userNamesMap[aId] : aId;
+                  otherAssignees.push(name);
+                }
+              });
+
+              let othersHtml = '';
+              if (otherAssignees.length > 0) {
+                othersHtml = `<span class="${isDelayed ? 'text-yellow-800' : 'text-slate-500'} flex items-center gap-1 truncate max-w-[150px]" title="他担当者: ${otherAssignees.join(', ')}">
+                  <span class="material-icons-outlined" style="font-size: 13px;">group</span>${otherAssignees.join(', ')}
+                </span>`;
+              }
+
+              let detailsHtml = '';
+              if (todo.details) {
+                const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+                detailsHtml = `<div class="text-[12px] font-medium leading-relaxed pl-1 ${isDelayed ? 'text-yellow-800' : 'text-slate-600'}">${escapedDetails}</div>`;
+              }
+
+              // ★追加：案件に紐づくタスクか、汎用タスクかの表示判定
+              let clientInfoHtml = '';
+              if (todo.taskId) {
+                clientInfoHtml = `<span class="${isDelayed ? 'text-yellow-800' : 'text-slate-500'} flex items-center gap-1 truncate max-w-[150px]">
+                  <span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}
+                </span>`;
+              } else {
+                clientInfoHtml = `<span class="${isDelayed ? 'text-yellow-800' : 'text-slate-400'} flex items-center gap-1 truncate max-w-[150px] font-bold">
+                  <span class="material-icons-outlined" style="font-size: 13px;">assignment</span>汎用タスク
+                </span>`;
+              }
+
+              // ★追加：クリック時の動作（案件あり＝詳細モーダル、案件なし＝汎用タスクモーダル）
+              const clickAction = todo.taskId ? `openDetailModalFromId('${todo.taskId}')` : `openGlobalTodoForm('${todo.id}', '${assigneeId}')`;
+
               activeHtml += `
                 <article class="todo-item flex items-start gap-3 py-2.5 px-2.5 ${isDelayed ? 'bg-yellow-100 hover:bg-yellow-200 border-yellow-400' : 'bg-white hover:bg-slate-50 border-slate-200'} border rounded-lg shadow-sm transition-all cursor-pointer group" draggable="true" data-id="${todo.id}">
                   <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5 ${isDelayed ? 'border-yellow-500' : ''}">
-                  <div class="flex-1 min-w-0 flex flex-col gap-2" onclick="openDetailModalFromId('${todo.taskId}')">
+                  <div class="flex-1 min-w-0 flex flex-col gap-1.5" onclick="${clickAction}">
                     <span class="text-[13px] font-bold ${isDelayed ? 'text-yellow-900' : 'text-slate-800'} leading-snug">${todo.title}</span>
-                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                      <span class="${isDelayed ? 'text-yellow-800' : 'text-slate-500'} flex items-center gap-1 truncate max-w-[150px]">
-                        <span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}
-                      </span>
-                      ${dateStr ? `<span class="${isDelayed ? 'text-red-600 bg-red-50 px-1 font-bold' : 'text-slate-500'} flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">${isDelayed ? 'warning_amber' : 'event'}</span>${dateStr}</span>` : ''}
+                    ${detailsHtml}
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] mt-0.5">
+                      ${clientInfoHtml}
+                      ${dateStr ? `<span class="${isDelayed ? 'text-red-600 bg-red-50 px-1 py-0.5 font-bold rounded border border-red-200 shadow-sm' : 'text-slate-500'} flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">${isDelayed ? 'warning_amber' : 'event'}</span>${dateStr}</span>` : ''}
+                      ${othersHtml}
                     </div>
                   </div>
                 </article>
@@ -2020,20 +2215,43 @@
           completedTodos.forEach(todo => {
             const parentTask = window.tasks.find(pt => pt.id === todo.taskId);
             let clientName = parentTask ? parentTask.client : '-';
+            
+            let detailsHtml = '';
+            if (todo.details) {
+              const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+              detailsHtml = `<div class="text-[12px] font-medium text-slate-500 leading-relaxed pl-1 line-through">${escapedDetails}</div>`;
+            }
+
+            // ★追加：完了側の判定
+            let clientInfoHtml = '';
+            if (todo.taskId) {
+              clientInfoHtml = `<span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}`;
+            } else {
+              clientInfoHtml = `<span class="material-icons-outlined" style="font-size: 13px;">assignment</span>汎用タスク`;
+            }
+
+            const clickAction = todo.taskId ? `openDetailModalFromId('${todo.taskId}')` : `openGlobalTodoForm('${todo.id}', '${assigneeId}')`;
+
             compHtml += `
-              <article class="flex items-start gap-3 py-2.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60">
+              <article class="flex items-start gap-3 py-2.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60 cursor-pointer" onclick="${clickAction}">
                 <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5">
                 <div class="flex-1 min-w-0 flex flex-col gap-1">
                   <span class="text-[13px] font-bold text-slate-500 line-through leading-snug">${todo.title}</span>
-                  <div class="flex text-[11px] text-slate-400 gap-1"><span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}</div>
+                  ${detailsHtml}
+                  <div class="flex text-[11px] text-slate-400 gap-1 mt-0.5">${clientInfoHtml}</div>
                 </div>
               </article>
             `;
           });
 
           section.innerHTML = `
-            <header class="py-3 shrink-0 flex justify-between items-center mb-1">
+            <header class="py-3 px-1 shrink-0 flex justify-between items-center mb-2">
               <div class="font-bold text-[15px] text-slate-800 flex items-center gap-2">${name}</div>
+              <!-- ★変更：「タスクを追加」ボタンを右端に配置し、枠線を削除 -->
+              <button class="flex items-center gap-1 hover:bg-slate-200 px-2 py-1 rounded transition-colors text-slate-500 font-bold group" onclick="window.openGlobalTodoForm('', '${assigneeId}')">
+                <span class="material-icons-outlined text-slate-400 group-hover:text-blue-600 transition-colors" style="font-size: 16px;">add</span>
+                <span class="text-[11px] group-hover:text-blue-600 transition-colors">タスクを追加</span>
+              </button>
             </header>
             <div class="flex-1 overflow-y-auto pb-4">
               <div class="auto-grid content-start mb-6 drop-target-list">
@@ -2098,5 +2316,107 @@
               }
             }
           });
+        });
+      }
+
+      // ==========================================
+      // 汎用タスク（案件に紐づかないToDo）用ロジック
+      // ==========================================
+      window.openGlobalTodoForm = function(todoId, defaultAssignee) {
+        const modal = document.getElementById('global-todo-modal');
+        if(!modal) return;
+        const idField = document.getElementById('gt-todo-id');
+        const titleField = document.getElementById('gt-todo-title');
+        const detailsField = document.getElementById('gt-todo-details');
+        const dateField = document.getElementById('gt-todo-date');
+        const btnDelete = document.getElementById('btn-delete-gt');
+        
+        if (todoId) {
+          const todo = window.allTodos.find(t => t.id === todoId);
+          if(!todo) return;
+          idField.value = todo.id;
+          titleField.value = todo.title || '';
+          detailsField.value = todo.details || '';
+          dateField.value = todo.dueDate || '';
+          const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
+          populateGtTodoAssignees(assignees);
+          btnDelete.classList.remove('hidden');
+        } else {
+          idField.value = '';
+          titleField.value = '';
+          detailsField.value = '';
+          dateField.value = '';
+          populateGtTodoAssignees([defaultAssignee]);
+          btnDelete.classList.add('hidden');
+        }
+        modal.classList.remove('hidden');
+        setTimeout(() => titleField.focus(), 100);
+      };
+
+      function populateGtTodoAssignees(selectedArray) {
+        const container = document.getElementById('gt-todo-assignees');
+        if (!container) return;
+        let html = '';
+        const selected = selectedArray || [];
+        if (window.userNamesMap) {
+          for (const [emailPrefix, name] of Object.entries(window.userNamesMap)) {
+            const isChecked = selected.includes(emailPrefix) ? 'checked' : '';
+            html += `<label class="flex items-center gap-1 text-[11px] font-bold text-slate-700 cursor-pointer">
+                      <input type="checkbox" value="${emailPrefix}" ${isChecked} class="gt-assignee-cb w-3.5 h-3.5 text-blue-600 rounded">
+                      ${name}
+                    </label>`;
+          }
+        }
+        container.innerHTML = html;
+      }
+
+      const btnSaveGt = document.getElementById('btn-save-gt');
+      if(btnSaveGt) {
+        btnSaveGt.addEventListener('click', async () => {
+          const title = document.getElementById('gt-todo-title').value.trim();
+          if (!title) return;
+          const details = document.getElementById('gt-todo-details').value.trim();
+          const dueDate = document.getElementById('gt-todo-date').value;
+          const todoId = document.getElementById('gt-todo-id').value;
+          
+          const selectedAssignees = [];
+          document.querySelectorAll('.gt-assignee-cb:checked').forEach(cb => selectedAssignees.push(cb.value));
+
+          btnSaveGt.disabled = true;
+          btnSaveGt.innerHTML = '保存中...';
+          try {
+            if (todoId) {
+              await updateDoc(doc(db, 'todos', todoId), { title, details, assignees: selectedAssignees, dueDate });
+            } else {
+              await addDoc(collection(db, 'todos'), {
+                taskId: "", // 空文字にすることで汎用タスクとして扱う
+                title,
+                details,
+                assignees: selectedAssignees,
+                dueDate,
+                isCompleted: false,
+                order: 0,
+                createdAt: serverTimestamp()
+              });
+            }
+            document.getElementById('global-todo-modal').classList.add('hidden');
+          } catch(e) {
+            showToast('保存に失敗', 'error');
+          } finally {
+            btnSaveGt.disabled = false;
+            btnSaveGt.innerHTML = '保存';
+          }
+        });
+      }
+
+      const btnDeleteGt = document.getElementById('btn-delete-gt');
+      if(btnDeleteGt) {
+        btnDeleteGt.addEventListener('click', async () => {
+          const todoId = document.getElementById('gt-todo-id').value;
+          if(!todoId) return;
+          try {
+            await deleteDoc(doc(db, 'todos', todoId));
+            document.getElementById('global-todo-modal').classList.add('hidden');
+          } catch(e) { showToast('削除失敗', 'error'); }
         });
       }
