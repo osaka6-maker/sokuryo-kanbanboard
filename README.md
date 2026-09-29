@@ -1,3 +1,4 @@
+```mermaid
 erDiagram
     TASKS ||--o{ LOGS : "変更履歴として記録"
     TASKS ||--o{ TODOS : "案件ごとのサブタスク(taskIdが空なら汎用タスク)"
