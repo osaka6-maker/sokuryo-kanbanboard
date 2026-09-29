@@ -357,6 +357,32 @@
     window.handleUploadCheck = async function(fieldName, isChecked) {
       if (!window.currentOpenTaskId) return;
       
+      // ★追加：成果物ZIPをチェックした際、成果物チェックが0件ならアラートを出す
+      if (fieldName === '成果物ZIP' && isChecked) {
+        const task = window.tasks.find(t => t.id === window.currentOpenTaskId);
+        if (task) {
+          let savedStatus = {};
+          if (typeof task.checkStatus === 'object') {
+            savedStatus = task.checkStatus;
+          } else if (typeof task.checkStatus === 'string') {
+            try { savedStatus = JSON.parse(task.checkStatus || '{}'); } catch(e) {}
+          }
+          
+          // チェックが入っている項目の数をカウント（trueになっているもの）
+          const checkedCount = Object.values(savedStatus).filter(val => val === true).length;
+          
+          if (checkedCount === 0) {
+            const confirmed = window.confirm('チェックリストが空欄ですが、問題ありませんか？');
+            if (!confirmed) {
+              // キャンセルされた場合はチェックボックスのUIを元に戻して処理を中断する
+              const checkbox = document.querySelector(`input[onchange="handleUploadCheck('${fieldName}', this.checked)"]`);
+              if (checkbox) checkbox.checked = false;
+              return;
+            }
+          }
+        }
+      }
+
       // ① チェックされたユーザーのIDと名前を取得
       const userPrefix = window.currentUser.email.split('@')[0];
       const displayName = (window.userNamesMap && window.userNamesMap[userPrefix]) ? window.userNamesMap[userPrefix] : userPrefix;
@@ -713,47 +739,94 @@
       }
     }
 
-    const btnApplySearch = document.getElementById('btn-apply-search');
-    if (btnApplySearch) {
-      btnApplySearch.addEventListener('click', () => {
-        window.filterText = document.getElementById('search-text').value.toLowerCase();
-        window.filterYear = document.getElementById('search-year').value;
-        window.filterMonth = document.getElementById('search-month').value;
-        window.filterOffice = document.getElementById('search-office').value;
-        window.filterSales = document.getElementById('search-sales').value;
-        window.filterType = document.getElementById('search-type').value;
-        window.filterEq = document.getElementById('search-eq').value;
-        window.filterRole = document.getElementById('search-role').value;
-        window.filterAssignee = document.getElementById('search-assignee').value;
+    // ★変更：検索の適用・解除をトグルスイッチで処理
+    let isSearchFilterActive = false;
+    const btnToggleSearchFilter = document.getElementById('btn-toggle-search-filter');
+
+    if (btnToggleSearchFilter) {
+      // トグルをクリックしたときの処理（ON/OFFの切り替え）
+      btnToggleSearchFilter.addEventListener('click', () => {
+        isSearchFilterActive = !isSearchFilterActive;
+        const bg = btnToggleSearchFilter.querySelector('.toggle-bg');
+        const circle = btnToggleSearchFilter.querySelector('.toggle-circle');
+        const label = btnToggleSearchFilter.querySelector('.filter-label');
+
+        if (isSearchFilterActive) {
+          // ON：絞り込みを適用
+          bg.className = 'w-10 h-5 bg-green-500 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg';
+          circle.className = 'w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 translate-x-5 toggle-circle';
+          if(label) label.className = 'text-[12px] font-bold text-green-600 transition-colors filter-label';
+
+          window.filterText = document.getElementById('search-text').value.toLowerCase();
+          window.filterYear = document.getElementById('search-year').value;
+          window.filterMonth = document.getElementById('search-month').value;
+          window.filterOffice = document.getElementById('search-office').value;
+          window.filterSales = document.getElementById('search-sales').value;
+          window.filterType = document.getElementById('search-type').value;
+          window.filterEq = document.getElementById('search-eq').value;
+          window.filterRole = document.getElementById('search-role').value;
+          window.filterAssignee = document.getElementById('search-assignee').value;
+        } else {
+          // OFF：絞り込みを解除（リセット）
+          bg.className = 'w-10 h-5 bg-slate-300 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg';
+          circle.className = 'w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 translate-x-0 toggle-circle';
+          if(label) label.className = 'text-[12px] font-bold text-slate-500 transition-colors filter-label';
+
+          document.getElementById('search-text').value = '';
+          document.getElementById('search-year').value = '';
+          document.getElementById('search-month').value = '';
+          document.getElementById('search-office').value = '';
+          document.getElementById('search-sales').innerHTML = '<option value="">営業マン</option>';
+          document.getElementById('search-type').value = '';
+          document.getElementById('search-eq').value = '';
+          document.getElementById('search-role').value = 'all';
+          document.getElementById('search-assignee').value = '';
+
+          window.filterText = '';
+          window.filterYear = '';
+          window.filterMonth = '';
+          window.filterOffice = '';
+          window.filterSales = '';
+          window.filterType = '';
+          window.filterEq = '';
+          window.filterRole = 'all';
+          window.filterAssignee = '';
+        }
         window.updateCurrentView();
       });
-    }
-
-    const btnClearSearch = document.getElementById('btn-clear-search');
-    if (btnClearSearch) {
-      btnClearSearch.addEventListener('click', () => {
-        document.getElementById('search-text').value = '';
-        document.getElementById('search-year').value = '';
-        document.getElementById('search-month').value = '';
-        document.getElementById('search-office').value = '';
-        document.getElementById('search-sales').innerHTML = '<option value="">営業マン</option>';
-        document.getElementById('search-type').value = '';
-        document.getElementById('search-eq').value = '';
-        document.getElementById('search-role').value = 'all';
-        document.getElementById('search-assignee').value = '';
-
-        window.filterText = '';
-        window.filterYear = '';
-        window.filterMonth = '';
-        window.filterOffice = '';
-        window.filterSales = '';
-        window.filterType = '';
-        window.filterEq = '';
-        window.filterRole = 'all';
-        window.filterAssignee = '';
-
-        window.updateCurrentView();
+      
+      // ★追加機能：トグルがONの時、プルダウンや文字が変更されたら「即座に」適用する
+      const searchInputs = ['search-text', 'search-year', 'search-month', 'search-office', 'search-sales', 'search-type', 'search-eq', 'search-role', 'search-assignee'];
+      searchInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('change', () => {
+            if (isSearchFilterActive) {
+              window.filterText = document.getElementById('search-text').value.toLowerCase();
+              window.filterYear = document.getElementById('search-year').value;
+              window.filterMonth = document.getElementById('search-month').value;
+              window.filterOffice = document.getElementById('search-office').value;
+              window.filterSales = document.getElementById('search-sales').value;
+              window.filterType = document.getElementById('search-type').value;
+              window.filterEq = document.getElementById('search-eq').value;
+              window.filterRole = document.getElementById('search-role').value;
+              window.filterAssignee = document.getElementById('search-assignee').value;
+              window.updateCurrentView();
+            }
+          });
+        }
       });
+
+      // テキスト入力欄は Enter キーでも即時反映
+      const textInput = document.getElementById('search-text');
+      if (textInput) {
+        textInput.addEventListener('keyup', (e) => {
+           if (e.key === 'Enter' && isSearchFilterActive) {
+             window.filterText = textInput.value.toLowerCase();
+             window.updateCurrentView();
+           }
+        });
+      }
     }
 
     const sortOrder = document.getElementById('sort-order');
