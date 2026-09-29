@@ -1,8 +1,27 @@
-```mermaid
 erDiagram
     TASKS ||--o{ LOGS : "変更履歴として記録"
+    TASKS ||--o{ TODOS : "案件ごとのサブタスク(taskIdが空なら汎用タスク)"
     SETTINGS_MASTER ||--o{ TASKS : "入力時の選択肢(マスター)を提供"
     SETTINGS_DESCRIPTIONS ||--o{ TASKS : "ステータス説明文を提供"
+    USERS ||--o{ TODOS : "担当者名を提供"
+
+    USERS {
+        string ID PK "ドキュメントID (emailの@より前)"
+        string name "ユーザー名 (表示名)"
+    }
+
+    TODOS {
+        string ID PK "自動生成ID"
+        string taskId FK "対象案件ID (tasks.ID / 汎用タスクの場合は空文字)"
+        string title "タスクのタイトル"
+        string details "詳細 (メモ)"
+        string dueDate "期限 (YYYY-MM-DD 等)"
+        array assignees "担当者IDの配列 (USERS.ID)"
+        boolean isCompleted "完了フラグ"
+        string completedAt "完了日 (YYYY/MM/DD)"
+        number order "並び順"
+        timestamp createdAt "作成日時"
+    }
 
     TASKS {
         string ID PK "ドキュメントID (例: PJ-123456789)"
@@ -37,7 +56,7 @@ erDiagram
         string surveyRep "測量担当(カンマ区切り文字列)"
         string pointCloudRep "点群処理(カンマ区切り文字列)"
         string crossSectionRep "現況横断(カンマ区切り文字列)"
-        string earthRep "土量(カンマ区切り文字列)"
+        string hyouteitenRep "標定点配置図(カンマ区切り文字列)"
         string outputRep "成果作成(カンマ区切り文字列)"
         string zeroYenRep "０円請求(カンマ区切り文字列)"
 
