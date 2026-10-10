@@ -1406,9 +1406,54 @@
       try { await updateDoc(doc(db, 'tasks', window.currentOpenTaskId), { [fieldName]: value }); showToast(fieldName + 'を更新しました'); } catch(e) { showToast('更新失敗', 'error'); }
     }
 
-    window.openEditFromDetail = function() {
-      const idToEdit = window.currentOpenTaskId; closeDetailModal(); window.openTaskModal(idToEdit);
-    }
+    window.duplicateTaskFromDetail = function() {
+  const originalTask = window.tasks.find(x => x.id === window.currentOpenTaskId);
+  if (!originalTask) return;
+
+  closeDetailModal();
+
+  // モーダルを新規作成モードで初期化
+  window.isEditMode = false;
+  window.currentOpenTaskId = null; 
+  document.getElementById('modal-title').innerHTML = '案件の複製';
+  document.getElementById('task-form').reset(); 
+  populateMasterDropdowns(); 
+  document.getElementById('btn-delete-task').classList.add('hidden');
+  document.getElementById('edit-title-icon').innerHTML = ''; // 絵文字を削除して空欄にする
+
+  // 営業マンのプルダウンリストを再構築
+  const reps = window.masterData.offices[originalTask.office] || []; 
+  let salesHtml = '<option value="">（未選択）</option>'; 
+  reps.forEach(r => salesHtml += `<option value="${r}">${r}</option>`);
+  document.getElementById('fm-sales').innerHTML = salesHtml;
+
+  // ① 引き継ぐ項目のリスト（データの変数名 : HTMLのID）
+  const fieldsToCopy = {
+    client: 'fm-client', billing: 'fm-billing', site: 'fm-site', 
+    office: 'fm-office', salesperson: 'fm-sales', district: 'fm-district', 
+    officeLoc: 'fm-office-loc', ministry: 'fm-ministry', standard: 'fm-standard', 
+    route: 'fm-route', refPoint: 'fm-ref-point', mapUrl: 'fm-mapUrl', 
+    meetUrl: 'fm-meetUrl', pjUrl: 'fm-pjUrl', chatUrl: 'fm-chatUrl', sharePath: 'fm-sharePath'
+  };
+
+  // ② 辞書をループ処理して値をセット
+  for (const [key, elementId] of Object.entries(fieldsToCopy)) {
+    const element = document.getElementById(elementId);
+    if (element) element.value = originalTask[key] || '';
+  }
+
+  // ③ 空欄・初期値にする項目
+  const fieldsToReset = {
+    'fm-date': '', 'fm-status': '予定', 'fm-type': '', 'fm-equipment': '', 'fm-dips': ''
+  };
+  for (const [elementId, value] of Object.entries(fieldsToReset)) {
+    const element = document.getElementById(elementId);
+    if (element) element.value = value;
+  }
+
+  document.getElementById('task-modal').classList.remove('hidden');
+  showToast('案件のデータをコピーしました。内容を修正して保存してください。');
+}
 
     window.closeDetailModal = function() { 
       document.getElementById('detail-modal').classList.add('hidden'); 
@@ -1465,12 +1510,13 @@
     window.openTaskModal = function(taskId) {
       window.isEditMode = !!taskId; 
       window.currentOpenTaskId = taskId; 
-      document.getElementById('modal-title').innerHTML = window.isEditMode ? '📝 案件情報の編集' : '➕ 新規案件の追加';
+      document.getElementById('modal-title').textContent = window.isEditMode ? '案件情報の編集' : '新規案件の追加';
       document.getElementById('task-form').reset(); 
       populateMasterDropdowns(); 
       
       if (window.isEditMode) {
         document.getElementById('btn-delete-task').classList.remove('hidden');
+        document.getElementById('btn-duplicate-task').classList.remove('hidden');
         const t = window.tasks.find(x => x.id === taskId);
         if (t) {
           document.getElementById('edit-title-icon').innerHTML = getIconSvg(t.type, t.equipment, 'w-10 h-10');
@@ -1505,6 +1551,7 @@
         }
       } else {
         document.getElementById('btn-delete-task').classList.add('hidden');
+        document.getElementById('btn-duplicate-task').classList.add('hidden');
         document.getElementById('fm-status').value = '予定';
         document.getElementById('edit-title-icon').innerHTML = '✨';
       }
@@ -2493,3 +2540,48 @@
           } catch(e) { showToast('削除失敗', 'error'); }
         });
       }
+
+      // ==========================================
+// 案件情報編集画面からの複製ロジック（リファクタリング版）
+// ==========================================
+window.duplicateTaskFromEdit = function() {
+  // 1. 状態のリセット
+  window.isEditMode = false;
+  window.currentOpenTaskId = null;
+  
+  // 2. テキストの更新（安全な textContent を使用し、存在確認をする）
+  const titleEl = document.getElementById('modal-title');
+  if (titleEl) titleEl.textContent = '新規案件の追加（複製）';
+  
+  const iconEl = document.getElementById('edit-title-icon');
+  if (iconEl) iconEl.textContent = ''; 
+
+  // 3. ボタンの非表示（配列とオプショナルチェーン「?.」で短く書く）
+  ['btn-delete-task', 'btn-duplicate-task'].forEach(id => {
+    document.getElementById(id)?.classList.add('hidden');
+  });
+
+  // 4. 特定の入力欄を初期値に戻す（forEachを使ってより関数的に）
+  const fieldsToReset = {
+    'fm-date': '', 
+    'fm-status': '予定', 
+    'fm-type': '', 
+    'fm-equipment': '', 
+    'fm-dips': ''
+  };
+  
+  Object.entries(fieldsToReset).forEach(([id, value]) => {
+    const element = document.getElementById(id);
+    if (element) element.value = value;
+  });
+
+  // 5. ユーザーに通知
+  showToast('案件のデータをコピーしました。内容を修正して保存してください。');
+};
+
+// 詳細画面から編集モーダルを開く処理（復旧）
+window.openEditFromDetail = function() {
+  const idToEdit = window.currentOpenTaskId; 
+  closeDetailModal(); 
+  window.openTaskModal(idToEdit);
+}
