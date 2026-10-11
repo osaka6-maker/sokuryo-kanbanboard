@@ -56,7 +56,7 @@
     window.filterRole = 'all';
     window.filterAssignee = '';
     window.globalStatusDescriptions = {};
-    window.currentView = 'kanban'; 
+    window.currentView = 'ready'; 
     window.currentCalYear = new Date().getFullYear();
     window.currentCalMonth = new Date().getMonth();
     window.currentUser = null;
@@ -287,7 +287,8 @@
         if (syncIcon) syncIcon.classList.add('animate-spin', 'text-blue-400');
         const updateData = { 'ステータス': stat };
         if (stat === '設計待') {
-          updateData['ステータス変更日'] = formatYYYYMMDD(new Date());
+          const now = new Date();
+          updateData['ステータス変更日'] = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
         } else {
           updateData['ステータス変更日'] = '';
         }
@@ -732,7 +733,8 @@
     }
 
     window.updateCurrentView = function() {
-      if (window.currentView === 'kanban' || window.currentView === 'shared') {
+      // ready, kanban, shared いずれかのタブが開かれている場合はボードを描画
+      if (['ready', 'kanban', 'shared'].includes(window.currentView)) {
         renderBoard();
       } else if (window.currentView === 'calendar') {
         renderCalendar();
@@ -986,11 +988,25 @@
               const designRep = task.designRep || '未設定'; 
               let daysPassedText = '-日'; 
               if (task.statusDate) {
-                const today = new Date(); const startDate = new Date(task.statusDate);
-                today.setHours(0,0,0,0); startDate.setHours(0,0,0,0);
-                const diffTime = today.getTime() - startDate.getTime(); 
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                daysPassedText = diffDays + '日'; 
+                const today = new Date();
+                let startDate;
+                // "20261012" のような8桁の形式か判定して日付を生成
+                if (task.statusDate.length === 8 && !task.statusDate.includes('/')) {
+                  const y = task.statusDate.substring(0, 4);
+                  const m = task.statusDate.substring(4, 6) - 1; // 月は0から始まるため-1
+                  const d = task.statusDate.substring(6, 8);
+                  startDate = new Date(y, m, d);
+                } else {
+                  startDate = new Date(task.statusDate); // 過去の "YYYY/MM/DD" 等のデータ用
+                }
+                
+                today.setHours(0,0,0,0); 
+                if (startDate && !isNaN(startDate.getTime())) {
+                  startDate.setHours(0,0,0,0);
+                  const diffTime = today.getTime() - startDate.getTime(); 
+                  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                  daysPassedText = diffDays + '日'; 
+                }
               }
               footerCenterHtml += '<div class="flex items-center gap-1 min-w-0 shrink px-1 justify-center">';
               footerCenterHtml += '<span class="text-[10px] font-bold text-cyan-800 bg-cyan-100 border border-cyan-300 px-1 py-0.5 rounded truncate max-w-[60px]" title="' + designRep + '">📐' + designRep + '</span>';
@@ -1786,7 +1802,7 @@
       // ====== タブ切り替えの拡張 ======
 window.switchView = function(view) {
   window.currentView = view;
-  const views = ['kanban', 'shared', 'tasks', 'calendar', 'logs'];
+  const views = ['ready', 'kanban', 'shared', 'tasks', 'calendar', 'logs'];
 
   views.forEach(v => {
     // 1. ビューの表示/非表示（オプショナルチェーン ?. で安全に実行）
