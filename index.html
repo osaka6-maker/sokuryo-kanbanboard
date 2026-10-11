@@ -69,6 +69,17 @@
       <div class="ml-auto flex flex-wrap items-center gap-4 px-2 pb-2 text-xs">
         <!-- ★変更：iPhone風トグルスイッチ（独立2つ） -->
         <div id="task-sort-container" class="hidden items-center gap-4 border-r border-slate-300 pr-4 mr-1">
+          <!-- ★新規追加：タスクタブ専用キーワード検索 -->
+          <div class="flex items-center gap-2 border-r border-slate-300 pr-4">
+            <input type="text" id="task-keyword-input" placeholder="キーワード検索..." class="border border-slate-300 rounded px-2 py-1 text-[11px] font-bold outline-none focus:border-blue-500 w-40 shadow-inner">
+            <div class="flex items-center gap-1.5 select-none cursor-pointer group" id="btn-toggle-task-keyword">
+              <span class="text-[11px] font-bold text-slate-500 transition-colors keyword-filter-label">検索</span>
+              <div class="w-10 h-5 bg-slate-300 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg">
+                <div class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 translate-x-0 toggle-circle"></div>
+              </div>
+            </div>
+          </div>
+          
           <span class="font-bold text-slate-500">並び替え:</span>
           
           <div class="flex items-center gap-1.5 select-none cursor-pointer group" id="btn-toggle-client">

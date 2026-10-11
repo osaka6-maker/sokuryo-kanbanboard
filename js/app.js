@@ -1508,55 +1508,72 @@
     }
 
     window.openTaskModal = function(taskId) {
-      window.isEditMode = !!taskId; 
-      window.currentOpenTaskId = taskId; 
-      document.getElementById('modal-title').textContent = window.isEditMode ? '案件情報の編集' : '新規案件の追加';
-      document.getElementById('task-form').reset(); 
-      populateMasterDropdowns(); 
-      
-      if (window.isEditMode) {
-        document.getElementById('btn-delete-task').classList.remove('hidden');
-        document.getElementById('btn-duplicate-task').classList.remove('hidden');
-        const t = window.tasks.find(x => x.id === taskId);
-        if (t) {
-          document.getElementById('edit-title-icon').innerHTML = getIconSvg(t.type, t.equipment, 'w-10 h-10');
-          document.getElementById('fm-date').value = formatDateForInput(t.date);
-          document.getElementById('fm-status').value = t.status || '予定';
-          document.getElementById('fm-type').value = t.type || '';
-          document.getElementById('fm-equipment').value = t.equipment || '';
-          document.getElementById('fm-client').value = t.client || '';
-          document.getElementById('fm-billing').value = t.billing || '';
-          document.getElementById('fm-site').value = t.site || '';
-          document.getElementById('fm-office').value = t.office || '';
-          
-          const reps = window.masterData.offices[t.office] || []; 
-          const salesSelect = document.getElementById('fm-sales'); 
-          let salesHtml = '<option value="">（未選択）</option>'; 
-          reps.forEach(r => { salesHtml += '<option value="' + r + '">' + r + '</option>'; });
-          if(salesSelect) salesSelect.innerHTML = salesHtml;
-          
-          document.getElementById('fm-sales').value = t.salesperson || '';
-          document.getElementById('fm-district').value = t.district || ''; 
-          document.getElementById('fm-office-loc').value = t.officeLoc || ''; 
-          document.getElementById('fm-ministry').value = t.ministry || '';
-          document.getElementById('fm-standard').value = t.standard || '';
-          document.getElementById('fm-route').value = t.route || '';
-          document.getElementById('fm-dips').value = t.dips || '';
-          document.getElementById('fm-ref-point').value = t.refPoint || '';
-          document.getElementById('fm-mapUrl').value = t.mapUrl || '';
-          document.getElementById('fm-meetUrl').value = t.meetUrl || '';
-          document.getElementById('fm-pjUrl').value = t.pjUrl || '';
-          document.getElementById('fm-chatUrl').value = t.chatUrl || '';
-          document.getElementById('fm-sharePath').value = t.sharePath || '';
-        }
-      } else {
-        document.getElementById('btn-delete-task').classList.add('hidden');
-        document.getElementById('btn-duplicate-task').classList.add('hidden');
-        document.getElementById('fm-status').value = '予定';
-        document.getElementById('edit-title-icon').innerHTML = '✨';
-      }
-      document.getElementById('task-modal').classList.remove('hidden');
-    }
+  window.isEditMode = !!taskId; 
+  window.currentOpenTaskId = taskId; 
+  
+  // 1. モーダルの初期化
+  document.getElementById('modal-title').textContent = window.isEditMode ? '案件情報の編集' : '新規案件の追加';
+  document.getElementById('task-form').reset(); 
+  populateMasterDropdowns(); 
+  
+  // 2. ボタンの表示切り替え
+  const btnDelete = document.getElementById('btn-delete-task');
+  const btnDuplicate = document.getElementById('btn-duplicate-task');
+  if (btnDelete) btnDelete.classList.toggle('hidden', !window.isEditMode);
+  if (btnDuplicate) btnDuplicate.classList.toggle('hidden', !window.isEditMode);
+  
+  if (window.isEditMode) {
+    const t = window.tasks.find(x => x.id === taskId);
+    if (!t) return;
+
+    document.getElementById('edit-title-icon').innerHTML = getIconSvg(t.type, t.equipment, 'w-10 h-10');
+    
+    // 営業マンのプルダウンを動的に生成
+    const reps = window.masterData.offices[t.office] || []; 
+    let salesHtml = '<option value="">（未選択）</option>'; 
+    reps.forEach(r => salesHtml += `<option value="${r}">${r}</option>`);
+    const salesSelect = document.getElementById('fm-sales');
+    if (salesSelect) salesSelect.innerHTML = salesHtml;
+
+    // 3. 値を流し込む項目のマッピング (HTMLのID : 流し込むデータ)
+    const fieldsToMap = {
+      'fm-date': formatDateForInput(t.date),
+      'fm-status': t.status || '予定',
+      'fm-type': t.type || '',
+      'fm-equipment': t.equipment || '',
+      'fm-client': t.client || '',
+      'fm-billing': t.billing || '',
+      'fm-site': t.site || '',
+      'fm-office': t.office || '',
+      'fm-sales': t.salesperson || '',
+      'fm-district': t.district || '',
+      'fm-office-loc': t.officeLoc || '',
+      'fm-ministry': t.ministry || '',
+      'fm-standard': t.standard || '',
+      'fm-route': t.route || '',
+      'fm-dips': t.dips || '',
+      'fm-ref-point': t.refPoint || '',
+      'fm-mapUrl': t.mapUrl || '',
+      'fm-meetUrl': t.meetUrl || '',
+      'fm-pjUrl': t.pjUrl || '',
+      'fm-chatUrl': t.chatUrl || '',
+      'fm-sharePath': t.sharePath || ''
+    };
+
+    // ループ処理で一気に値をセット
+    Object.entries(fieldsToMap).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+
+  } else {
+    // 新規作成時の初期値
+    document.getElementById('fm-status').value = '予定';
+    document.getElementById('edit-title-icon').innerHTML = '✨';
+  }
+  
+  document.getElementById('task-modal').classList.remove('hidden');
+}
 
     window.closeTaskModal = function() { 
       document.getElementById('task-modal').classList.add('hidden'); 
@@ -1767,39 +1784,41 @@
       window.allTodos = []; // 全タスクデータを保持
 
       // ====== タブ切り替えの拡張 ======
-      window.switchView = function(view) {
-        window.currentView = view;
-        ['kanban', 'shared', 'tasks', 'calendar', 'logs'].forEach(v => {
-          const vEl = document.getElementById('view-' + v);
-          if(vEl) vEl.classList.toggle('hidden', v !== view);
-          
-          const tEl = document.getElementById('tab-' + v);
-          if(tEl) {
-            // アクティブタブのスタイル
-            if (v === view) {
-              tEl.className = "px-5 py-2 bg-white border-t border-l border-r border-slate-300 rounded-t-lg font-bold text-blue-700 relative top-[1px] shadow-sm z-10 transition-colors cursor-pointer";
-            } else {
-              tEl.className = "px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer";
-            }
-          }
-        });
+window.switchView = function(view) {
+  window.currentView = view;
+  const views = ['kanban', 'shared', 'tasks', 'calendar', 'logs'];
 
-        // ★追加：並び替えボタンの表示/非表示の切り替え
-        const sortContainer = document.getElementById('task-sort-container');
-        if (sortContainer) {
-          if (view === 'tasks') {
-            sortContainer.classList.remove('hidden');
-            sortContainer.classList.add('flex');
-          } else {
-            sortContainer.classList.add('hidden');
-            sortContainer.classList.remove('flex');
-          }
-        }
-        
-        if (view === 'logs') window.loadLogs();
-        else if (view === 'tasks') renderTasksTab();
-        else window.updateCurrentView();
-      }
+  views.forEach(v => {
+    // 1. ビューの表示/非表示（オプショナルチェーン ?. で安全に実行）
+    document.getElementById(`view-${v}`)?.classList.toggle('hidden', v !== view);
+    
+    // 2. タブのスタイル切り替え
+    const tEl = document.getElementById(`tab-${v}`);
+    if (tEl) {
+      const isActive = (v === view);
+      tEl.className = isActive
+        ? "px-5 py-2 bg-white border-t border-l border-r border-slate-300 rounded-t-lg font-bold text-blue-700 relative top-[1px] shadow-sm z-10 transition-colors cursor-pointer"
+        : "px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer";
+    }
+  });
+
+  // 3. UIの表示/非表示の切り替え（一括処理）
+  const isTasks = (view === 'tasks');
+  const sortContainer = document.getElementById('task-sort-container');
+
+  if (sortContainer) {
+    sortContainer.classList.toggle('hidden', !isTasks);
+    sortContainer.classList.toggle('flex', isTasks);
+  }
+
+  document.getElementById('btn-toggle-search')?.classList.toggle('hidden', isTasks);
+  document.getElementById('search-bar-container')?.classList.toggle('hidden', isTasks);
+
+  // 4. 画面の更新処理
+  if (view === 'logs') window.loadLogs();
+  else if (view === 'tasks') window.renderTasksTab();
+  else window.updateCurrentView();
+}
 
       // ====== アプリ起動時に全ToDoを監視 ======
       function setupRealtimeTodos() {
@@ -2162,6 +2181,10 @@
       // 前回保存された設定を読み込む（保存されていなければオフにする）
       window.isSortClient = localStorage.getItem('taskSortClient') === 'true';
       window.isSortDate = localStorage.getItem('taskSortDate') === 'true';
+      
+      // ★新規追加：タスクキーワード検索の状態
+      window.isTaskKeywordActive = false;
+      window.taskKeyword = '';
 
       // UIの見た目を更新する共通関数
       function updateToggleUI(btnId, isActive) {
@@ -2183,9 +2206,47 @@
       }
 
       const btnToggleClient = document.getElementById('btn-toggle-client');
-      const btnToggleDate = document.getElementById('btn-toggle-date');
+const btnToggleDate = document.getElementById('btn-toggle-date');
+const btnToggleTaskKeyword = document.getElementById('btn-toggle-task-keyword');
+const inputTaskKeyword = document.getElementById('task-keyword-input');
 
-      if (btnToggleClient && btnToggleDate) {
+// ★新規追加：キーワード検索トグルのイベント
+if (btnToggleTaskKeyword) {
+  btnToggleTaskKeyword.addEventListener('click', () => {
+    window.isTaskKeywordActive = !window.isTaskKeywordActive;
+    const isActive = window.isTaskKeywordActive;
+
+    const bg = btnToggleTaskKeyword.querySelector('.toggle-bg');
+    const circle = btnToggleTaskKeyword.querySelector('.toggle-circle');
+    const label = btnToggleTaskKeyword.querySelector('.keyword-filter-label');
+
+    // トグルのUI更新（三項演算子で色と動きの変更部分だけを切り替え）
+    if (bg) bg.className = `w-10 h-5 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg ${isActive ? 'bg-green-500' : 'bg-slate-300'}`;
+    if (circle) circle.className = `w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 toggle-circle ${isActive ? 'translate-x-5' : 'translate-x-0'}`;
+    if (label) label.className = `text-[11px] font-bold transition-colors keyword-filter-label ${isActive ? 'text-green-600' : 'text-slate-500'}`;
+
+    // OFF時のリセット処理
+    if (!isActive && inputTaskKeyword) {
+      inputTaskKeyword.value = '';
+    }
+
+    // 検索キーワードの更新と再描画
+    window.taskKeyword = inputTaskKeyword ? inputTaskKeyword.value.toLowerCase().trim() : '';
+    if (window.currentView === 'tasks') window.renderTasksTab();
+  });
+}
+
+// ★新規追加：キーワード入力時のリアルタイムイベント
+if (inputTaskKeyword) {
+  inputTaskKeyword.addEventListener('input', () => {
+    if (window.isTaskKeywordActive) {
+      window.taskKeyword = inputTaskKeyword.value.toLowerCase().trim();
+      if (window.currentView === 'tasks') window.renderTasksTab();
+    }
+  });
+}
+
+if (btnToggleClient && btnToggleDate) {
         // ロード時に前回の設定をUIへ反映
         updateToggleUI('btn-toggle-client', window.isSortClient);
         updateToggleUI('btn-toggle-date', window.isSortDate);
@@ -2222,10 +2283,26 @@
           section.dataset.assignee = assigneeId;
           
           // その担当者に関わるタスクを抽出（未完了と完了）
-          const myTodos = window.allTodos.filter(t => {
+          let myTodos = window.allTodos.filter(t => {
             const arr = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : []);
             return arr.includes(assigneeId);
           });
+          
+          // ★新規追加：キーワード検索による絞り込み（タイトル、詳細、お客様名、現場名）
+          if (window.isTaskKeywordActive && window.taskKeyword) {
+            myTodos = myTodos.filter(t => {
+              const parentTask = window.tasks.find(pt => pt.id === t.taskId);
+              const title = (t.title || '').toLowerCase();
+              const details = (t.details || '').toLowerCase();
+              const client = parentTask ? (parentTask.client || '').toLowerCase() : '';
+              const site = parentTask ? (parentTask.site || '').toLowerCase() : '';
+              
+              return title.includes(window.taskKeyword) || 
+                     details.includes(window.taskKeyword) || 
+                     client.includes(window.taskKeyword) || 
+                     site.includes(window.taskKeyword);
+            });
+          }
           
           let activeTodos = myTodos.filter(t => !t.isCompleted);
           const completedTodos = myTodos.filter(t => t.isCompleted);
