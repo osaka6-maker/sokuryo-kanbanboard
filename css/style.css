@@ -205,9 +205,11 @@ select option {
 /* =========================================================
    【6】工程グループごとの背景色設定
    ========================================================= */
+#view-ready > section, 
 #view-kanban > section, #view-kanban > aside, #view-kanban > aside > section, #view-shared > section {
   border: none !important; box-shadow: none !important;
 }
+#view-ready > section > div, 
 #view-kanban > section > div, #view-kanban > aside > section > div, #view-shared > section > div {
   background-color: transparent !important; border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
@@ -216,8 +218,9 @@ select option {
   background-color: transparent !important;
 }
 
-/* ▽ カンバンタブの4グループ分け ▽ */
-section[data-status="予定"], section[data-status="測量前準備"] { background-color: #F1F5F9 !important; }
+/* ▽ カンバン・Readyタブのグループ分け ▽ */
+section[data-status="予定"] { background-color: #F1F5F9 !important; } /* 薄いブルーグレー */
+section[data-status="測量前準備"] { background-color: #FEFCE8 !important; } /* 薄い黄色 */
 section[data-status="点群処理中"], section[data-status="横断作成中"], section[data-status="成果作成中"], section[data-status="設計待"] { background-color: #E0F2FE !important; }
 section[data-status="確認待"], section[data-status="０円請求未"] { background-color: #F3E8FF !important; }
 section[data-status="まとめて提出"], section[data-status="共有移動未"] { background-color: #FCE7F3 !important; }

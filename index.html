@@ -59,6 +59,8 @@
 
     <section class="bg-slate-200 border-b border-slate-300 flex flex-wrap items-end shrink-0 shadow-sm z-10 text-slate-700 select-none pt-2 px-2">
       <div class="flex gap-1 ml-2">
+        <!-- ★新規追加：Readyタブ -->
+        <button id="tab-ready" onclick="switchView('ready')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">Ready</button>
         <button id="tab-kanban" onclick="switchView('kanban')" class="px-5 py-2 bg-slate-50 border-t border-l border-r border-slate-300 rounded-t-lg font-bold text-blue-700 relative top-[1px] shadow-sm z-10 transition-colors cursor-pointer">Running</button>
         <button id="tab-shared" onclick="switchView('shared')" class="px-5 py-2 bg-slate-300 border border-slate-300 rounded-t-lg font-bold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">Done</button>
       <!-- ★新規追加：タスクタブ -->
@@ -204,10 +206,11 @@
     </section>
 
     <main class="flex-1 overflow-hidden p-3 bg-slate-50 min-h-0 select-none relative">
-      <!-- ===== 1. カンバン表示 ===== -->
-      <div id="view-kanban" class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_240px] grid-rows-2 gap-3 h-full pb-2 min-h-0">
-        
-        <section class="row-span-1 col-start-1 row-start-1 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="予定">
+      <!-- ===== 0. Ready表示 ===== -->
+      <!-- hidden を追加 -->
+      <div id="view-ready" class="hidden grid grid-cols-2 gap-4 h-full pb-2 min-h-0">
+        <!-- 左側：予定（2カラム表示） -->
+        <section class="bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="予定">
           <div class="bg-slate-300 shrink-0">
             <header class="px-4 py-2.5 font-bold text-base text-slate-800 flex justify-between items-center">
               <div class="flex items-baseline gap-2.5 truncate">
@@ -217,10 +220,30 @@
               <span class="count bg-white text-slate-600 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
             </header>
           </div>
-          <div class="flex-1 overflow-y-auto p-2 flex flex-col gap-2 task-list min-h-0"></div>
+          <div class="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3 content-start task-list min-h-0"></div>
         </section>
+
+        <!-- 右側：測量前準備（2カラム表示） -->
+        <section class="bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="測量前準備">
+          <div class="bg-yellow-200 shrink-0">
+            <header class="px-4 py-2.5 font-bold text-base text-yellow-800 flex justify-between items-center">
+              <div class="flex items-baseline gap-2.5 truncate">
+                <span>測量前準備</span>
+                <span class="status-desc text-xs font-medium text-yellow-700 empty:hidden truncate" data-status-key="測量前準備"></span>
+              </div>
+              <span class="count bg-white text-yellow-700 text-sm px-2.5 py-0.5 rounded-full shadow-sm">0</span>
+            </header>
+          </div>
+          <div class="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3 content-start task-list min-h-0"></div>
+        </section>
+      </div>
+
+      <!-- ===== 1. カンバン表示(Running) ===== -->
+      <!-- hidden を削除 -->
+      <div id="view-kanban" class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_240px] grid-rows-[2fr_1fr] gap-3 h-full pb-2 min-h-0">
         
-        <section class="row-span-1 col-start-1 row-start-2 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="測量前準備">
+        <!-- 測量前準備（縦幅をフルサイズ row-span-2 に拡張） -->
+        <section class="row-span-2 col-start-1 row-start-1 bg-slate-200 rounded-xl flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-inner min-h-0" data-status="測量前準備">
           <div class="bg-yellow-200 shrink-0">
             <header class="px-4 py-2.5 font-bold text-base text-yellow-800 flex justify-between items-center">
               <div class="flex items-baseline gap-2.5 truncate">
@@ -313,7 +336,8 @@
 
         <!-- 右側：まとめて提出・共有移動未 -->
         <aside class="row-span-2 col-start-5 row-start-1 flex flex-col gap-3 bg-slate-300 rounded-xl p-2.5 overflow-hidden shadow-inner border border-slate-300 min-h-0">
-          <section class="flex-1 min-h-0 bg-gray-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm" data-status="まとめて提出">
+          <!-- flex-1 を flex-[2] に変更して高さを下段の2倍にします -->
+          <section class="flex-[2] min-h-0 bg-gray-50 rounded-lg flex flex-col border-2 border-transparent drop-zone overflow-hidden shadow-sm" data-status="まとめて提出">
             <div class="bg-gray-200 shrink-0">
               <header class="text-sm font-bold text-gray-800 px-3 py-2 flex justify-between items-center">
                 <div class="flex items-baseline gap-2 truncate">
