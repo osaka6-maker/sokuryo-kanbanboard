@@ -930,11 +930,11 @@
       if (isFiltered) {
         btn.classList.add('bg-blue-600', 'text-white', 'border-blue-500'); 
         btn.classList.remove('bg-slate-700', 'text-blue-200', 'border-slate-600'); 
-        btn.innerHTML = '🔍 検索中 (' + count + '件)';
+        btn.innerHTML = '案件検索';
       } else {
         btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-500'); 
         btn.classList.add('bg-slate-700', 'text-blue-200', 'border-slate-600'); 
-        btn.innerHTML = '🔍 検索・絞り';
+        btn.innerHTML = '案件検索';
       }
     }
 
@@ -1811,8 +1811,17 @@ window.switchView = function(view) {
     sortContainer.classList.toggle('flex', isTasks);
   }
 
-  document.getElementById('btn-toggle-search')?.classList.toggle('hidden', isTasks);
-  document.getElementById('search-bar-container')?.classList.toggle('hidden', isTasks);
+  const btnToggleSearch = document.getElementById('btn-toggle-search');
+  const searchBarContainer = document.getElementById('search-bar-container');
+
+  if (isTasks) {
+    // To Do(タスク)タブを開いた時は検索枠を隠し、検索ボタンをグレーアウト(無効化)させる
+    searchBarContainer?.classList.add('hidden');
+    btnToggleSearch?.classList.add('btn-disabled');
+  } else {
+    // 他のタブを開いた時は検索ボタンのグレーアウトを解除する
+    btnToggleSearch?.classList.remove('btn-disabled');
+  }
 
   // 4. 画面の更新処理
   if (view === 'logs') window.loadLogs();
