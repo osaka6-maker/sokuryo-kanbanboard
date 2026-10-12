@@ -1963,8 +1963,14 @@ window.switchView = function(view) {
 
           let detailsHtml = '';
           if (todo.details) {
-            const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-            detailsHtml = `<div class="text-[12px] text-slate-600 font-medium mt-1 leading-relaxed pl-1">${escapedDetails}</div>`;
+            const escapedDetailsForTooltip = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const shortDetails = escapedDetailsForTooltip.split('\n')[0];
+            detailsHtml = `
+              <div class="mt-0.5 min-w-0 w-full">
+                <div class="text-[11px] font-medium text-slate-500 pl-0.5 truncate">${shortDetails}</div>
+                <div class="absolute left-0 top-full mt-1 w-[400px] max-w-[90vw] p-3 bg-white text-slate-700 border border-slate-300 text-[11px] font-normal leading-relaxed rounded-md shadow-xl z-[100] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 delay-0 group-hover:delay-500 whitespace-pre-wrap pointer-events-none break-all text-left">${escapedDetailsForTooltip}</div>
+              </div>
+            `;
           }
 
           activeHtml += `
@@ -2003,8 +2009,14 @@ window.switchView = function(view) {
 
             let detailsHtml = '';
             if (todo.details) {
-              const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-              detailsHtml = `<div class="text-[12px] text-slate-400 font-medium mt-1 leading-relaxed pl-1 line-through">${escapedDetails}</div>`;
+              const escapedDetailsForTooltip = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              const shortDetails = escapedDetailsForTooltip.split('\n')[0];
+              detailsHtml = `
+                <div class="mt-0.5 min-w-0 w-full">
+                  <div class="text-[11px] font-medium text-slate-400 pl-0.5 truncate line-through">${shortDetails}</div>
+                  <div class="absolute left-0 top-full mt-1 w-[400px] max-w-[90vw] p-3 bg-white text-slate-700 border border-slate-300 text-[11px] font-normal leading-relaxed rounded-md shadow-xl z-[100] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 delay-0 group-hover:delay-500 whitespace-pre-wrap pointer-events-none break-all no-underline text-left">${escapedDetailsForTooltip}</div>
+                </div>
+              `;
             }
 
             compItemsHtml += `
@@ -2397,8 +2409,14 @@ if (btnToggleClient && btnToggleDate) {
 
               let detailsHtml = '';
               if (todo.details) {
-                const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-                detailsHtml = `<div class="text-[12px] font-medium leading-relaxed pl-1 ${isDelayed ? 'text-yellow-800' : 'text-slate-600'}">${escapedDetails}</div>`;
+                const escapedDetailsForTooltip = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const shortDetails = escapedDetailsForTooltip.split('\n')[0];
+                detailsHtml = `
+                  <div class="mt-0.5 min-w-0 w-full">
+                    <div class="text-[11px] font-medium pl-0.5 truncate ${isDelayed ? 'text-yellow-800' : 'text-slate-600'}">${shortDetails}</div>
+                    <div class="absolute left-0 top-full mt-1 w-[400px] max-w-[90vw] p-3 bg-white text-slate-700 border border-slate-300 text-[11px] font-normal leading-relaxed rounded-md shadow-xl z-[100] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 delay-0 group-hover:delay-500 whitespace-pre-wrap pointer-events-none break-all text-left">${escapedDetailsForTooltip}</div>
+                  </div>
+                `;
               }
 
               // ★追加：案件に紐づくタスクか、汎用タスクかの表示判定
@@ -2416,17 +2434,22 @@ if (btnToggleClient && btnToggleDate) {
               // ★追加：クリック時の動作（案件あり＝詳細モーダル、案件なし＝汎用タスクモーダル）
               const clickAction = todo.taskId ? `openDetailModalFromId('${todo.taskId}')` : `openGlobalTodoForm('${todo.id}', '${assigneeId}')`;
 
+              const dragHandleHtml = `<div class="cursor-grab text-slate-300 hover:text-slate-500 pt-0.5 shrink-0 active:cursor-grabbing" title="ドラッグで並び替え"><span class="material-icons-outlined" style="font-size: 18px;">drag_indicator</span></div>`;
+              
               activeHtml += `
-                <article class="todo-item flex items-start gap-3 py-2.5 px-2.5 ${isDelayed ? 'bg-yellow-100 hover:bg-yellow-200 border-yellow-400' : 'bg-white hover:bg-slate-50 border-slate-200'} border rounded-lg shadow-sm transition-all cursor-pointer group" draggable="true" data-id="${todo.id}">
-                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5 ${isDelayed ? 'border-yellow-500' : ''}">
-                  <div class="flex-1 min-w-0 flex flex-col gap-1.5" onclick="${clickAction}">
-                    <span class="text-[13px] font-bold ${isDelayed ? 'text-yellow-900' : 'text-slate-800'} leading-snug">${todo.title}</span>
-                    ${detailsHtml}
-                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] mt-0.5">
-                      ${clientInfoHtml}
-                      ${dateStr ? `<span class="${isDelayed ? 'text-red-600 bg-red-50 px-1 py-0.5 font-bold rounded border border-red-200 shadow-sm' : 'text-slate-500'} flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">${isDelayed ? 'warning_amber' : 'event'}</span>${dateStr}</span>` : ''}
-                      ${othersHtml}
+                <article class="todo-item relative flex items-start gap-2 py-2.5 px-2 border-b ${isDelayed ? 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200' : 'bg-white hover:bg-slate-50 border-slate-100'} transition-colors cursor-pointer group" draggable="true" data-id="${todo.id}">
+                  ${dragHandleHtml}
+                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-[3px] ${isDelayed ? 'border-yellow-500' : ''}">
+                  <div class="flex-1 min-w-0 flex flex-col pt-0.5" onclick="${clickAction}">
+                    <div class="flex justify-between items-start gap-3 w-full">
+                      <span class="text-[13px] font-bold ${isDelayed ? 'text-yellow-900' : 'text-slate-800'} leading-snug truncate flex-1">${todo.title}</span>
+                      <div class="flex items-center gap-2 text-[10px] shrink-0 justify-end max-w-[50%]">
+                        ${clientInfoHtml}
+                        ${othersHtml}
+                        ${dateStr ? `<span class="${isDelayed ? 'text-red-600 bg-red-50 px-1 py-0.5 font-bold rounded border border-red-200 shadow-sm' : 'text-slate-500'} flex items-center gap-0.5"><span class="material-icons-outlined" style="font-size: 11px;">${isDelayed ? 'warning_amber' : 'event'}</span>${dateStr}</span>` : ''}
+                      </div>
                     </div>
+                    ${detailsHtml}
                   </div>
                 </article>
               `;
@@ -2440,8 +2463,14 @@ if (btnToggleClient && btnToggleDate) {
             
             let detailsHtml = '';
             if (todo.details) {
-              const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-              detailsHtml = `<div class="text-[12px] font-medium text-slate-500 leading-relaxed pl-1 line-through">${escapedDetails}</div>`;
+              const escapedDetailsForTooltip = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              const shortDetails = escapedDetailsForTooltip.split('\n')[0];
+              detailsHtml = `
+                <div class="mt-0.5 min-w-0 w-full">
+                  <div class="text-[11px] font-medium text-slate-400 pl-0.5 truncate line-through">${shortDetails}</div>
+                  <div class="absolute left-0 top-full mt-1 w-[400px] max-w-[90vw] p-3 bg-white text-slate-700 border border-slate-300 text-[11px] font-normal leading-relaxed rounded-md shadow-xl z-[100] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 delay-0 group-hover:delay-500 whitespace-pre-wrap pointer-events-none break-all no-underline text-left">${escapedDetailsForTooltip}</div>
+                </div>
+              `;
             }
 
             // ★追加：完了側の判定
@@ -2455,12 +2484,15 @@ if (btnToggleClient && btnToggleDate) {
             const clickAction = todo.taskId ? `openDetailModalFromId('${todo.taskId}')` : `openGlobalTodoForm('${todo.id}', '${assigneeId}')`;
 
             compHtml += `
-              <article class="flex items-start gap-3 py-2.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg opacity-60 cursor-pointer" onclick="${clickAction}">
-                <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-0.5">
-                <div class="flex-1 min-w-0 flex flex-col gap-1">
-                  <span class="text-[13px] font-bold text-slate-500 line-through leading-snug">${todo.title}</span>
+              <article class="relative flex items-start gap-2 py-2.5 px-2 bg-slate-50 border-b border-slate-100 opacity-70 hover:opacity-100 transition-opacity cursor-pointer group" onclick="${clickAction}">
+                <div class="w-[18px] shrink-0"></div> <!-- ドラッグハンドルのスペース合わせ -->
+                <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-[3px]">
+                <div class="flex-1 min-w-0 flex flex-col pt-0.5">
+                  <div class="flex justify-between items-start gap-3 w-full">
+                    <span class="text-[13px] font-bold text-slate-500 line-through leading-snug truncate flex-1">${todo.title}</span>
+                    <div class="flex text-[10px] text-slate-400 gap-1 shrink-0 justify-end max-w-[50%]">${clientInfoHtml}</div>
+                  </div>
                   ${detailsHtml}
-                  <div class="flex text-[11px] text-slate-400 gap-1 mt-0.5">${clientInfoHtml}</div>
                 </div>
               </article>
             `;
@@ -2476,7 +2508,7 @@ if (btnToggleClient && btnToggleDate) {
               </button>
             </header>
             <div class="flex-1 overflow-y-auto pb-4">
-              <div class="auto-grid content-start mb-6 drop-target-list">
+              <div class="flex flex-col mb-6 drop-target-list border-t border-slate-100">
                 ${activeHtml}
               </div>
               <div class="completed-section">
@@ -2484,7 +2516,7 @@ if (btnToggleClient && btnToggleDate) {
                   <span class="material-icons-outlined toggle-icon transition-transform" style="font-size: 16px;">play_arrow</span>
                   完了 (${completedTodos.length}件)
                 </button>
-                <div class="completed-list auto-grid mt-1 pt-2 border-t border-slate-100">
+                <div class="completed-list flex-col mt-1 pt-1 border-t border-slate-100">
                   ${compHtml}
                 </div>
               </div>
@@ -2496,50 +2528,125 @@ if (btnToggleClient && btnToggleDate) {
         setupTaskTabDragAndDrop();
       };
 
-      // タスクタブ用：担当者変更ドラッグ＆ドロップ
-      function setupTaskTabDragAndDrop() {
-        const columns = document.querySelectorAll('.task-column');
-        let draggedTodoEl = null;
+      // タスクタブ用：担当者変更 ＆ 自由な並び替え（ドラッグ＆ドロップ）Google Tasks風
+function setupTaskTabDragAndDrop() {
+  const columns = document.querySelectorAll('.task-column');
+  let draggedTodoEl = null;
 
-        document.querySelectorAll('.drop-target-list .todo-item').forEach(item => {
-          item.addEventListener('dragstart', (e) => {
-            draggedTodoEl = item;
-            setTimeout(() => item.classList.add('dragging'), 0);
-          });
-          item.addEventListener('dragend', () => {
-            if(draggedTodoEl) draggedTodoEl.classList.remove('dragging');
-            draggedTodoEl = null;
-            columns.forEach(col => col.classList.remove('drag-over'));
-          });
-        });
+  // 挿入位置を計算する関数
+  const getDragAfterElement = (container, y) => {
+    const draggableElements = [...container.querySelectorAll('.todo-item:not(.opacity-40)')];
+    return draggableElements.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  };
 
-        columns.forEach(column => {
-          column.addEventListener('dragover', (e) => { e.preventDefault(); column.classList.add('drag-over'); });
-          column.addEventListener('dragleave', () => { column.classList.remove('drag-over'); });
-          column.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            column.classList.remove('drag-over');
-            if (draggedTodoEl) {
-              const todoId = draggedTodoEl.dataset.id;
-              const targetAssignee = column.dataset.assignee;
-              const sourceAssignee = draggedTodoEl.closest('.task-column').dataset.assignee;
-              if (targetAssignee && targetAssignee !== sourceAssignee) {
-                // Firebaseのデータを更新 (配列内の担当者を入れ替える)
-                const todoData = window.allTodos.find(t => t.id === todoId);
-                if (todoData) {
-                  let assignees = Array.isArray(todoData.assignees) ? todoData.assignees : (todoData.assignee ? [todoData.assignee] : []);
-                  assignees = assignees.filter(a => a !== sourceAssignee); // 元の担当者を外す
-                  if (!assignees.includes(targetAssignee)) assignees.push(targetAssignee); // 新しい担当者を追加
-                  try {
-                    await updateDoc(doc(db, 'todos', todoId), { assignees });
-                    showToast('担当者を変更しました');
-                  } catch(err) { showToast('変更失敗', 'error'); }
-                }
-              }
-            }
-          });
-        });
+  // 青い挿入ラインをリセットするヘルパー関数
+  const clearDropIndicators = () => {
+    document.querySelectorAll('.todo-item').forEach(el => {
+      el.style.borderTop = '';
+      el.style.borderBottom = '';
+    });
+  };
+
+  // ドラッグ開始・終了イベントの設定
+  document.querySelectorAll('.drop-target-list .todo-item').forEach(item => {
+    item.addEventListener('dragstart', () => {
+      draggedTodoEl = item;
+      setTimeout(() => item.classList.add('opacity-40', 'bg-slate-100'), 0);
+    });
+    
+    item.addEventListener('dragend', () => {
+      if (draggedTodoEl) draggedTodoEl.classList.remove('opacity-40', 'bg-slate-100');
+      draggedTodoEl = null;
+      clearDropIndicators();
+    });
+  });
+
+  // 各カラム（ドロップ先）のイベント設定
+  columns.forEach(column => {
+    const dropList = column.querySelector('.drop-target-list');
+    if (!dropList) return;
+
+    dropList.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const afterElement = getDragAfterElement(dropList, e.clientY);
+      clearDropIndicators();
+
+      if (afterElement) {
+        afterElement.style.borderTop = '2px solid #3b82f6';
+      } else {
+        const lastChild = dropList.lastElementChild;
+        if (lastChild && lastChild !== draggedTodoEl) {
+          lastChild.style.borderBottom = '2px solid #3b82f6';
+        }
       }
+    });
+
+    dropList.addEventListener('dragleave', clearDropIndicators);
+
+    dropList.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      clearDropIndicators();
+      if (!draggedTodoEl) return;
+
+      const afterElement = getDragAfterElement(dropList, e.clientY);
+      if (afterElement) {
+        dropList.insertBefore(draggedTodoEl, afterElement);
+      } else {
+        dropList.appendChild(draggedTodoEl);
+      }
+
+      const todoId = draggedTodoEl.dataset.id;
+      const targetAssignee = column.dataset.assignee;
+      const todoData = window.allTodos.find(t => t.id === todoId);
+      if (!todoData) return;
+
+      let assignees = Array.isArray(todoData.assignees) ? [...todoData.assignees] : (todoData.assignee ? [todoData.assignee] : []);
+      let isAssigneeChanged = false;
+
+      // 他の人のカラムにドロップされた場合の担当者入れ替え
+      if (targetAssignee && !assignees.includes(targetAssignee)) {
+        const allVisible = Array.from(columns).map(c => c.dataset.assignee);
+        assignees = assignees.filter(a => !allVisible.includes(a)); 
+        assignees.push(targetAssignee);
+        isAssigneeChanged = true;
+      }
+
+      // 並び順と担当者の保存処理
+      const items = [...dropList.querySelectorAll('.todo-item')];
+      
+      items.forEach(async (itemEl, index) => {
+        const id = itemEl.dataset.id;
+        const tData = window.allTodos.find(t => t.id === id);
+        if (!tData) return;
+
+        const updates = {};
+        if (tData.order !== index) {
+          updates.order = index;
+          tData.order = index; // ローカル同期
+        }
+        if (id === todoId && isAssigneeChanged) {
+          updates.assignees = assignees;
+          tData.assignees = assignees;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          try { 
+            // 既にファイルの先頭でインポート済みの関数を使用
+            await updateDoc(doc(db, 'todos', id), updates); 
+          } catch(err) {
+            console.error('更新エラー:', err);
+          }
+        }
+      });
+
+      if (isAssigneeChanged) showToast('担当者を変更しました');
+    });
+  });
+}
 
       // ==========================================
       // 汎用タスク（案件に紐づかないToDo）用ロジック
