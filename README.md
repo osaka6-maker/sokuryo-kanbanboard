@@ -50,7 +50,7 @@ erDiagram
         string image1 "画像1(Storage URL)"
         string image2 "画像2(Storage URL)"
         string slipImage "伝票画像(Storage URL)"
-        string statusDate "ステータス変更日"
+        string statusDate "ステータス変更日 (YYYYMMDD形式)"
         
         string designRep "設計担当(カンマ区切り文字列)"
         string planRep "施工計画(カンマ区切り文字列)"
@@ -82,6 +82,7 @@ erDiagram
         timestamp timestamp "操作日時"
         string userName "ユーザー名(email)"
         string taskId FK "対象案件ID (tasks.ID)"
+        string taskName "案件・現場名"
         string actionType "操作種別"
         string details "詳細"
     }
