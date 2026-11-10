@@ -1927,74 +1927,63 @@ window.switchView = function(view) {
         container.innerHTML = html;
       }
 
-      // 詳細モーダル用ToDoリストの描画（★変更：完了タスクの分離と無効化の自由化）
-      function loadTodosForTask(taskId) {
-        const container = document.getElementById('todo-list-container');
-        if(!container) return;
-        const taskTodos = window.allTodos.filter(t => t.taskId === taskId).sort((a,b) => a.order - b.order);
-
-        if (taskTodos.length === 0) {
-          container.innerHTML = '<div class="text-center text-[11px] text-slate-400 mt-6">タスクはありません</div>';
-          return;
+      // ==========================================
+      // タスク・ログタブの切り替えロジック
+      // ==========================================
+      window.currentDetailTab = 'task'; // 'task' or 'log'
+      
+      window.switchDetailTab = function(tab) {
+        window.currentDetailTab = tab;
+        const tabTask = document.getElementById('tab-detail-task');
+        const tabLog = document.getElementById('tab-detail-log');
+        const listTask = document.getElementById('todo-list-container');
+        const listLog = document.getElementById('log-list-container');
+        const btnText = document.getElementById('btn-show-todo-text');
+        
+        if (tab === 'task') {
+          tabTask.className = "flex-1 py-3 text-blue-700 bg-white border-b-2 border-blue-600 transition-colors cursor-pointer";
+          tabLog.className = "flex-1 py-3 text-slate-500 hover:bg-slate-100 border-b-2 border-transparent transition-colors cursor-pointer";
+          listTask.classList.remove('hidden');
+          listLog.classList.add('hidden');
+          btnText.textContent = "タスクを追加";
+        } else {
+          tabTask.className = "flex-1 py-3 text-slate-500 hover:bg-slate-100 border-b-2 border-transparent transition-colors cursor-pointer";
+          tabLog.className = "flex-1 py-3 text-blue-700 bg-white border-b-2 border-blue-600 transition-colors cursor-pointer";
+          listTask.classList.add('hidden');
+          listLog.classList.remove('hidden');
+          btnText.textContent = "ログを追加";
         }
+        closeTodoForm();
+      }
 
-        const activeTodos = taskTodos.filter(t => !t.isCompleted);
-        const completedTodos = taskTodos.filter(t => t.isCompleted);
+      window.toggleLogPin = async function(id, isPinned) {
+        try {
+          await updateDoc(doc(db, 'todos', id), { isPinned });
+        } catch(e) {
+          console.error("ピン留め更新エラー:", e);
+        }
+      }
+
+      // ==========================================
+      // リスト描画（タスク ＆ ログ統合版）
+      // ==========================================
+      function loadTodosForTask(taskId) {
+        const containerTask = document.getElementById('todo-list-container');
+        const containerLog = document.getElementById('log-list-container');
+        if(!containerTask || !containerLog) return;
+        const taskTodos = window.allTodos.filter(t => t.taskId === taskId);
+
+        // -----------------------------
+        // 1. タスク側の描画処理
+        // -----------------------------
+        const activeTodos = taskTodos.filter(t => !t.isCompleted).sort((a,b) => a.order - b.order);
+        const completedTodos = taskTodos.filter(t => t.isCompleted).sort((a,b) => a.order - b.order);
 
         let activeHtml = '';
-        activeTodos.forEach(todo => {
-          let assigneesHtml = '';
-          const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
-          if (assignees.length > 0) {
-            assigneesHtml += `<span class="flex items-center gap-1">`;
-            const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
-            assigneesHtml += `<span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}`;
-            if(assignees.length > 1) {
-              assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 1} 名">+${assignees.length - 1}</span>`;
-            }
-            assigneesHtml += `</span>`;
-          }
-
-          let dateHtml = '';
-          if (todo.dueDate) {
-            const d = new Date(todo.dueDate);
-            dateHtml = `<span class="flex items-center gap-1 ${new Date() > d ? 'text-red-500' : ''}"><span class="material-icons-outlined" style="font-size: 14px;">calendar_today</span>${d.getMonth()+1}/${d.getDate()}</span>`;
-          }
-
-          let detailsHtml = '';
-          if (todo.details) {
-            const escapedDetailsForTooltip = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            const shortDetails = escapedDetailsForTooltip.split('\n')[0];
-            detailsHtml = `
-              <div class="mt-0.5 min-w-0 w-full">
-                <div class="text-[11px] font-medium text-slate-500 pl-0.5 truncate">${shortDetails}</div>
-                <div class="absolute left-0 top-full mt-1 w-[400px] max-w-[90vw] p-3 bg-white text-slate-700 border border-slate-300 text-[11px] font-normal leading-relaxed rounded-md shadow-xl z-[100] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 delay-0 group-hover:delay-500 whitespace-pre-wrap pointer-events-none break-all text-left">${escapedDetailsForTooltip}</div>
-              </div>
-            `;
-          }
-
-          activeHtml += `
-            <li class="todo-item relative py-3 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 hover:bg-slate-50 cursor-pointer transition-colors">
-              <div class="pt-0.5 shrink-0">
-                <!-- ★ onchangeでトグル処理を呼び出し、自由にチェック付け外し可能に -->
-                <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
-              </div>
-              <div class="flex-1 min-w-0 flex flex-col" onclick="openTodoEditForm('${todo.id}')">
-                <span class="text-[13px] font-bold text-slate-700 leading-snug">${todo.title}</span>
-                ${detailsHtml}
-                <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-1">
-                  ${assigneesHtml}
-                  ${dateHtml}
-                </div>
-              </div>
-            </li>
-          `;
-        });
-
-        let compHtml = '';
-        if (completedTodos.length > 0) {
-          let compItemsHtml = '';
-          completedTodos.forEach(todo => {
+        if (activeTodos.length === 0) {
+          activeHtml = '<div class="text-center text-[11px] text-slate-400 mt-6">タスクはありません</div>';
+        } else {
+          activeTodos.forEach(todo => {
             let assigneesHtml = '';
             const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
             if (assignees.length > 0) {
@@ -2007,30 +1996,55 @@ window.switchView = function(view) {
               assigneesHtml += `</span>`;
             }
 
+            let dateHtml = '';
+            if (todo.dueDate) {
+              const d = new Date(todo.dueDate);
+              dateHtml = `<span class="flex items-center gap-1 ${new Date() > d ? 'text-red-500' : ''}"><span class="material-icons-outlined" style="font-size: 14px;">calendar_today</span>${d.getMonth()+1}/${d.getDate()}</span>`;
+            }
+
             let detailsHtml = '';
             if (todo.details) {
-              const escapedDetailsForTooltip = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-              const shortDetails = escapedDetailsForTooltip.split('\n')[0];
-              detailsHtml = `
-                <div class="mt-0.5 min-w-0 w-full">
-                  <div class="text-[11px] font-medium text-slate-400 pl-0.5 truncate line-through">${shortDetails}</div>
-                  <div class="absolute left-0 top-full mt-1 w-[400px] max-w-[90vw] p-3 bg-white text-slate-700 border border-slate-300 text-[11px] font-normal leading-relaxed rounded-md shadow-xl z-[100] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 delay-0 group-hover:delay-500 whitespace-pre-wrap pointer-events-none break-all no-underline text-left">${escapedDetailsForTooltip}</div>
+              const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              detailsHtml = `<div class="mt-0.5 text-[11px] font-medium text-slate-500 pl-0.5 truncate">${escapedDetails.split('\n')[0]}</div>`;
+            }
+
+            activeHtml += `
+              <li class="todo-item relative py-3 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 hover:bg-slate-50 cursor-pointer transition-colors">
+                <div class="pt-0.5 shrink-0"><input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox"></div>
+                <div class="flex-1 min-w-0 flex flex-col" onclick="openTodoEditForm('${todo.id}')">
+                  <span class="text-[13px] font-bold text-slate-700 leading-snug">${todo.title}</span>
+                  ${detailsHtml}
+                  <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-1">${assigneesHtml}${dateHtml}</div>
                 </div>
-              `;
+              </li>
+            `;
+          });
+        }
+
+        let compHtml = '';
+        if (completedTodos.length > 0) {
+          let compItemsHtml = '';
+          completedTodos.forEach(todo => {
+            let assigneesHtml = '';
+            const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
+            if (assignees.length > 0) {
+              const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
+              assigneesHtml = `<span class="flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}</span>`;
+            }
+
+            let detailsHtml = '';
+            if (todo.details) {
+              const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              detailsHtml = `<div class="mt-0.5 text-[11px] font-medium text-slate-400 pl-0.5 truncate line-through">${escapedDetails.split('\n')[0]}</div>`;
             }
 
             compItemsHtml += `
               <li class="todo-item relative py-2.5 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 bg-slate-50 opacity-70 transition-colors">
-                <div class="pt-0.5 shrink-0">
-                  <!-- ★ checked状態で出力。外すと未完了に戻り、上のリストへ移動する -->
-                  <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
-                </div>
+                <div class="pt-0.5 shrink-0"><input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox"></div>
                 <div class="flex-1 min-w-0 flex flex-col cursor-pointer" onclick="openTodoEditForm('${todo.id}')">
                   <span class="text-[13px] font-bold text-slate-500 leading-snug line-through">${todo.title}</span>
                   ${detailsHtml}
-                  <div class="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
-                    ${assigneesHtml}
-                  </div>
+                  <div class="flex items-center gap-3 text-[10px] text-slate-400 mt-1">${assigneesHtml}</div>
                 </div>
               </li>
             `;
@@ -2039,20 +2053,67 @@ window.switchView = function(view) {
           compHtml = `
             <div class="completed-section mt-4 mb-2">
               <button class="flex items-center gap-2 text-[12px] font-bold text-slate-500 hover:text-slate-700 transition-colors py-2 px-1 w-full text-left" onclick="this.parentElement.classList.toggle('open')">
-                <span class="material-icons-outlined toggle-icon transition-transform" style="font-size: 16px;">play_arrow</span>
-                完了 (${completedTodos.length}件)
+                <span class="material-icons-outlined toggle-icon transition-transform" style="font-size: 16px;">play_arrow</span>完了 (${completedTodos.length}件)
               </button>
-              <ul class="completed-list mt-1 pt-1 border-t border-slate-100">
-                ${compItemsHtml}
-              </ul>
+              <ul class="completed-list mt-1 pt-1 border-t border-slate-100">${compItemsHtml}</ul>
             </div>
           `;
         }
+        containerTask.innerHTML = `<ul>${activeHtml}</ul>${compHtml}`;
 
-        container.innerHTML = `<ul>${activeHtml}</ul>${compHtml}`;
+        // -----------------------------
+        // 2. ログ側の描画処理
+        // -----------------------------
+        // 並び替え: ピン留め(true)優先 -> 日付降順 -> 作成日時降順
+        const logTodos = [...taskTodos].sort((a, b) => {
+          if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+          const dateA = a.logDate || '0000-00-00';
+          const dateB = b.logDate || '0000-00-00';
+          if (dateA !== dateB) return dateB.localeCompare(dateA);
+          const ca = a.createdAt?.seconds || 0;
+          const cb = b.createdAt?.seconds || 0;
+          return cb - ca;
+        });
+
+        if (logTodos.length === 0) {
+          containerLog.innerHTML = '<div class="text-center text-[11px] text-slate-400 mt-6 pt-4">ログはありません</div>';
+        } else {
+          let logHtml = '';
+          logTodos.forEach(log => {
+            const authorName = (window.userNamesMap && window.userNamesMap[log.author]) ? window.userNamesMap[log.author] : (log.author || '不明');
+            const dateStr = log.logDate ? log.logDate.replace(/-/g, '/') : '-';
+            
+            let detailsHtml = '';
+            if (log.details) {
+              const escapedDetails = log.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              detailsHtml = `<div class="mt-2 text-[12px] font-medium text-slate-700 whitespace-pre-wrap break-all leading-relaxed bg-slate-50 p-2 rounded border border-slate-100">${escapedDetails}</div>`;
+            }
+            
+            const pinClass = log.isPinned ? 'text-orange-500 bg-orange-50 border border-orange-200' : 'text-slate-300 hover:text-slate-500 hover:bg-slate-200 border border-transparent';
+
+            logHtml += `
+              <li class="relative p-3 border border-slate-200 flex flex-col group transition-colors bg-white mt-3 rounded-xl shadow-sm hover:shadow-md cursor-pointer" onclick="openTodoEditForm('${log.id}')">
+                <div class="flex justify-between items-start mb-1">
+                  <span class="text-[14px] font-bold text-slate-800 leading-snug flex-1 pr-2">${log.title}</span>
+                  <button type="button" onclick="event.stopPropagation(); toggleLogPin('${log.id}', ${!log.isPinned})" class="${pinClass} transition-colors p-1 rounded shadow-sm shrink-0" title="固定を切り替え">
+                    <span class="material-icons-outlined" style="font-size: 16px; transform: rotate(45deg);">push_pin</span>
+                  </button>
+                </div>
+                <div class="flex items-center gap-3 text-[10.5px] text-slate-500 pb-1 w-full border-b border-slate-100 border-dashed mb-1">
+                  <span class="flex items-center gap-1 font-bold text-slate-600"><span class="material-icons-outlined" style="font-size: 13px;">person</span>${authorName}</span>
+                  <span class="flex items-center gap-1 font-bold"><span class="material-icons-outlined" style="font-size: 13px;">edit_calendar</span>${dateStr}</span>
+                </div>
+                ${detailsHtml}
+              </li>
+            `;
+          });
+          containerLog.innerHTML = `<ul>${logHtml}</ul>`;
+        }
       }
 
-      // 詳細モーダル用：フォーム開閉
+      // ==========================================
+      // 詳細モーダル用：フォーム開閉と保存
+      // ==========================================
       const btnShowTodo = document.getElementById('btn-show-todo-form');
       const todoForm = document.getElementById('todo-edit-form');
       const todoBackdrop = document.getElementById('todo-form-backdrop');
@@ -2064,9 +2125,25 @@ window.switchView = function(view) {
         btnShowTodo.addEventListener('click', () => {
           document.getElementById('form-todo-id').value = '';
           document.getElementById('form-todo-title').value = '';
-          document.getElementById('form-todo-details').value = ''; // ★追加
-          document.getElementById('form-todo-date').value = '';
-          populateTodoAssignees([]);
+          document.getElementById('form-todo-details').value = '';
+          
+          const now = new Date();
+          const todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+          const authorPrefix = window.currentUser.email.split('@')[0];
+          const authorName = (window.userNamesMap && window.userNamesMap[authorPrefix]) ? window.userNamesMap[authorPrefix] : authorPrefix;
+
+          if (window.currentDetailTab === 'task') {
+            document.getElementById('form-area-task').classList.remove('hidden');
+            document.getElementById('form-area-log').classList.add('hidden');
+            document.getElementById('form-todo-date').value = '';
+            populateTodoAssignees([]);
+          } else {
+            document.getElementById('form-area-task').classList.add('hidden');
+            document.getElementById('form-area-log').classList.remove('hidden');
+            document.getElementById('form-log-date').value = todayStr;
+            document.getElementById('form-log-author').textContent = authorName;
+          }
+
           btnDeleteTodo.classList.add('hidden');
           todoForm.classList.remove('hidden');
           todoBackdrop.classList.remove('hidden');
@@ -2079,10 +2156,24 @@ window.switchView = function(view) {
         if(!todo) return;
         document.getElementById('form-todo-id').value = id;
         document.getElementById('form-todo-title').value = todo.title;
-        document.getElementById('form-todo-details').value = todo.details || ''; // ★追加
-        document.getElementById('form-todo-date').value = todo.dueDate || '';
-        const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
-        populateTodoAssignees(assignees);
+        document.getElementById('form-todo-details').value = todo.details || '';
+        
+        const authorPrefix = window.currentUser.email.split('@')[0];
+        const authorName = (window.userNamesMap && window.userNamesMap[authorPrefix]) ? window.userNamesMap[authorPrefix] : authorPrefix;
+
+        if (window.currentDetailTab === 'task') {
+          document.getElementById('form-area-task').classList.remove('hidden');
+          document.getElementById('form-area-log').classList.add('hidden');
+          document.getElementById('form-todo-date').value = todo.dueDate || '';
+          const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
+          populateTodoAssignees(assignees);
+        } else {
+          document.getElementById('form-area-task').classList.add('hidden');
+          document.getElementById('form-area-log').classList.remove('hidden');
+          document.getElementById('form-log-date').value = todo.logDate || '';
+          const logAuthorName = (window.userNamesMap && window.userNamesMap[todo.author]) ? window.userNamesMap[todo.author] : (todo.author || authorName);
+          document.getElementById('form-log-author').textContent = logAuthorName;
+        }
         
         btnDeleteTodo.classList.remove('hidden');
         todoForm.classList.remove('hidden');
@@ -2097,39 +2188,57 @@ window.switchView = function(view) {
       if(btnCancelTodo) btnCancelTodo.addEventListener('click', closeTodoForm);
       if(todoBackdrop) todoBackdrop.addEventListener('click', closeTodoForm);
 
-      // モーダルからの保存処理
       if(btnSaveTodo) {
         btnSaveTodo.addEventListener('click', async () => {
           const title = document.getElementById('form-todo-title').value.trim();
           if (!title) return;
-          const details = document.getElementById('form-todo-details').value.trim(); // ★追加
-          const dueDate = document.getElementById('form-todo-date').value;
+          const details = document.getElementById('form-todo-details').value.trim();
           const todoId = document.getElementById('form-todo-id').value;
+          const authorPrefix = window.currentUser.email.split('@')[0];
           
-          const selectedAssignees = [];
-          document.querySelectorAll('.todo-assignee-cb:checked').forEach(cb => selectedAssignees.push(cb.value));
+          let updateData = { title, details };
+
+          if (window.currentDetailTab === 'task') {
+            updateData.dueDate = document.getElementById('form-todo-date').value;
+            const selectedAssignees = [];
+            document.querySelectorAll('.todo-assignee-cb:checked').forEach(cb => selectedAssignees.push(cb.value));
+            updateData.assignees = selectedAssignees;
+            
+            // タスクから新規作成時、ログ側でも見られるように初期設定
+            if (!todoId) {
+              const now = new Date();
+              updateData.logDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+              updateData.author = authorPrefix;
+            }
+          } else {
+            updateData.logDate = document.getElementById('form-log-date').value;
+            // ログから新規作成時、タスク側でも見られるように初期設定
+            if (!todoId) {
+              updateData.dueDate = '';
+              updateData.assignees = [authorPrefix];
+              updateData.author = authorPrefix;
+            }
+          }
 
           btnSaveTodo.disabled = true;
           btnSaveTodo.innerHTML = '保存中...';
           try {
             if (todoId) {
-              await updateDoc(doc(db, 'todos', todoId), { title, details, assignees: selectedAssignees, dueDate }); // ★details追加
+              await updateDoc(doc(db, 'todos', todoId), updateData);
             } else {
               const order = document.getElementById('todo-list-container').children.length;
               await addDoc(collection(db, 'todos'), {
                 taskId: window.currentOpenTaskId,
-                title,
-                details, // ★追加
-                assignees: selectedAssignees,
-                dueDate,
                 isCompleted: false,
+                isPinned: false,
                 order: order,
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                ...updateData
               });
             }
             closeTodoForm();
           } catch(e) {
-            showToast('ToDoの保存に失敗', 'error');
+            showToast('保存に失敗', 'error');
           } finally {
             btnSaveTodo.disabled = false;
             btnSaveTodo.innerHTML = '保存';
@@ -2153,14 +2262,12 @@ window.switchView = function(view) {
           const updateData = { isCompleted };
           
           if (isCompleted) {
-            // 完了になった場合は、今日の日付を YYYY/MM/DD 形式で記録する
             const now = new Date();
             const todayStr = now.getFullYear() + '/' + 
                              String(now.getMonth() + 1).padStart(2, '0') + '/' + 
                              String(now.getDate()).padStart(2, '0');
             updateData.completedAt = todayStr;
           } else {
-            // 未完了に戻された場合は、完了日をクリアする
             updateData.completedAt = "";
           }
 

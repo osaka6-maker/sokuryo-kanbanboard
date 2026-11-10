@@ -464,50 +464,69 @@
     <!-- 完全に分離した2つのカードを並べるラッパー -->
     <div class="flex gap-4 h-fit max-h-[95vh] w-max items-stretch mx-auto my-auto transition-all duration-300">
       
-      <!-- 【独立エリア】左側：案件タスク (ToDo) -->
+      <!-- 【独立エリア】左側：案件タスク & ログ -->
       <aside id="todo-panel" class="w-[320px] bg-white rounded-2xl shadow-2xl flex flex-col shrink-0 overflow-hidden border border-slate-200 relative">
-        <header class="px-5 py-4 border-b border-slate-200 shrink-0 flex justify-between items-center bg-white">
-          <h3 class="font-bold text-slate-800 text-[15px]">案件タスク</h3>
+        <!-- タブヘッダー -->
+        <header class="flex border-b border-slate-200 shrink-0 bg-slate-50 text-[14px] font-bold select-none">
+          <button id="tab-detail-task" onclick="switchDetailTab('task')" class="flex-1 py-3 text-blue-700 bg-white border-b-2 border-blue-600 transition-colors cursor-pointer">To Do</button>
+          <button id="tab-detail-log" onclick="switchDetailTab('log')" class="flex-1 py-3 text-slate-500 hover:bg-slate-100 border-b-2 border-transparent transition-colors cursor-pointer">Logs</button>
         </header>
-        <div class="px-3 py-2 shrink-0">
-          <button id="btn-show-todo-form" class="w-full flex items-center gap-3 px-2 py-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-600 font-medium group">
-            <span class="material-icons-outlined text-slate-400 group-hover:text-blue-600 transition-colors">add</span>
-            <span class="text-[13px] group-hover:text-blue-600 transition-colors">タスクを追加</span>
+        <div class="px-3 py-2 shrink-0 border-b border-slate-50 bg-white">
+          <button id="btn-show-todo-form" class="w-full flex items-center justify-center gap-2 px-2 py-2 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-lg transition-colors text-slate-600 font-bold group shadow-sm">
+            <span class="material-icons-outlined text-slate-400 group-hover:text-blue-600 transition-colors" style="font-size: 18px;">add</span>
+            <span id="btn-show-todo-text" class="text-[12px] group-hover:text-blue-600 transition-colors tracking-wide">タスクを追加</span>
           </button>
         </div>
-        <!-- 入力フォーム（複数担当者対応） -->
-          <div id="todo-edit-form" class="hidden absolute top-[110px] left-3 right-3 bg-white border border-blue-400 shadow-lg rounded-lg p-3 z-30 flex flex-col gap-3">
-            <input type="hidden" id="form-todo-id">
-            <input type="text" id="form-todo-title" placeholder="タスクを入力" class="w-full border-b border-transparent focus:border-blue-500 px-1 py-1 text-[13px] font-bold outline-none text-slate-800 bg-slate-50 focus:bg-white rounded transition-colors">
-            
-            <!-- ★追加：詳細（メモ）入力用のテキストエリア -->
-            <textarea id="form-todo-details" placeholder="詳細を追加" class="w-full border border-slate-200 rounded p-2 text-[12px] font-medium text-slate-700 outline-none focus:border-blue-500 bg-white resize-y min-h-[60px]"></textarea>
-            
+        <!-- 入力フォーム（タスク・ログ兼用） -->
+        <div id="todo-edit-form" class="hidden absolute top-[110px] left-3 right-3 bg-white border border-blue-400 shadow-lg rounded-lg p-3 z-30 flex flex-col gap-3">
+          <input type="hidden" id="form-todo-id">
+          <input type="text" id="form-todo-title" placeholder="タイトルを入力" class="w-full border-b border-transparent focus:border-blue-500 px-1 py-1 text-[13px] font-bold outline-none text-slate-800 bg-slate-50 focus:bg-white rounded transition-colors">
+          <textarea id="form-todo-details" placeholder="詳細を追加" class="w-full border border-slate-200 rounded p-2 text-[12px] font-medium text-slate-700 outline-none focus:border-blue-500 bg-white resize-y min-h-[60px]"></textarea>
+          
+          <!-- タスク専用エリア -->
+          <div id="form-area-task" class="flex flex-col gap-3">
             <div class="flex items-center gap-2">
               <div class="relative w-full max-w-[130px]">
                 <span class="material-icons-outlined absolute left-2 top-[6px] text-slate-400" style="font-size: 15px;">calendar_today</span>
-                <input type="date" id="form-todo-date" class="w-full border border-slate-200 rounded p-1.5 pl-7 text-[11px] outline-none focus:border-blue-500 bg-white text-slate-600 font-medium">
+                <input type="date" id="form-todo-date" class="w-full border border-slate-200 rounded p-1.5 pl-7 text-[11px] outline-none focus:border-blue-500 bg-white text-slate-600 font-medium" title="期限">
               </div>
             </div>
-            <!-- 複数担当者選択エリア -->
             <div class="border border-slate-200 rounded p-2 bg-slate-50">
               <span class="text-[10px] font-bold text-slate-500 block mb-1.5">担当者（複数選択可）</span>
-              <div id="form-todo-assignees" class="flex flex-wrap gap-x-3 gap-y-2">
-                <!-- JSでチェックボックス一覧を展開 -->
-              </div>
+              <div id="form-todo-assignees" class="flex flex-wrap gap-x-3 gap-y-2"></div>
             </div>
-            <div class="flex justify-between items-center mt-1">
-              <button id="btn-delete-todo" class="hidden text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50" title="タスクを削除"><span class="material-icons-outlined" style="font-size: 18px;">delete</span></button>
-              <div class="flex gap-2 ml-auto">
-                <button id="btn-cancel-todo" class="px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-200 rounded transition-colors">キャンセル</button>
-                <button id="btn-save-todo" class="px-4 py-1.5 text-[11px] font-bold bg-blue-600 text-white hover:bg-blue-700 rounded shadow-sm transition-colors">保存</button>
+          </div>
+
+          <!-- ログ専用エリア -->
+          <div id="form-area-log" class="hidden flex flex-col gap-3">
+            <div class="flex items-center justify-between border border-slate-200 rounded p-2 bg-slate-50">
+              <div class="relative w-[130px]">
+                <span class="material-icons-outlined absolute left-2 top-[5px] text-slate-400" style="font-size: 15px;">edit_calendar</span>
+                <input type="date" id="form-log-date" class="w-full border border-slate-300 rounded p-1 pl-7 text-[11px] outline-none focus:border-blue-500 bg-white text-slate-600 font-medium" title="記入日">
+              </div>
+              <div class="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                記入者: <span id="form-log-author" class="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 shadow-sm"></span>
               </div>
             </div>
           </div>
+
+          <div class="flex justify-between items-center mt-1">
+            <button id="btn-delete-todo" class="hidden text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50" title="削除"><span class="material-icons-outlined" style="font-size: 18px;">delete</span></button>
+            <div class="flex gap-2 ml-auto">
+              <button id="btn-cancel-todo" class="px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-200 rounded transition-colors">キャンセル</button>
+              <button id="btn-save-todo" class="px-4 py-1.5 text-[11px] font-bold bg-blue-600 text-white hover:bg-blue-700 rounded shadow-sm transition-colors">保存</button>
+            </div>
+          </div>
+        </div>
         <!-- バックドロップ -->
         <div id="todo-form-backdrop" class="hidden absolute inset-0 bg-slate-900/10 z-20"></div>
-        <!-- ToDoリスト -->
-        <ul id="todo-list-container" class="todo-list flex-1 overflow-y-auto px-3 pb-4 flex flex-col"></ul>
+        
+        <!-- リスト表示エリア -->
+        <div class="flex-1 overflow-hidden relative bg-white">
+          <ul id="todo-list-container" class="todo-list absolute inset-0 overflow-y-auto px-3 pb-4 flex flex-col bg-white transition-opacity"></ul>
+          <!-- ログは背景を少しグレーにしてカード型を際立たせる -->
+          <ul id="log-list-container" class="todo-list absolute inset-0 overflow-y-auto px-3 pb-4 flex flex-col hidden bg-slate-100 transition-opacity"></ul>
+        </div>
       </aside>
 
       <!-- 右側：既存のメインコンテンツ -->
