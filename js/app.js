@@ -2178,20 +2178,31 @@ window.switchView = function(view) {
               detailsHtml = `<div id="log-detail-${log.id}" class="hidden pl-3 pr-2 py-2 text-[12px] text-slate-600 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[10px] mt-1.5 mb-1 bg-white rounded shadow-sm">${escapedDetails}</div>`;
             }
 
-            // タスクに登録ボタン（または登録済バッジ）
+            // タスクに登録ボタン（または登録済バッジ）の色と状態分岐
             let taskBtnHtml = '';
             if (log.isLogOnly) {
+              // グレーアウト（未登録）
               taskBtnHtml = `
-                <button type="button" onclick="event.stopPropagation(); window.registerAsTask('${log.id}')" class="ml-auto flex items-center gap-1 px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded text-[10px] font-bold transition-colors shadow-sm">
+                <button type="button" onclick="event.stopPropagation(); window.registerAsTask('${log.id}')" class="ml-auto flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 hover:bg-slate-100 text-slate-400 border border-slate-200 rounded text-[10px] font-bold transition-colors shadow-sm">
                   <span class="material-icons-outlined" style="font-size: 12px;">add_task</span>タスクに登録
                 </button>
               `;
             } else {
-              taskBtnHtml = `
-                <span class="ml-auto flex items-center gap-1 px-1.5 py-0.5 text-slate-400 text-[10px] font-bold">
-                  <span class="material-icons-outlined" style="font-size: 12px;">check_circle</span>タスク登録済
-                </span>
-              `;
+              if (log.isCompleted) {
+                // 緑色（タスク完了）
+                taskBtnHtml = `
+                  <span class="ml-auto flex items-center gap-1 px-1.5 py-0.5 text-emerald-600 text-[10px] font-bold bg-emerald-50 border border-emerald-200 rounded shadow-sm">
+                    <span class="material-icons-outlined" style="font-size: 12px;">check_circle</span>タスク完了
+                  </span>
+                `;
+              } else {
+                // 水色（タスク登録済・未完了）
+                taskBtnHtml = `
+                  <span class="ml-auto flex items-center gap-1 px-1.5 py-0.5 text-blue-500 text-[10px] font-bold bg-blue-50 border border-blue-200 rounded shadow-sm">
+                    <span class="material-icons-outlined" style="font-size: 12px;">fact_check</span>タスク登録済
+                  </span>
+                `;
+              }
             }
 
             logHtml += `
@@ -2224,6 +2235,7 @@ window.switchView = function(view) {
       const btnCancelTodo = document.getElementById('btn-cancel-todo');
       const btnSaveTodo = document.getElementById('btn-save-todo');
       const btnDeleteTodo = document.getElementById('btn-delete-todo');
+      const btnUnregisterTask = document.getElementById('btn-unregister-task');
 
       if(btnShowTodo) {
         btnShowTodo.addEventListener('click', () => {
@@ -2251,6 +2263,7 @@ window.switchView = function(view) {
             if (pinEl) pinEl.checked = false; // 新規時はピン留めオフ
           }
 
+          if (btnUnregisterTask) btnUnregisterTask.classList.add('hidden'); // 新規作成時は常に非表示
           btnDeleteTodo.classList.add('hidden');
           todoForm.classList.remove('hidden');
           todoBackdrop.classList.remove('hidden');
@@ -2276,6 +2289,8 @@ window.switchView = function(view) {
           document.getElementById('form-todo-date').value = todo.dueDate || '';
           const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
           populateTodoAssignees(assignees);
+          
+          if (btnUnregisterTask) btnUnregisterTask.classList.remove('hidden'); // タスク編集時のみ表示
         } else {
           document.getElementById('form-area-task').classList.add('hidden');
           document.getElementById('form-area-log').classList.remove('hidden');
@@ -2283,6 +2298,8 @@ window.switchView = function(view) {
           const logAuthorName = (window.userNamesMap && window.userNamesMap[todo.author]) ? window.userNamesMap[todo.author] : (todo.author || authorName);
           document.getElementById('form-log-author').textContent = logAuthorName;
           if (pinEl) pinEl.checked = !!todo.isPinned;
+          
+          if (btnUnregisterTask) btnUnregisterTask.classList.add('hidden'); // ログ編集時は非表示
         }
         
         btnDeleteTodo.classList.remove('hidden');
@@ -2371,6 +2388,22 @@ window.switchView = function(view) {
         });
       }
 
+      // タスク登録解除（ログのみに戻す）機能
+      if (btnUnregisterTask) {
+        btnUnregisterTask.addEventListener('click', async () => {
+          const todoId = document.getElementById('form-todo-id').value;
+          if (!todoId) return;
+          try {
+            await updateDoc(doc(db, 'todos', todoId), { isLogOnly: true });
+            showToast('タスク登録を解除しました');
+            closeTodoForm();
+          } catch(e) { 
+            console.error("タスク登録解除エラー", e);
+            showToast('解除に失敗しました', 'error'); 
+          }
+        });
+      }
+
       window.toggleTodoComplete = async function(todoId, isCompleted, element) {
         // UI上でフェードアウトさせる（アニメーションのため即時反映を防ぐ）
         if (element) {
@@ -2433,7 +2466,6 @@ window.switchView = function(view) {
 
       // 設定モーダルの保存ボタンに連動させる
       document.getElementById('btn-save-settings').addEventListener('click', () => {
-        // 元の説明文保存処理は既存のままなので、その前に担当者設定を保存
         const cbs = document.querySelectorAll('.settings-assignee-cb:checked');
         visibleAssignees = Array.from(cbs).map(cb => cb.value);
         localStorage.setItem('taskTabAssignees', JSON.stringify(visibleAssignees));
@@ -2441,16 +2473,11 @@ window.switchView = function(view) {
         if(window.currentView === 'tasks') renderTasksTab(); // 再描画
       });
 
-      // ★変更：独立した2つのトグルスイッチ用状態とイベント（設定の保存機能付き）
-      // 前回保存された設定を読み込む（保存されていなければオフにする）
       window.isSortClient = localStorage.getItem('taskSortClient') === 'true';
       window.isSortDate = localStorage.getItem('taskSortDate') === 'true';
-      
-      // ★新規追加：タスクキーワード検索の状態
       window.isTaskKeywordActive = false;
       window.taskKeyword = '';
 
-      // UIの見た目を更新する共通関数
       function updateToggleUI(btnId, isActive) {
         const btn = document.getElementById(btnId);
         if (!btn) return;
@@ -2474,7 +2501,6 @@ window.switchView = function(view) {
       const btnToggleTaskKeyword = document.getElementById('btn-toggle-task-keyword');
       const inputTaskKeyword = document.getElementById('task-keyword-input');
 
-      // ★新規追加：キーワード検索トグルのイベント
       if (btnToggleTaskKeyword) {
         btnToggleTaskKeyword.addEventListener('click', () => {
           window.isTaskKeywordActive = !window.isTaskKeywordActive;
@@ -2484,23 +2510,19 @@ window.switchView = function(view) {
           const circle = btnToggleTaskKeyword.querySelector('.toggle-circle');
           const label = btnToggleTaskKeyword.querySelector('.keyword-filter-label');
 
-          // トグルのUI更新（三項演算子で色と動きの変更部分だけを切り替え）
           if (bg) bg.className = `w-10 h-5 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg ${isActive ? 'bg-green-500' : 'bg-slate-300'}`;
           if (circle) circle.className = `w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 toggle-circle ${isActive ? 'translate-x-5' : 'translate-x-0'}`;
           if (label) label.className = `text-[11px] font-bold transition-colors keyword-filter-label ${isActive ? 'text-green-600' : 'text-slate-500'}`;
 
-          // OFF時のリセット処理
           if (!isActive && inputTaskKeyword) {
             inputTaskKeyword.value = '';
           }
 
-          // 検索キーワードの更新と再描画
           window.taskKeyword = inputTaskKeyword ? inputTaskKeyword.value.toLowerCase().trim() : '';
           if (window.currentView === 'tasks') window.renderTasksTab();
         });
       }
 
-      // ★新規追加：キーワード入力時のリアルタイムイベント
       if (inputTaskKeyword) {
         inputTaskKeyword.addEventListener('input', () => {
           if (window.isTaskKeywordActive) {
@@ -2511,20 +2533,19 @@ window.switchView = function(view) {
       }
 
       if (btnToggleClient && btnToggleDate) {
-        // ロード時に前回の設定をUIへ反映
         updateToggleUI('btn-toggle-client', window.isSortClient);
         updateToggleUI('btn-toggle-date', window.isSortDate);
 
         btnToggleClient.addEventListener('click', () => {
           window.isSortClient = !window.isSortClient;
-          localStorage.setItem('taskSortClient', window.isSortClient); // 状態を保存
+          localStorage.setItem('taskSortClient', window.isSortClient);
           updateToggleUI('btn-toggle-client', window.isSortClient);
           if (window.currentView === 'tasks') window.renderTasksTab();
         });
 
         btnToggleDate.addEventListener('click', () => {
           window.isSortDate = !window.isSortDate;
-          localStorage.setItem('taskSortDate', window.isSortDate); // 状態を保存
+          localStorage.setItem('taskSortDate', window.isSortDate);
           updateToggleUI('btn-toggle-date', window.isSortDate);
           if (window.currentView === 'tasks') window.renderTasksTab();
         });
@@ -2533,7 +2554,7 @@ window.switchView = function(view) {
       window.renderTasksTab = function() {
         const container = document.getElementById('view-tasks');
         if (!container) return;
-        container.innerHTML = ''; // クリア
+        container.innerHTML = '';
 
         if (visibleAssignees.length === 0) {
           container.innerHTML = '<div class="p-10 w-full text-center text-slate-400 font-bold">設定から表示する担当者を選択してください。</div>';
@@ -2546,13 +2567,11 @@ window.switchView = function(view) {
           section.className = "flex-1 flex flex-col h-full overflow-hidden px-4 task-column transition-all";
           section.dataset.assignee = assigneeId;
           
-          // その担当者に関わるタスクを抽出（未完了と完了）
           let myTodos = window.allTodos.filter(t => {
             const arr = Array.isArray(t.assignees) ? t.assignees : (t.assignee ? [t.assignee] : []);
             return arr.includes(assigneeId);
           });
           
-          // ★新規追加：キーワード検索による絞り込み（タイトル、詳細、お客様名、現場名）
           if (window.isTaskKeywordActive && window.taskKeyword) {
             myTodos = myTodos.filter(t => {
               const parentTask = window.tasks.find(pt => pt.id === t.taskId);
@@ -2571,9 +2590,7 @@ window.switchView = function(view) {
           let activeTodos = myTodos.filter(t => !t.isCompleted);
           const completedTodos = myTodos.filter(t => t.isCompleted);
 
-          // ★変更：独立した2つのソート条件を組み合わせた並び替え処理
           activeTodos.sort((a, b) => {
-            // 1. 両方オフの場合は追加された順（元のオーダー）
             if (!window.isSortClient && !window.isSortDate) {
               return (a.order || 0) - (b.order || 0);
             }
@@ -2586,16 +2603,13 @@ window.switchView = function(view) {
             const dateB = b.dueDate ? b.dueDate : '9999-99-99';
 
             if (window.isSortClient && window.isSortDate) {
-              // 2. 両方オン：お客様順 → 期限順 のレイヤーでソート
               if (clientA !== clientB) return clientA.localeCompare(clientB, 'ja');
               if (dateA !== dateB) return dateA.localeCompare(dateB);
               return (a.order || 0) - (b.order || 0);
             } else if (window.isSortClient) {
-              // 3. お客様順のみ
               if (clientA !== clientB) return clientA.localeCompare(clientB, 'ja');
               return (a.order || 0) - (b.order || 0);
             } else if (window.isSortDate) {
-              // 4. 期限順のみ
               if (dateA !== dateB) return dateA.localeCompare(dateB);
               return (a.order || 0) - (b.order || 0);
             }
@@ -2646,7 +2660,6 @@ window.switchView = function(view) {
                 `;
               }
 
-              // ★追加：案件に紐づくタスクか、汎用タスクかの表示判定
               let clientInfoHtml = '';
               if (todo.taskId) {
                 clientInfoHtml = `<span class="${isDelayed ? 'text-yellow-800' : 'text-slate-500'} flex items-center gap-1 truncate max-w-[150px]">
@@ -2658,7 +2671,6 @@ window.switchView = function(view) {
                 </span>`;
               }
 
-              // ★追加：クリック時の動作（案件あり＝詳細モーダル、案件なし＝汎用タスクモーダル）
               const clickAction = todo.taskId ? `openDetailModalFromId('${todo.taskId}')` : `openGlobalTodoForm('${todo.id}', '${assigneeId}')`;
 
               const dragHandleHtml = `<div class="cursor-grab text-slate-300 hover:text-slate-500 pt-0.5 shrink-0 active:cursor-grabbing" title="ドラッグで並び替え"><span class="material-icons-outlined" style="font-size: 18px;">drag_indicator</span></div>`;
@@ -2700,7 +2712,6 @@ window.switchView = function(view) {
               `;
             }
 
-            // ★追加：完了側の判定
             let clientInfoHtml = '';
             if (todo.taskId) {
               clientInfoHtml = `<span class="material-icons-outlined" style="font-size: 13px;">business</span>${clientName}`;
@@ -2712,7 +2723,7 @@ window.switchView = function(view) {
 
             compHtml += `
               <article class="todo-item relative flex items-start gap-2 py-2.5 px-2 bg-slate-50 border-b border-slate-100 opacity-70 hover:opacity-100 transition-opacity cursor-pointer group" onclick="${clickAction}">
-                <div class="w-[18px] shrink-0"></div> <!-- ドラッグハンドルのスペース合わせ -->
+                <div class="w-[18px] shrink-0"></div>
                 <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked, this)" class="task-checkbox shrink-0 mt-[3px]">
                 <div class="flex-1 min-w-0 flex flex-col pt-0.5">
                   <div class="flex justify-between items-start gap-3 w-full">
@@ -2728,7 +2739,6 @@ window.switchView = function(view) {
           section.innerHTML = `
             <header class="py-3 px-1 shrink-0 flex justify-between items-center mb-2">
               <div class="font-bold text-[15px] text-slate-800 flex items-center gap-2">${name}</div>
-              <!-- ★変更：「タスクを追加」ボタンを右端に配置し、枠線を削除 -->
               <button class="flex items-center gap-1 hover:bg-slate-200 px-2 py-1 rounded transition-colors text-slate-500 font-bold group" onclick="window.openGlobalTodoForm('', '${assigneeId}')">
                 <span class="material-icons-outlined text-slate-400 group-hover:text-blue-600 transition-colors" style="font-size: 16px;">add</span>
                 <span class="text-[11px] group-hover:text-blue-600 transition-colors">タスクを追加</span>
@@ -2755,12 +2765,10 @@ window.switchView = function(view) {
         setupTaskTabDragAndDrop();
       };
 
-      // タスクタブ用：担当者変更 ＆ 自由な並び替え（ドラッグ＆ドロップ）Google Tasks風
       function setupTaskTabDragAndDrop() {
         const columns = document.querySelectorAll('.task-column');
         let draggedTodoEl = null;
 
-        // 挿入位置を計算する関数
         const getDragAfterElement = (container, y) => {
           const draggableElements = [...container.querySelectorAll('.todo-item:not(.opacity-40)')];
           return draggableElements.reduce((closest, child) => {
@@ -2770,7 +2778,6 @@ window.switchView = function(view) {
           }, { offset: Number.NEGATIVE_INFINITY }).element;
         };
 
-        // 青い挿入ラインをリセットするヘルパー関数
         const clearDropIndicators = () => {
           document.querySelectorAll('.todo-item').forEach(el => {
             el.style.borderTop = '';
@@ -2778,7 +2785,6 @@ window.switchView = function(view) {
           });
         };
 
-        // ドラッグ開始・終了イベントの設定
         document.querySelectorAll('.drop-target-list .todo-item').forEach(item => {
           item.addEventListener('dragstart', () => {
             draggedTodoEl = item;
@@ -2792,7 +2798,6 @@ window.switchView = function(view) {
           });
         });
 
-        // 各カラム（ドロップ先）のイベント設定
         columns.forEach(column => {
           const dropList = column.querySelector('.drop-target-list');
           if (!dropList) return;
@@ -2834,7 +2839,6 @@ window.switchView = function(view) {
             let assignees = Array.isArray(todoData.assignees) ? [...todoData.assignees] : (todoData.assignee ? [todoData.assignee] : []);
             let isAssigneeChanged = false;
 
-            // 他の人のカラムにドロップされた場合の担当者入れ替え
             if (targetAssignee && !assignees.includes(targetAssignee)) {
               const allVisible = Array.from(columns).map(c => c.dataset.assignee);
               assignees = assignees.filter(a => !allVisible.includes(a)); 
@@ -2842,7 +2846,6 @@ window.switchView = function(view) {
               isAssigneeChanged = true;
             }
 
-            // 並び順と担当者の保存処理
             const items = [...dropList.querySelectorAll('.todo-item')];
             
             items.forEach(async (itemEl, index) => {
@@ -2853,7 +2856,7 @@ window.switchView = function(view) {
               const updates = {};
               if (tData.order !== index) {
                 updates.order = index;
-                tData.order = index; // ローカル同期
+                tData.order = index;
               }
               if (id === todoId && isAssigneeChanged) {
                 updates.assignees = assignees;
@@ -2862,7 +2865,6 @@ window.switchView = function(view) {
 
               if (Object.keys(updates).length > 0) {
                 try { 
-                  // 既にファイルの先頭でインポート済みの関数を使用
                   await updateDoc(doc(db, 'todos', id), updates); 
                 } catch(err) {
                   console.error('更新エラー:', err);
@@ -2945,13 +2947,13 @@ window.switchView = function(view) {
               await updateDoc(doc(db, 'todos', todoId), { title, details, assignees: selectedAssignees, dueDate });
             } else {
               await addDoc(collection(db, 'todos'), {
-                taskId: "", // 空文字にすることで汎用タスクとして扱う
+                taskId: "", 
                 title,
                 details,
                 assignees: selectedAssignees,
                 dueDate,
                 isCompleted: false,
-                isLogOnly: false, // 汎用タスクもタスク一覧に出す
+                isLogOnly: false, 
                 order: 0,
                 createdAt: serverTimestamp()
               });
