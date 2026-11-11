@@ -1982,7 +1982,24 @@ window.switchView = function(view) {
       };
 
       // ==========================================
-      // リスト描画（タスク ＆ ログ）
+      // 詳細項目のトグル（アコーディオン）開閉関数
+      // ==========================================
+      window.toggleItemDetails = function(event, elementId) {
+        event.stopPropagation(); // クリック時に編集モーダルが開くのを防ぐ
+        const el = document.getElementById(elementId);
+        const btn = event.currentTarget;
+        const icon = btn.querySelector('.material-icons-outlined');
+        if (el.classList.contains('hidden')) {
+          el.classList.remove('hidden');
+          if (icon) icon.style.transform = 'rotate(90deg)';
+        } else {
+          el.classList.add('hidden');
+          if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+      };
+
+      // ==========================================
+      // リスト描画（タスク ＆ ログ統合）
       // ==========================================
       function loadTodosForTask(taskId) {
         const containerTask = document.getElementById('todo-list-container');
@@ -2034,7 +2051,7 @@ window.switchView = function(view) {
             activeHtml += `
               <li class="todo-item relative py-3 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 hover:bg-slate-50 cursor-pointer transition-colors">
                 <div class="pt-0.5 shrink-0">
-                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
+                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked, this)" class="task-checkbox">
                 </div>
                 <div class="flex-1 min-w-0 flex flex-col" onclick="openTodoEditForm('${todo.id}')">
                   <span class="text-[13px] font-bold text-slate-700 leading-snug whitespace-pre-wrap break-all">${todo.title}</span>
@@ -2080,7 +2097,7 @@ window.switchView = function(view) {
             compItemsHtml += `
               <li class="todo-item relative py-2.5 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 bg-slate-50 opacity-70 transition-colors">
                 <div class="pt-0.5 shrink-0">
-                  <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
+                  <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked, this)" class="task-checkbox">
                 </div>
                 <div class="flex-1 min-w-0 flex flex-col cursor-pointer" onclick="openTodoEditForm('${todo.id}')">
                   <span class="text-[13px] font-bold text-slate-500 leading-snug line-through whitespace-pre-wrap break-all">${todo.title}</span>
@@ -2107,7 +2124,6 @@ window.switchView = function(view) {
         // -----------------------------
         // 2. ログ側の描画処理（2行表示＆詳細トグル）
         // -----------------------------
-        // 並び替え: ピン留め(true)優先 -> 日付降順 -> 作成日時降順
         const logTodos = [...taskTodos].sort((a, b) => {
           if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
           const dateA = a.logDate || '0000-00-00';
@@ -2126,7 +2142,7 @@ window.switchView = function(view) {
             const authorName = (window.userNamesMap && window.userNamesMap[log.author]) ? window.userNamesMap[log.author] : (log.author || '不明');
             const dateStr = log.logDate ? log.logDate.replace(/-/g, '/') : '-';
             
-            let toggleBtn = `<div class="w-5 shrink-0"></div>`; // 詳細がない時のインデント合わせ用スペース
+            let toggleBtn = `<div class="w-5 shrink-0"></div>`;
             let detailsHtml = '';
             if (log.details) {
               const escapedDetails = log.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -2135,12 +2151,11 @@ window.switchView = function(view) {
                   <span class="material-icons-outlined transition-transform" style="font-size: 18px;">play_arrow</span>
                 </button>
               `;
-              detailsHtml = `<div id="log-detail-${log.id}" class="hidden pl-3 pr-2 py-2 text-[12px] text-slate-600 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[10px] mt-1.5 mb-1 bg-white rounded">${escapedDetails}</div>`;
+              detailsHtml = `<div id="log-detail-${log.id}" class="hidden pl-3 pr-2 py-2 text-[12px] text-slate-600 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[10px] mt-1.5 mb-1 bg-white rounded shadow-sm">${escapedDetails}</div>`;
             }
 
-            // ピン留めUIはリストから削除し、ピン留めされている場合はうっすらオレンジの背景で目立たせる
             logHtml += `
-              <li class="relative py-2.5 px-3 border-b border-slate-200 flex flex-col group transition-colors hover:bg-slate-50 cursor-pointer ${log.isPinned ? 'bg-orange-50/50' : 'bg-white'}" onclick="openTodoEditForm('${log.id}')">
+              <li class="todo-item relative py-2.5 px-3 border-b border-slate-200 flex flex-col group transition-colors hover:bg-slate-50 cursor-pointer ${log.isPinned ? 'bg-orange-50/50' : 'bg-white'}" onclick="openTodoEditForm('${log.id}')">
                 <div class="flex items-center gap-3 mb-1 pl-1">
                   <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">edit_calendar</span>${dateStr}</span>
                   <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">person</span>${authorName}</span>
@@ -2180,6 +2195,8 @@ window.switchView = function(view) {
           const authorPrefix = window.currentUser.email.split('@')[0];
           const authorName = (window.userNamesMap && window.userNamesMap[authorPrefix]) ? window.userNamesMap[authorPrefix] : authorPrefix;
 
+          const pinEl = document.getElementById('form-log-pinned');
+
           if (window.currentDetailTab === 'task') {
             document.getElementById('form-area-task').classList.remove('hidden');
             document.getElementById('form-area-log').classList.add('hidden');
@@ -2190,7 +2207,7 @@ window.switchView = function(view) {
             document.getElementById('form-area-log').classList.remove('hidden');
             document.getElementById('form-log-date').value = todayStr;
             document.getElementById('form-log-author').textContent = authorName;
-            document.getElementById('form-log-pinned').checked = false; // 新規作成時はピン留めオフ
+            if (pinEl) pinEl.checked = false; // エラー回避策
           }
 
           btnDeleteTodo.classList.add('hidden');
@@ -2210,6 +2227,8 @@ window.switchView = function(view) {
         const authorPrefix = window.currentUser.email.split('@')[0];
         const authorName = (window.userNamesMap && window.userNamesMap[authorPrefix]) ? window.userNamesMap[authorPrefix] : authorPrefix;
 
+        const pinEl = document.getElementById('form-log-pinned');
+
         if (window.currentDetailTab === 'task') {
           document.getElementById('form-area-task').classList.remove('hidden');
           document.getElementById('form-area-log').classList.add('hidden');
@@ -2222,7 +2241,7 @@ window.switchView = function(view) {
           document.getElementById('form-log-date').value = todo.logDate || '';
           const logAuthorName = (window.userNamesMap && window.userNamesMap[todo.author]) ? window.userNamesMap[todo.author] : (todo.author || authorName);
           document.getElementById('form-log-author').textContent = logAuthorName;
-          document.getElementById('form-log-pinned').checked = !!todo.isPinned; // ピン留めの状態を反映
+          if (pinEl) pinEl.checked = !!todo.isPinned;
         }
         
         btnDeleteTodo.classList.remove('hidden');
@@ -2254,7 +2273,6 @@ window.switchView = function(view) {
             document.querySelectorAll('.todo-assignee-cb:checked').forEach(cb => selectedAssignees.push(cb.value));
             updateData.assignees = selectedAssignees;
             
-            // タスクから新規作成時、ログ側でも見られるように初期設定
             if (!todoId) {
               const now = new Date();
               updateData.logDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
@@ -2262,9 +2280,9 @@ window.switchView = function(view) {
             }
           } else {
             updateData.logDate = document.getElementById('form-log-date').value;
-            updateData.isPinned = document.getElementById('form-log-pinned').checked;
+            const pinEl = document.getElementById('form-log-pinned');
+            updateData.isPinned = pinEl ? pinEl.checked : false;
             
-            // ログから新規作成時、タスク側でも見られるように初期設定
             if (!todoId) {
               updateData.dueDate = '';
               updateData.assignees = [authorPrefix];
@@ -2309,24 +2327,31 @@ window.switchView = function(view) {
         });
       }
 
-      window.toggleTodoComplete = async function(todoId, isCompleted) {
-        try {
-          const updateData = { isCompleted };
-          
-          if (isCompleted) {
-            const now = new Date();
-            const todayStr = now.getFullYear() + '/' + 
-                             String(now.getMonth() + 1).padStart(2, '0') + '/' + 
-                             String(now.getDate()).padStart(2, '0');
-            updateData.completedAt = todayStr;
-          } else {
-            updateData.completedAt = "";
-          }
-
-          await updateDoc(doc(db, 'todos', todoId), updateData);
-        } catch(e) {
-          console.error("ToDoの完了状態の更新に失敗しました:", e);
+      window.toggleTodoComplete = async function(todoId, isCompleted, element) {
+        // UI上でフェードアウトさせる（アニメーションのため即時反映を防ぐ）
+        if (element) {
+          const item = element.closest('.todo-item');
+          if (item) item.classList.add('fade-out');
         }
+        
+        // アニメーションの時間（0.3秒）だけ待ってからFirebaseを更新
+        setTimeout(async () => {
+          try {
+            const updateData = { isCompleted };
+            if (isCompleted) {
+              const now = new Date();
+              const todayStr = now.getFullYear() + '/' + 
+                               String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+                               String(now.getDate()).padStart(2, '0');
+              updateData.completedAt = todayStr;
+            } else {
+              updateData.completedAt = "";
+            }
+            await updateDoc(doc(db, 'todos', todoId), updateData);
+          } catch(e) {
+            console.error("ToDoの完了状態の更新に失敗しました:", e);
+          }
+        }, 300);
       };
 
 
