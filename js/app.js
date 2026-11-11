@@ -1965,7 +1965,24 @@ window.switchView = function(view) {
       }
 
       // ==========================================
-      // リスト描画（タスク ＆ ログ統合版）
+      // 詳細項目のトグル（アコーディオン）開閉関数
+      // ==========================================
+      window.toggleItemDetails = function(event, elementId) {
+        event.stopPropagation(); // クリック時に編集モーダルが開くのを防ぐ
+        const el = document.getElementById(elementId);
+        const btn = event.currentTarget;
+        const icon = btn.querySelector('.material-icons-outlined');
+        if (el.classList.contains('hidden')) {
+          el.classList.remove('hidden');
+          if (icon) icon.style.transform = 'rotate(90deg)';
+        } else {
+          el.classList.add('hidden');
+          if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+      };
+
+      // ==========================================
+      // リスト描画（タスク ＆ ログ統合・コンパクト版）
       // ==========================================
       function loadTodosForTask(taskId) {
         const containerTask = document.getElementById('todo-list-container');
@@ -1984,38 +2001,47 @@ window.switchView = function(view) {
           activeHtml = '<div class="text-center text-[11px] text-slate-400 mt-6">タスクはありません</div>';
         } else {
           activeTodos.forEach(todo => {
-            let assigneesHtml = '';
+            let assigneesStr = '';
             const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
             if (assignees.length > 0) {
-              assigneesHtml += `<span class="flex items-center gap-1">`;
               const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
-              assigneesHtml += `<span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}`;
-              if(assignees.length > 1) {
-                assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 1} 名">+${assignees.length - 1}</span>`;
-              }
-              assigneesHtml += `</span>`;
+              assigneesStr = primaryName + (assignees.length > 1 ? `+${assignees.length - 1}` : '');
             }
 
-            let dateHtml = '';
+            let dateStr = '';
             if (todo.dueDate) {
               const d = new Date(todo.dueDate);
-              dateHtml = `<span class="flex items-center gap-1 ${new Date() > d ? 'text-red-500' : ''}"><span class="material-icons-outlined" style="font-size: 14px;">calendar_today</span>${d.getMonth()+1}/${d.getDate()}</span>`;
+              dateStr = `${d.getMonth()+1}/${d.getDate()}`;
             }
 
+            let metaText = '';
+            if (dateStr || assigneesStr) {
+              metaText = `( ${dateStr ? '期限:' + dateStr : ''} ${assigneesStr} )`.trim().replace(/\(\s+\)/, '');
+            }
+
+            let toggleBtn = `<div class="w-4 shrink-0"></div>`; // 詳細がない場合の幅合わせ
             let detailsHtml = '';
             if (todo.details) {
               const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-              detailsHtml = `<div class="mt-0.5 text-[11px] font-medium text-slate-500 pl-0.5 truncate">${escapedDetails.split('\n')[0]}</div>`;
+              toggleBtn = `
+                <button type="button" class="shrink-0 text-slate-400 hover:text-blue-600 transition-transform duration-200 flex items-center justify-center w-4" onclick="toggleItemDetails(event, 'task-detail-${todo.id}')">
+                  <span class="material-icons-outlined transition-transform" style="font-size: 16px;">play_arrow</span>
+                </button>
+              `;
+              detailsHtml = `<div id="task-detail-${todo.id}" class="hidden pl-4 pr-2 py-1.5 text-[11px] text-slate-600 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[28px] mt-1 mb-1">${escapedDetails}</div>`;
             }
 
             activeHtml += `
-              <li class="todo-item relative py-3 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 hover:bg-slate-50 cursor-pointer transition-colors">
-                <div class="pt-0.5 shrink-0"><input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox"></div>
-                <div class="flex-1 min-w-0 flex flex-col" onclick="openTodoEditForm('${todo.id}')">
-                  <span class="text-[13px] font-bold text-slate-700 leading-snug">${todo.title}</span>
-                  ${detailsHtml}
-                  <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-1">${assigneesHtml}${dateHtml}</div>
+              <li class="todo-item relative py-2 border-b border-slate-100 flex flex-col group px-2 -mx-2 hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-1.5">
+                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0" style="margin-top: 0;">
+                  ${toggleBtn}
+                  <div class="flex-1 min-w-0 flex items-center gap-1.5 cursor-pointer" onclick="openTodoEditForm('${todo.id}')">
+                    ${metaText ? `<span class="text-[10px] text-slate-400 shrink-0 font-mono tracking-tighter">${metaText}</span>` : ''}
+                    <span class="text-[12px] font-bold text-slate-700 truncate">${todo.title}</span>
+                  </div>
                 </div>
+                ${detailsHtml}
               </li>
             `;
           });
@@ -2025,27 +2051,39 @@ window.switchView = function(view) {
         if (completedTodos.length > 0) {
           let compItemsHtml = '';
           completedTodos.forEach(todo => {
-            let assigneesHtml = '';
+            let assigneesStr = '';
             const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
             if (assignees.length > 0) {
               const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
-              assigneesHtml = `<span class="flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}</span>`;
+              assigneesStr = primaryName;
             }
 
+            let metaText = '';
+            if (assigneesStr) metaText = `( ${assigneesStr} )`;
+
+            let toggleBtn = `<div class="w-4 shrink-0"></div>`;
             let detailsHtml = '';
             if (todo.details) {
               const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-              detailsHtml = `<div class="mt-0.5 text-[11px] font-medium text-slate-400 pl-0.5 truncate line-through">${escapedDetails.split('\n')[0]}</div>`;
+              toggleBtn = `
+                <button type="button" class="shrink-0 text-slate-400 hover:text-blue-600 transition-transform duration-200 flex items-center justify-center w-4" onclick="toggleItemDetails(event, 'task-detail-${todo.id}')">
+                  <span class="material-icons-outlined transition-transform" style="font-size: 16px;">play_arrow</span>
+                </button>
+              `;
+              detailsHtml = `<div id="task-detail-${todo.id}" class="hidden pl-4 pr-2 py-1.5 text-[11px] text-slate-400 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[28px] mt-1 mb-1 line-through">${escapedDetails}</div>`;
             }
 
             compItemsHtml += `
-              <li class="todo-item relative py-2.5 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 bg-slate-50 opacity-70 transition-colors">
-                <div class="pt-0.5 shrink-0"><input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox"></div>
-                <div class="flex-1 min-w-0 flex flex-col cursor-pointer" onclick="openTodoEditForm('${todo.id}')">
-                  <span class="text-[13px] font-bold text-slate-500 leading-snug line-through">${todo.title}</span>
-                  ${detailsHtml}
-                  <div class="flex items-center gap-3 text-[10px] text-slate-400 mt-1">${assigneesHtml}</div>
+              <li class="todo-item relative py-2 border-b border-slate-100 flex flex-col group px-2 -mx-2 bg-slate-50 opacity-70 transition-colors">
+                <div class="flex items-center gap-1.5">
+                  <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0" style="margin-top: 0;">
+                  ${toggleBtn}
+                  <div class="flex-1 min-w-0 flex items-center gap-1.5 cursor-pointer" onclick="openTodoEditForm('${todo.id}')">
+                    ${metaText ? `<span class="text-[10px] text-slate-400 shrink-0 font-mono tracking-tighter">${metaText}</span>` : ''}
+                    <span class="text-[12px] font-bold text-slate-500 truncate line-through">${todo.title}</span>
+                  </div>
                 </div>
+                ${detailsHtml}
               </li>
             `;
           });
@@ -2083,25 +2121,32 @@ window.switchView = function(view) {
             const authorName = (window.userNamesMap && window.userNamesMap[log.author]) ? window.userNamesMap[log.author] : (log.author || '不明');
             const dateStr = log.logDate ? log.logDate.replace(/-/g, '/') : '-';
             
+            const pinIcon = log.isPinned ? 'push_pin' : 'push_pin';
+            const pinClass = log.isPinned ? 'text-orange-500' : 'text-slate-300 hover:text-slate-500';
+
+            let toggleBtn = `<div class="w-4 shrink-0"></div>`;
             let detailsHtml = '';
             if (log.details) {
               const escapedDetails = log.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-              detailsHtml = `<div class="mt-2 text-[12px] font-medium text-slate-700 whitespace-pre-wrap break-all leading-relaxed bg-slate-50 p-2 rounded border border-slate-100">${escapedDetails}</div>`;
+              toggleBtn = `
+                <button type="button" class="shrink-0 text-slate-400 hover:text-blue-600 transition-transform duration-200 flex items-center justify-center w-4" onclick="toggleItemDetails(event, 'log-detail-${log.id}')">
+                  <span class="material-icons-outlined transition-transform" style="font-size: 16px;">play_arrow</span>
+                </button>
+              `;
+              detailsHtml = `<div id="log-detail-${log.id}" class="hidden pl-4 pr-2 py-1.5 text-[11px] text-slate-600 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[24px] mt-1 mb-1">${escapedDetails}</div>`;
             }
-            
-            const pinClass = log.isPinned ? 'text-orange-500 bg-orange-50 border border-orange-200' : 'text-slate-300 hover:text-slate-500 hover:bg-slate-200 border border-transparent';
 
             logHtml += `
-              <li class="relative p-3 border border-slate-200 flex flex-col group transition-colors bg-white mt-3 rounded-xl shadow-sm hover:shadow-md cursor-pointer" onclick="openTodoEditForm('${log.id}')">
-                <div class="flex justify-between items-start mb-1">
-                  <span class="text-[14px] font-bold text-slate-800 leading-snug flex-1 pr-2">${log.title}</span>
-                  <button type="button" onclick="event.stopPropagation(); toggleLogPin('${log.id}', ${!log.isPinned})" class="${pinClass} transition-colors p-1 rounded shadow-sm shrink-0" title="固定を切り替え">
-                    <span class="material-icons-outlined" style="font-size: 16px; transform: rotate(45deg);">push_pin</span>
+              <li class="relative py-2 border-b border-slate-200 flex flex-col group transition-colors hover:bg-slate-50">
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="event.stopPropagation(); toggleLogPin('${log.id}', ${!log.isPinned})" class="${pinClass} shrink-0 flex items-center justify-center w-4" title="固定を切り替え">
+                    <span class="material-icons-outlined" style="font-size: 14px; transform: rotate(45deg);">${pinIcon}</span>
                   </button>
-                </div>
-                <div class="flex items-center gap-3 text-[10.5px] text-slate-500 pb-1 w-full border-b border-slate-100 border-dashed mb-1">
-                  <span class="flex items-center gap-1 font-bold text-slate-600"><span class="material-icons-outlined" style="font-size: 13px;">person</span>${authorName}</span>
-                  <span class="flex items-center gap-1 font-bold"><span class="material-icons-outlined" style="font-size: 13px;">edit_calendar</span>${dateStr}</span>
+                  ${toggleBtn}
+                  <div class="flex-1 min-w-0 flex items-center gap-1.5 cursor-pointer" onclick="openTodoEditForm('${log.id}')">
+                    <span class="text-[10px] text-slate-500 shrink-0 font-mono tracking-tighter">( @${dateStr} ${authorName} )</span>
+                    <span class="text-[12px] font-bold text-slate-800 truncate">${log.title}</span>
+                  </div>
                 </div>
                 ${detailsHtml}
               </li>
