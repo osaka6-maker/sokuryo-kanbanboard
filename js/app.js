@@ -2150,20 +2150,36 @@ window.switchView = function(view) {
         } else {
           let logHtml = '';
           let currentDateGroup = '';
+          let hasPinnedGroupStarted = false;
+          let hasUnpinnedGroupStarted = false;
 
           logTodos.forEach(log => {
             const authorName = (window.userNamesMap && window.userNamesMap[log.author]) ? window.userNamesMap[log.author] : (log.author || '不明');
             const dateStr = log.logDate ? log.logDate.replace(/-/g, '/') : '-';
             
-            // 日付が変わったら区切り線を挿入
-            if (currentDateGroup !== dateStr) {
-              currentDateGroup = dateStr;
-              logHtml += `
-                <div class="flex items-center mt-4 mb-2 pl-1 pr-3 select-none">
-                  <span class="text-[12px] font-bold text-slate-500 mr-2 tracking-widest">${dateStr}</span>
-                  <div class="flex-1 border-t border-slate-300 border-dashed"></div>
-                </div>
-              `;
+            // ★固定（ピン留め）用と通常（日付）用で区切り線を分ける
+            if (log.isPinned) {
+              if (!hasPinnedGroupStarted) {
+                hasPinnedGroupStarted = true;
+                logHtml += `
+                  <div class="flex items-center mt-4 mb-2 pl-1 pr-3 select-none">
+                    <span class="material-icons-outlined text-orange-500 mr-1" style="font-size: 14px; transform: rotate(45deg);">push_pin</span>
+                    <span class="text-[12px] font-bold text-orange-500 mr-2 tracking-widest">固定</span>
+                    <div class="flex-1 border-t border-orange-300 border-dashed"></div>
+                  </div>
+                `;
+              }
+            } else {
+              if (!hasUnpinnedGroupStarted || currentDateGroup !== dateStr) {
+                hasUnpinnedGroupStarted = true;
+                currentDateGroup = dateStr;
+                logHtml += `
+                  <div class="flex items-center mt-4 mb-2 pl-1 pr-3 select-none">
+                    <span class="text-[12px] font-bold text-slate-500 mr-2 tracking-widest">${dateStr}</span>
+                    <div class="flex-1 border-t border-slate-300 border-dashed"></div>
+                  </div>
+                `;
+              }
             }
 
             let toggleBtn = `<div class="w-5 shrink-0"></div>`;
