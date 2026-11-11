@@ -1982,7 +1982,7 @@ window.switchView = function(view) {
       };
 
       // ==========================================
-      // リスト描画（タスク ＆ ログ統合・コンパクト版）
+      // リスト描画（タスク ＆ ログ）
       // ==========================================
       function loadTodosForTask(taskId) {
         const containerTask = document.getElementById('todo-list-container');
@@ -1991,7 +1991,7 @@ window.switchView = function(view) {
         const taskTodos = window.allTodos.filter(t => t.taskId === taskId);
 
         // -----------------------------
-        // 1. タスク側の描画処理
+        // 1. タスク側の描画処理（以前の形式へ復元）
         // -----------------------------
         const activeTodos = taskTodos.filter(t => !t.isCompleted).sort((a,b) => a.order - b.order);
         const completedTodos = taskTodos.filter(t => t.isCompleted).sort((a,b) => a.order - b.order);
@@ -2001,47 +2001,49 @@ window.switchView = function(view) {
           activeHtml = '<div class="text-center text-[11px] text-slate-400 mt-6">タスクはありません</div>';
         } else {
           activeTodos.forEach(todo => {
-            let assigneesStr = '';
+            let assigneesHtml = '';
             const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
             if (assignees.length > 0) {
+              assigneesHtml += `<span class="flex items-center gap-1">`;
               const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
-              assigneesStr = primaryName + (assignees.length > 1 ? `+${assignees.length - 1}` : '');
+              assigneesHtml += `<span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}`;
+              if(assignees.length > 1) {
+                assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 1} 名">+${assignees.length - 1}</span>`;
+              }
+              assigneesHtml += `</span>`;
             }
 
-            let dateStr = '';
+            let dateHtml = '';
             if (todo.dueDate) {
               const d = new Date(todo.dueDate);
-              dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+              dateHtml = `<span class="flex items-center gap-1 ${new Date() > d ? 'text-red-500' : ''}"><span class="material-icons-outlined" style="font-size: 14px;">calendar_today</span>${d.getMonth()+1}/${d.getDate()}</span>`;
             }
 
-            let metaText = '';
-            if (dateStr || assigneesStr) {
-              metaText = `( ${dateStr ? '期限:' + dateStr : ''} ${assigneesStr} )`.trim().replace(/\(\s+\)/, '');
-            }
-
-            let toggleBtn = `<div class="w-4 shrink-0"></div>`; // 詳細がない場合の幅合わせ
             let detailsHtml = '';
             if (todo.details) {
-              const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-              toggleBtn = `
-                <button type="button" class="shrink-0 text-slate-400 hover:text-blue-600 transition-transform duration-200 flex items-center justify-center w-4" onclick="toggleItemDetails(event, 'task-detail-${todo.id}')">
-                  <span class="material-icons-outlined transition-transform" style="font-size: 16px;">play_arrow</span>
-                </button>
+              const escapedDetailsForTooltip = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              const shortDetails = escapedDetailsForTooltip.split('\n')[0];
+              detailsHtml = `
+                <div class="mt-0.5 min-w-0 w-full">
+                  <div class="text-[11px] font-medium text-slate-500 pl-0.5 truncate">${shortDetails}</div>
+                  <div class="absolute left-0 top-full mt-1 w-[400px] max-w-[90vw] p-3 bg-white text-slate-700 border border-slate-300 text-[11px] font-normal leading-relaxed rounded-md shadow-xl z-[100] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 delay-0 group-hover:delay-500 whitespace-pre-wrap pointer-events-none break-all text-left">${escapedDetailsForTooltip}</div>
+                </div>
               `;
-              detailsHtml = `<div id="task-detail-${todo.id}" class="hidden pl-4 pr-2 py-1.5 text-[11px] text-slate-600 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[28px] mt-1 mb-1">${escapedDetails}</div>`;
             }
 
             activeHtml += `
-              <li class="todo-item relative py-2 border-b border-slate-100 flex flex-col group px-2 -mx-2 hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-1.5">
-                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0" style="margin-top: 0;">
-                  ${toggleBtn}
-                  <div class="flex-1 min-w-0 flex items-center gap-1.5 cursor-pointer" onclick="openTodoEditForm('${todo.id}')">
-                    ${metaText ? `<span class="text-[10px] text-slate-400 shrink-0 font-mono tracking-tighter">${metaText}</span>` : ''}
-                    <span class="text-[12px] font-bold text-slate-700 truncate">${todo.title}</span>
+              <li class="todo-item relative py-3 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 hover:bg-slate-50 cursor-pointer transition-colors">
+                <div class="pt-0.5 shrink-0">
+                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
+                </div>
+                <div class="flex-1 min-w-0 flex flex-col" onclick="openTodoEditForm('${todo.id}')">
+                  <span class="text-[13px] font-bold text-slate-700 leading-snug whitespace-pre-wrap break-all">${todo.title}</span>
+                  ${detailsHtml}
+                  <div class="flex items-center gap-3 text-[10px] text-slate-500 mt-1">
+                    ${assigneesHtml}
+                    ${dateHtml}
                   </div>
                 </div>
-                ${detailsHtml}
               </li>
             `;
           });
@@ -2051,39 +2053,42 @@ window.switchView = function(view) {
         if (completedTodos.length > 0) {
           let compItemsHtml = '';
           completedTodos.forEach(todo => {
-            let assigneesStr = '';
+            let assigneesHtml = '';
             const assignees = Array.isArray(todo.assignees) ? todo.assignees : (todo.assignee ? [todo.assignee] : []);
             if (assignees.length > 0) {
+              assigneesHtml += `<span class="flex items-center gap-1">`;
               const primaryName = (window.userNamesMap && window.userNamesMap[assignees[0]]) ? window.userNamesMap[assignees[0]] : assignees[0];
-              assigneesStr = primaryName;
+              assigneesHtml += `<span class="material-icons-outlined" style="font-size: 14px;">person_outline</span>${primaryName}`;
+              if(assignees.length > 1) {
+                assigneesHtml += `<span class="ml-1 text-[10px] bg-slate-200 text-slate-600 px-1 rounded rounded-full" title="他 ${assignees.length - 1} 名">+${assignees.length - 1}</span>`;
+              }
+              assigneesHtml += `</span>`;
             }
 
-            let metaText = '';
-            if (assigneesStr) metaText = `( ${assigneesStr} )`;
-
-            let toggleBtn = `<div class="w-4 shrink-0"></div>`;
             let detailsHtml = '';
             if (todo.details) {
-              const escapedDetails = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-              toggleBtn = `
-                <button type="button" class="shrink-0 text-slate-400 hover:text-blue-600 transition-transform duration-200 flex items-center justify-center w-4" onclick="toggleItemDetails(event, 'task-detail-${todo.id}')">
-                  <span class="material-icons-outlined transition-transform" style="font-size: 16px;">play_arrow</span>
-                </button>
+              const escapedDetailsForTooltip = todo.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              const shortDetails = escapedDetailsForTooltip.split('\n')[0];
+              detailsHtml = `
+                <div class="mt-0.5 min-w-0 w-full">
+                  <div class="text-[11px] font-medium text-slate-400 pl-0.5 truncate line-through">${shortDetails}</div>
+                  <div class="absolute left-0 top-full mt-1 w-[400px] max-w-[90vw] p-3 bg-white text-slate-700 border border-slate-300 text-[11px] font-normal leading-relaxed rounded-md shadow-xl z-[100] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 delay-0 group-hover:delay-500 whitespace-pre-wrap pointer-events-none break-all no-underline text-left">${escapedDetailsForTooltip}</div>
+                </div>
               `;
-              detailsHtml = `<div id="task-detail-${todo.id}" class="hidden pl-4 pr-2 py-1.5 text-[11px] text-slate-400 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[28px] mt-1 mb-1 line-through">${escapedDetails}</div>`;
             }
 
             compItemsHtml += `
-              <li class="todo-item relative py-2 border-b border-slate-100 flex flex-col group px-2 -mx-2 bg-slate-50 opacity-70 transition-colors">
-                <div class="flex items-center gap-1.5">
-                  <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0" style="margin-top: 0;">
-                  ${toggleBtn}
-                  <div class="flex-1 min-w-0 flex items-center gap-1.5 cursor-pointer" onclick="openTodoEditForm('${todo.id}')">
-                    ${metaText ? `<span class="text-[10px] text-slate-400 shrink-0 font-mono tracking-tighter">${metaText}</span>` : ''}
-                    <span class="text-[12px] font-bold text-slate-500 truncate line-through">${todo.title}</span>
+              <li class="todo-item relative py-2.5 border-b border-slate-100 flex items-start gap-3 group px-2 -mx-2 bg-slate-50 opacity-70 transition-colors">
+                <div class="pt-0.5 shrink-0">
+                  <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox">
+                </div>
+                <div class="flex-1 min-w-0 flex flex-col cursor-pointer" onclick="openTodoEditForm('${todo.id}')">
+                  <span class="text-[13px] font-bold text-slate-500 leading-snug line-through whitespace-pre-wrap break-all">${todo.title}</span>
+                  ${detailsHtml}
+                  <div class="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
+                    ${assigneesHtml}
                   </div>
                 </div>
-                ${detailsHtml}
               </li>
             `;
           });
@@ -2100,7 +2105,7 @@ window.switchView = function(view) {
         containerTask.innerHTML = `<ul>${activeHtml}</ul>${compHtml}`;
 
         // -----------------------------
-        // 2. ログ側の描画処理
+        // 2. ログ側の描画処理（2行表示＆詳細トグル）
         // -----------------------------
         // 並び替え: ピン留め(true)優先 -> 日付降順 -> 作成日時降順
         const logTodos = [...taskTodos].sort((a, b) => {
@@ -2121,31 +2126,29 @@ window.switchView = function(view) {
             const authorName = (window.userNamesMap && window.userNamesMap[log.author]) ? window.userNamesMap[log.author] : (log.author || '不明');
             const dateStr = log.logDate ? log.logDate.replace(/-/g, '/') : '-';
             
-            const pinIcon = log.isPinned ? 'push_pin' : 'push_pin';
-            const pinClass = log.isPinned ? 'text-orange-500' : 'text-slate-300 hover:text-slate-500';
-
-            let toggleBtn = `<div class="w-4 shrink-0"></div>`;
+            let toggleBtn = `<div class="w-5 shrink-0"></div>`; // 詳細がない時のインデント合わせ用スペース
             let detailsHtml = '';
             if (log.details) {
               const escapedDetails = log.details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
               toggleBtn = `
-                <button type="button" class="shrink-0 text-slate-400 hover:text-blue-600 transition-transform duration-200 flex items-center justify-center w-4" onclick="toggleItemDetails(event, 'log-detail-${log.id}')">
-                  <span class="material-icons-outlined transition-transform" style="font-size: 16px;">play_arrow</span>
+                <button type="button" class="shrink-0 text-slate-400 hover:text-blue-600 transition-transform duration-200 flex items-center justify-center w-5 h-5 mt-[1px]" onclick="toggleItemDetails(event, 'log-detail-${log.id}')">
+                  <span class="material-icons-outlined transition-transform" style="font-size: 18px;">play_arrow</span>
                 </button>
               `;
-              detailsHtml = `<div id="log-detail-${log.id}" class="hidden pl-4 pr-2 py-1.5 text-[11px] text-slate-600 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[24px] mt-1 mb-1">${escapedDetails}</div>`;
+              detailsHtml = `<div id="log-detail-${log.id}" class="hidden pl-3 pr-2 py-2 text-[12px] text-slate-600 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[10px] mt-1.5 mb-1 bg-white rounded">${escapedDetails}</div>`;
             }
 
+            // ピン留めUIはリストから削除し、ピン留めされている場合はうっすらオレンジの背景で目立たせる
             logHtml += `
-              <li class="relative py-2 border-b border-slate-200 flex flex-col group transition-colors hover:bg-slate-50">
-                <div class="flex items-center gap-1.5">
-                  <button type="button" onclick="event.stopPropagation(); toggleLogPin('${log.id}', ${!log.isPinned})" class="${pinClass} shrink-0 flex items-center justify-center w-4" title="固定を切り替え">
-                    <span class="material-icons-outlined" style="font-size: 14px; transform: rotate(45deg);">${pinIcon}</span>
-                  </button>
+              <li class="relative py-2.5 px-3 border-b border-slate-200 flex flex-col group transition-colors hover:bg-slate-50 cursor-pointer ${log.isPinned ? 'bg-orange-50/50' : 'bg-white'}" onclick="openTodoEditForm('${log.id}')">
+                <div class="flex items-center gap-3 mb-1 pl-1">
+                  <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">edit_calendar</span>${dateStr}</span>
+                  <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">person</span>${authorName}</span>
+                </div>
+                <div class="flex items-start gap-1">
                   ${toggleBtn}
-                  <div class="flex-1 min-w-0 flex items-center gap-1.5 cursor-pointer" onclick="openTodoEditForm('${log.id}')">
-                    <span class="text-[10px] text-slate-500 shrink-0 font-mono tracking-tighter">( @${dateStr} ${authorName} )</span>
-                    <span class="text-[12px] font-bold text-slate-800 truncate">${log.title}</span>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-[13px] font-bold text-slate-800 leading-relaxed whitespace-pre-wrap break-all">${log.title}</div>
                   </div>
                 </div>
                 ${detailsHtml}
@@ -2187,6 +2190,7 @@ window.switchView = function(view) {
             document.getElementById('form-area-log').classList.remove('hidden');
             document.getElementById('form-log-date').value = todayStr;
             document.getElementById('form-log-author').textContent = authorName;
+            document.getElementById('form-log-pinned').checked = false; // 新規作成時はピン留めオフ
           }
 
           btnDeleteTodo.classList.add('hidden');
@@ -2218,6 +2222,7 @@ window.switchView = function(view) {
           document.getElementById('form-log-date').value = todo.logDate || '';
           const logAuthorName = (window.userNamesMap && window.userNamesMap[todo.author]) ? window.userNamesMap[todo.author] : (todo.author || authorName);
           document.getElementById('form-log-author').textContent = logAuthorName;
+          document.getElementById('form-log-pinned').checked = !!todo.isPinned; // ピン留めの状態を反映
         }
         
         btnDeleteTodo.classList.remove('hidden');
@@ -2257,6 +2262,8 @@ window.switchView = function(view) {
             }
           } else {
             updateData.logDate = document.getElementById('form-log-date').value;
+            updateData.isPinned = document.getElementById('form-log-pinned').checked;
+            
             // ログから新規作成時、タスク側でも見られるように初期設定
             if (!todoId) {
               updateData.dueDate = '';
@@ -2275,7 +2282,7 @@ window.switchView = function(view) {
               await addDoc(collection(db, 'todos'), {
                 taskId: window.currentOpenTaskId,
                 isCompleted: false,
-                isPinned: false,
+                isPinned: updateData.isPinned || false,
                 order: order,
                 createdAt: serverTimestamp(),
                 ...updateData
