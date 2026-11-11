@@ -1,9 +1,31 @@
 
     /* ToDo用追加スタイル */
     .todo-completed .todo-text { text-decoration: line-through; color: #94a3b8; }
-    .todo-item.dragging { opacity: 0.5; background-color: #f8fafc; }
     .todo-list.drag-over { background-color: #f1f5f9; }
     .material-icons-outlined { font-size: 20px; line-height: 1; }
+
+    /* タスクのチェックボックスを四角形（□）に変更 */
+    .task-checkbox { appearance: none; width: 18px; height: 18px; border: 1.5px solid #94a3b8; border-radius: 4px; cursor: pointer; position: relative; transition: all 0.1s ease; margin-top: 2px; background-color: white; }
+    .task-checkbox:hover { background-color: #f1f5f9; }
+    .task-checkbox:checked { border-color: #3b82f6; background-color: #3b82f6; }
+    .task-checkbox:checked::after { content: ''; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(45deg); width: 5px; height: 10px; border: solid white; border-width: 0 2px 2px 0; }
+
+    /* @starting-style を使ったタスクのアニメーション */
+    .todo-item {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      opacity: 1;
+      transform: scale(1);
+    }
+    @starting-style {
+      .todo-item {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+    }
+    .todo-item.fade-out {
+      opacity: 0;
+      transform: scale(0.95);
+    }
 
     /* タスクのチェックボックスを四角形（□）に変更 */
     .task-checkbox { appearance: none; width: 18px; height: 18px; border: 1.5px solid #94a3b8; border-radius: 4px; cursor: pointer; position: relative; transition: all 0.1s ease; margin-top: 2px; background-color: white; }
