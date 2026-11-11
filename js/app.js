@@ -2001,6 +2001,17 @@ window.switchView = function(view) {
       // ==========================================
       // リスト描画（タスク ＆ ログ統合）
       // ==========================================
+      
+      // ログからタスクへ昇格（登録）させる関数
+      window.registerAsTask = async function(todoId) {
+        try {
+          await updateDoc(doc(db, 'todos', todoId), { isLogOnly: false });
+          showToast('タスクにも登録しました');
+        } catch(e) {
+          console.error("タスク登録エラー", e);
+        }
+      };
+
       function loadTodosForTask(taskId) {
         const containerTask = document.getElementById('todo-list-container');
         const containerLog = document.getElementById('log-list-container');
@@ -2008,10 +2019,10 @@ window.switchView = function(view) {
         const taskTodos = window.allTodos.filter(t => t.taskId === taskId);
 
         // -----------------------------
-        // 1. タスク側の描画処理（以前の形式へ復元）
+        // 1. タスク側の描画処理（既存データ ＋ isLogOnlyではないもの）
         // -----------------------------
-        const activeTodos = taskTodos.filter(t => !t.isCompleted).sort((a,b) => a.order - b.order);
-        const completedTodos = taskTodos.filter(t => t.isCompleted).sort((a,b) => a.order - b.order);
+        const activeTodos = taskTodos.filter(t => !t.isCompleted && !t.isLogOnly).sort((a,b) => (a.order || 0) - (b.order || 0));
+        const completedTodos = taskTodos.filter(t => t.isCompleted && !t.isLogOnly).sort((a,b) => (a.order || 0) - (b.order || 0));
 
         let activeHtml = '';
         if (activeTodos.length === 0) {
@@ -2122,7 +2133,7 @@ window.switchView = function(view) {
         containerTask.innerHTML = `<ul>${activeHtml}</ul>${compHtml}`;
 
         // -----------------------------
-        // 2. ログ側の描画処理（2行表示＆詳細トグル）
+        // 2. ログ側の描画処理（2行表示＆詳細トグル・日付区切り線）
         // -----------------------------
         const logTodos = [...taskTodos].sort((a, b) => {
           if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
@@ -2138,10 +2149,23 @@ window.switchView = function(view) {
           containerLog.innerHTML = '<div class="text-center text-[11px] text-slate-400 mt-6 pt-4">ログはありません</div>';
         } else {
           let logHtml = '';
+          let currentDateGroup = '';
+
           logTodos.forEach(log => {
             const authorName = (window.userNamesMap && window.userNamesMap[log.author]) ? window.userNamesMap[log.author] : (log.author || '不明');
             const dateStr = log.logDate ? log.logDate.replace(/-/g, '/') : '-';
             
+            // 日付が変わったら区切り線を挿入
+            if (currentDateGroup !== dateStr) {
+              currentDateGroup = dateStr;
+              logHtml += `
+                <div class="flex items-center mt-4 mb-2 pl-1 pr-3 select-none">
+                  <span class="text-[12px] font-bold text-slate-500 mr-2 tracking-widest">${dateStr}</span>
+                  <div class="flex-1 border-t border-slate-300 border-dashed"></div>
+                </div>
+              `;
+            }
+
             let toggleBtn = `<div class="w-5 shrink-0"></div>`;
             let detailsHtml = '';
             if (log.details) {
@@ -2154,16 +2178,33 @@ window.switchView = function(view) {
               detailsHtml = `<div id="log-detail-${log.id}" class="hidden pl-3 pr-2 py-2 text-[12px] text-slate-600 whitespace-pre-wrap break-all border-l-2 border-slate-200 ml-[10px] mt-1.5 mb-1 bg-white rounded shadow-sm">${escapedDetails}</div>`;
             }
 
+            // タスクに登録ボタン（または登録済バッジ）
+            let taskBtnHtml = '';
+            if (log.isLogOnly) {
+              taskBtnHtml = `
+                <button type="button" onclick="event.stopPropagation(); window.registerAsTask('${log.id}')" class="ml-auto flex items-center gap-1 px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded text-[10px] font-bold transition-colors shadow-sm">
+                  <span class="material-icons-outlined" style="font-size: 12px;">add_task</span>タスクに登録
+                </button>
+              `;
+            } else {
+              taskBtnHtml = `
+                <span class="ml-auto flex items-center gap-1 px-1.5 py-0.5 text-slate-400 text-[10px] font-bold">
+                  <span class="material-icons-outlined" style="font-size: 12px;">check_circle</span>タスク登録済
+                </span>
+              `;
+            }
+
             logHtml += `
               <li class="todo-item relative py-2.5 px-3 border-b border-slate-200 flex flex-col group transition-colors hover:bg-slate-50 cursor-pointer ${log.isPinned ? 'bg-orange-50/50' : 'bg-white'}" onclick="openTodoEditForm('${log.id}')">
                 <div class="flex items-center gap-3 mb-1 pl-1">
                   <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">edit_calendar</span>${dateStr}</span>
                   <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1"><span class="material-icons-outlined" style="font-size: 13px;">person</span>${authorName}</span>
+                  ${taskBtnHtml}
                 </div>
                 <div class="flex items-start gap-1">
                   ${toggleBtn}
                   <div class="flex-1 min-w-0">
-                    <div class="text-[13px] font-bold text-slate-800 leading-relaxed whitespace-pre-wrap break-all">${log.title}</div>
+                    <div class="text-[13px] font-medium text-slate-800 leading-relaxed whitespace-pre-wrap break-all">${log.title}</div>
                   </div>
                 </div>
                 ${detailsHtml}
@@ -2207,7 +2248,7 @@ window.switchView = function(view) {
             document.getElementById('form-area-log').classList.remove('hidden');
             document.getElementById('form-log-date').value = todayStr;
             document.getElementById('form-log-author').textContent = authorName;
-            if (pinEl) pinEl.checked = false; // エラー回避策
+            if (pinEl) pinEl.checked = false; // 新規時はピン留めオフ
           }
 
           btnDeleteTodo.classList.add('hidden');
@@ -2272,6 +2313,7 @@ window.switchView = function(view) {
             const selectedAssignees = [];
             document.querySelectorAll('.todo-assignee-cb:checked').forEach(cb => selectedAssignees.push(cb.value));
             updateData.assignees = selectedAssignees;
+            updateData.isLogOnly = false; // タスクから作成・保存した場合はタスクに出る
             
             if (!todoId) {
               const now = new Date();
@@ -2287,6 +2329,7 @@ window.switchView = function(view) {
               updateData.dueDate = '';
               updateData.assignees = [authorPrefix];
               updateData.author = authorPrefix;
+              updateData.isLogOnly = true; // 新規でログとして追加したものはタスクに出さない
             }
           }
 
@@ -2301,6 +2344,7 @@ window.switchView = function(view) {
                 taskId: window.currentOpenTaskId,
                 isCompleted: false,
                 isPinned: updateData.isPinned || false,
+                isLogOnly: updateData.isLogOnly !== undefined ? updateData.isLogOnly : true,
                 order: order,
                 createdAt: serverTimestamp(),
                 ...updateData
@@ -2353,7 +2397,6 @@ window.switchView = function(view) {
           }
         }, 300);
       };
-
 
       // ==========================================
       // タスクタブ（一覧表示）のロジック
@@ -2427,47 +2470,47 @@ window.switchView = function(view) {
       }
 
       const btnToggleClient = document.getElementById('btn-toggle-client');
-const btnToggleDate = document.getElementById('btn-toggle-date');
-const btnToggleTaskKeyword = document.getElementById('btn-toggle-task-keyword');
-const inputTaskKeyword = document.getElementById('task-keyword-input');
+      const btnToggleDate = document.getElementById('btn-toggle-date');
+      const btnToggleTaskKeyword = document.getElementById('btn-toggle-task-keyword');
+      const inputTaskKeyword = document.getElementById('task-keyword-input');
 
-// ★新規追加：キーワード検索トグルのイベント
-if (btnToggleTaskKeyword) {
-  btnToggleTaskKeyword.addEventListener('click', () => {
-    window.isTaskKeywordActive = !window.isTaskKeywordActive;
-    const isActive = window.isTaskKeywordActive;
+      // ★新規追加：キーワード検索トグルのイベント
+      if (btnToggleTaskKeyword) {
+        btnToggleTaskKeyword.addEventListener('click', () => {
+          window.isTaskKeywordActive = !window.isTaskKeywordActive;
+          const isActive = window.isTaskKeywordActive;
 
-    const bg = btnToggleTaskKeyword.querySelector('.toggle-bg');
-    const circle = btnToggleTaskKeyword.querySelector('.toggle-circle');
-    const label = btnToggleTaskKeyword.querySelector('.keyword-filter-label');
+          const bg = btnToggleTaskKeyword.querySelector('.toggle-bg');
+          const circle = btnToggleTaskKeyword.querySelector('.toggle-circle');
+          const label = btnToggleTaskKeyword.querySelector('.keyword-filter-label');
 
-    // トグルのUI更新（三項演算子で色と動きの変更部分だけを切り替え）
-    if (bg) bg.className = `w-10 h-5 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg ${isActive ? 'bg-green-500' : 'bg-slate-300'}`;
-    if (circle) circle.className = `w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 toggle-circle ${isActive ? 'translate-x-5' : 'translate-x-0'}`;
-    if (label) label.className = `text-[11px] font-bold transition-colors keyword-filter-label ${isActive ? 'text-green-600' : 'text-slate-500'}`;
+          // トグルのUI更新（三項演算子で色と動きの変更部分だけを切り替え）
+          if (bg) bg.className = `w-10 h-5 rounded-full relative transition-colors duration-300 shadow-inner toggle-bg ${isActive ? 'bg-green-500' : 'bg-slate-300'}`;
+          if (circle) circle.className = `w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow transform transition-transform duration-300 toggle-circle ${isActive ? 'translate-x-5' : 'translate-x-0'}`;
+          if (label) label.className = `text-[11px] font-bold transition-colors keyword-filter-label ${isActive ? 'text-green-600' : 'text-slate-500'}`;
 
-    // OFF時のリセット処理
-    if (!isActive && inputTaskKeyword) {
-      inputTaskKeyword.value = '';
-    }
+          // OFF時のリセット処理
+          if (!isActive && inputTaskKeyword) {
+            inputTaskKeyword.value = '';
+          }
 
-    // 検索キーワードの更新と再描画
-    window.taskKeyword = inputTaskKeyword ? inputTaskKeyword.value.toLowerCase().trim() : '';
-    if (window.currentView === 'tasks') window.renderTasksTab();
-  });
-}
+          // 検索キーワードの更新と再描画
+          window.taskKeyword = inputTaskKeyword ? inputTaskKeyword.value.toLowerCase().trim() : '';
+          if (window.currentView === 'tasks') window.renderTasksTab();
+        });
+      }
 
-// ★新規追加：キーワード入力時のリアルタイムイベント
-if (inputTaskKeyword) {
-  inputTaskKeyword.addEventListener('input', () => {
-    if (window.isTaskKeywordActive) {
-      window.taskKeyword = inputTaskKeyword.value.toLowerCase().trim();
-      if (window.currentView === 'tasks') window.renderTasksTab();
-    }
-  });
-}
+      // ★新規追加：キーワード入力時のリアルタイムイベント
+      if (inputTaskKeyword) {
+        inputTaskKeyword.addEventListener('input', () => {
+          if (window.isTaskKeywordActive) {
+            window.taskKeyword = inputTaskKeyword.value.toLowerCase().trim();
+            if (window.currentView === 'tasks') window.renderTasksTab();
+          }
+        });
+      }
 
-if (btnToggleClient && btnToggleDate) {
+      if (btnToggleClient && btnToggleDate) {
         // ロード時に前回の設定をUIへ反映
         updateToggleUI('btn-toggle-client', window.isSortClient);
         updateToggleUI('btn-toggle-date', window.isSortDate);
@@ -2623,7 +2666,7 @@ if (btnToggleClient && btnToggleDate) {
               activeHtml += `
                 <article class="todo-item relative flex items-start gap-2 py-2.5 px-2 border-b ${isDelayed ? 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200' : 'bg-white hover:bg-slate-50 border-slate-100'} transition-colors cursor-pointer group" draggable="true" data-id="${todo.id}">
                   ${dragHandleHtml}
-                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-[3px] ${isDelayed ? 'border-yellow-500' : ''}">
+                  <input type="checkbox" onchange="toggleTodoComplete('${todo.id}', this.checked, this)" class="task-checkbox shrink-0 mt-[3px] ${isDelayed ? 'border-yellow-500' : ''}">
                   <div class="flex-1 min-w-0 flex flex-col pt-0.5" onclick="${clickAction}">
                     <div class="flex justify-between items-start gap-3 w-full">
                       <span class="text-[13px] font-bold ${isDelayed ? 'text-yellow-900' : 'text-slate-800'} leading-snug truncate flex-1">${todo.title}</span>
@@ -2668,9 +2711,9 @@ if (btnToggleClient && btnToggleDate) {
             const clickAction = todo.taskId ? `openDetailModalFromId('${todo.taskId}')` : `openGlobalTodoForm('${todo.id}', '${assigneeId}')`;
 
             compHtml += `
-              <article class="relative flex items-start gap-2 py-2.5 px-2 bg-slate-50 border-b border-slate-100 opacity-70 hover:opacity-100 transition-opacity cursor-pointer group" onclick="${clickAction}">
+              <article class="todo-item relative flex items-start gap-2 py-2.5 px-2 bg-slate-50 border-b border-slate-100 opacity-70 hover:opacity-100 transition-opacity cursor-pointer group" onclick="${clickAction}">
                 <div class="w-[18px] shrink-0"></div> <!-- ドラッグハンドルのスペース合わせ -->
-                <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked)" class="task-checkbox shrink-0 mt-[3px]">
+                <input type="checkbox" checked onchange="toggleTodoComplete('${todo.id}', this.checked, this)" class="task-checkbox shrink-0 mt-[3px]">
                 <div class="flex-1 min-w-0 flex flex-col pt-0.5">
                   <div class="flex justify-between items-start gap-3 w-full">
                     <span class="text-[13px] font-bold text-slate-500 line-through leading-snug truncate flex-1">${todo.title}</span>
@@ -2713,124 +2756,124 @@ if (btnToggleClient && btnToggleDate) {
       };
 
       // タスクタブ用：担当者変更 ＆ 自由な並び替え（ドラッグ＆ドロップ）Google Tasks風
-function setupTaskTabDragAndDrop() {
-  const columns = document.querySelectorAll('.task-column');
-  let draggedTodoEl = null;
+      function setupTaskTabDragAndDrop() {
+        const columns = document.querySelectorAll('.task-column');
+        let draggedTodoEl = null;
 
-  // 挿入位置を計算する関数
-  const getDragAfterElement = (container, y) => {
-    const draggableElements = [...container.querySelectorAll('.todo-item:not(.opacity-40)')];
-    return draggableElements.reduce((closest, child) => {
-      const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
-      return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
-  };
+        // 挿入位置を計算する関数
+        const getDragAfterElement = (container, y) => {
+          const draggableElements = [...container.querySelectorAll('.todo-item:not(.opacity-40)')];
+          return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
+          }, { offset: Number.NEGATIVE_INFINITY }).element;
+        };
 
-  // 青い挿入ラインをリセットするヘルパー関数
-  const clearDropIndicators = () => {
-    document.querySelectorAll('.todo-item').forEach(el => {
-      el.style.borderTop = '';
-      el.style.borderBottom = '';
-    });
-  };
+        // 青い挿入ラインをリセットするヘルパー関数
+        const clearDropIndicators = () => {
+          document.querySelectorAll('.todo-item').forEach(el => {
+            el.style.borderTop = '';
+            el.style.borderBottom = '';
+          });
+        };
 
-  // ドラッグ開始・終了イベントの設定
-  document.querySelectorAll('.drop-target-list .todo-item').forEach(item => {
-    item.addEventListener('dragstart', () => {
-      draggedTodoEl = item;
-      setTimeout(() => item.classList.add('opacity-40', 'bg-slate-100'), 0);
-    });
-    
-    item.addEventListener('dragend', () => {
-      if (draggedTodoEl) draggedTodoEl.classList.remove('opacity-40', 'bg-slate-100');
-      draggedTodoEl = null;
-      clearDropIndicators();
-    });
-  });
+        // ドラッグ開始・終了イベントの設定
+        document.querySelectorAll('.drop-target-list .todo-item').forEach(item => {
+          item.addEventListener('dragstart', () => {
+            draggedTodoEl = item;
+            setTimeout(() => item.classList.add('opacity-40', 'bg-slate-100'), 0);
+          });
+          
+          item.addEventListener('dragend', () => {
+            if (draggedTodoEl) draggedTodoEl.classList.remove('opacity-40', 'bg-slate-100');
+            draggedTodoEl = null;
+            clearDropIndicators();
+          });
+        });
 
-  // 各カラム（ドロップ先）のイベント設定
-  columns.forEach(column => {
-    const dropList = column.querySelector('.drop-target-list');
-    if (!dropList) return;
+        // 各カラム（ドロップ先）のイベント設定
+        columns.forEach(column => {
+          const dropList = column.querySelector('.drop-target-list');
+          if (!dropList) return;
 
-    dropList.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      const afterElement = getDragAfterElement(dropList, e.clientY);
-      clearDropIndicators();
+          dropList.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(dropList, e.clientY);
+            clearDropIndicators();
 
-      if (afterElement) {
-        afterElement.style.borderTop = '2px solid #3b82f6';
-      } else {
-        const lastChild = dropList.lastElementChild;
-        if (lastChild && lastChild !== draggedTodoEl) {
-          lastChild.style.borderBottom = '2px solid #3b82f6';
-        }
+            if (afterElement) {
+              afterElement.style.borderTop = '2px solid #3b82f6';
+            } else {
+              const lastChild = dropList.lastElementChild;
+              if (lastChild && lastChild !== draggedTodoEl) {
+                lastChild.style.borderBottom = '2px solid #3b82f6';
+              }
+            }
+          });
+
+          dropList.addEventListener('dragleave', clearDropIndicators);
+
+          dropList.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            clearDropIndicators();
+            if (!draggedTodoEl) return;
+
+            const afterElement = getDragAfterElement(dropList, e.clientY);
+            if (afterElement) {
+              dropList.insertBefore(draggedTodoEl, afterElement);
+            } else {
+              dropList.appendChild(draggedTodoEl);
+            }
+
+            const todoId = draggedTodoEl.dataset.id;
+            const targetAssignee = column.dataset.assignee;
+            const todoData = window.allTodos.find(t => t.id === todoId);
+            if (!todoData) return;
+
+            let assignees = Array.isArray(todoData.assignees) ? [...todoData.assignees] : (todoData.assignee ? [todoData.assignee] : []);
+            let isAssigneeChanged = false;
+
+            // 他の人のカラムにドロップされた場合の担当者入れ替え
+            if (targetAssignee && !assignees.includes(targetAssignee)) {
+              const allVisible = Array.from(columns).map(c => c.dataset.assignee);
+              assignees = assignees.filter(a => !allVisible.includes(a)); 
+              assignees.push(targetAssignee);
+              isAssigneeChanged = true;
+            }
+
+            // 並び順と担当者の保存処理
+            const items = [...dropList.querySelectorAll('.todo-item')];
+            
+            items.forEach(async (itemEl, index) => {
+              const id = itemEl.dataset.id;
+              const tData = window.allTodos.find(t => t.id === id);
+              if (!tData) return;
+
+              const updates = {};
+              if (tData.order !== index) {
+                updates.order = index;
+                tData.order = index; // ローカル同期
+              }
+              if (id === todoId && isAssigneeChanged) {
+                updates.assignees = assignees;
+                tData.assignees = assignees;
+              }
+
+              if (Object.keys(updates).length > 0) {
+                try { 
+                  // 既にファイルの先頭でインポート済みの関数を使用
+                  await updateDoc(doc(db, 'todos', id), updates); 
+                } catch(err) {
+                  console.error('更新エラー:', err);
+                }
+              }
+            });
+
+            if (isAssigneeChanged) showToast('担当者を変更しました');
+          });
+        });
       }
-    });
-
-    dropList.addEventListener('dragleave', clearDropIndicators);
-
-    dropList.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      clearDropIndicators();
-      if (!draggedTodoEl) return;
-
-      const afterElement = getDragAfterElement(dropList, e.clientY);
-      if (afterElement) {
-        dropList.insertBefore(draggedTodoEl, afterElement);
-      } else {
-        dropList.appendChild(draggedTodoEl);
-      }
-
-      const todoId = draggedTodoEl.dataset.id;
-      const targetAssignee = column.dataset.assignee;
-      const todoData = window.allTodos.find(t => t.id === todoId);
-      if (!todoData) return;
-
-      let assignees = Array.isArray(todoData.assignees) ? [...todoData.assignees] : (todoData.assignee ? [todoData.assignee] : []);
-      let isAssigneeChanged = false;
-
-      // 他の人のカラムにドロップされた場合の担当者入れ替え
-      if (targetAssignee && !assignees.includes(targetAssignee)) {
-        const allVisible = Array.from(columns).map(c => c.dataset.assignee);
-        assignees = assignees.filter(a => !allVisible.includes(a)); 
-        assignees.push(targetAssignee);
-        isAssigneeChanged = true;
-      }
-
-      // 並び順と担当者の保存処理
-      const items = [...dropList.querySelectorAll('.todo-item')];
-      
-      items.forEach(async (itemEl, index) => {
-        const id = itemEl.dataset.id;
-        const tData = window.allTodos.find(t => t.id === id);
-        if (!tData) return;
-
-        const updates = {};
-        if (tData.order !== index) {
-          updates.order = index;
-          tData.order = index; // ローカル同期
-        }
-        if (id === todoId && isAssigneeChanged) {
-          updates.assignees = assignees;
-          tData.assignees = assignees;
-        }
-
-        if (Object.keys(updates).length > 0) {
-          try { 
-            // 既にファイルの先頭でインポート済みの関数を使用
-            await updateDoc(doc(db, 'todos', id), updates); 
-          } catch(err) {
-            console.error('更新エラー:', err);
-          }
-        }
-      });
-
-      if (isAssigneeChanged) showToast('担当者を変更しました');
-    });
-  });
-}
 
       // ==========================================
       // 汎用タスク（案件に紐づかないToDo）用ロジック
@@ -2908,6 +2951,7 @@ function setupTaskTabDragAndDrop() {
                 assignees: selectedAssignees,
                 dueDate,
                 isCompleted: false,
+                isLogOnly: false, // 汎用タスクもタスク一覧に出す
                 order: 0,
                 createdAt: serverTimestamp()
               });
@@ -2935,46 +2979,40 @@ function setupTaskTabDragAndDrop() {
       }
 
       // ==========================================
-// 案件情報編集画面からの複製ロジック（リファクタリング版）
-// ==========================================
-window.duplicateTaskFromEdit = function() {
-  // 1. 状態のリセット
-  window.isEditMode = false;
-  window.currentOpenTaskId = null;
-  
-  // 2. テキストの更新（安全な textContent を使用し、存在確認をする）
-  const titleEl = document.getElementById('modal-title');
-  if (titleEl) titleEl.textContent = '新規案件の追加（複製）';
-  
-  const iconEl = document.getElementById('edit-title-icon');
-  if (iconEl) iconEl.textContent = ''; 
+      // 案件情報編集画面からの複製ロジック
+      // ==========================================
+      window.duplicateTaskFromEdit = function() {
+        window.isEditMode = false;
+        window.currentOpenTaskId = null;
+        
+        const titleEl = document.getElementById('modal-title');
+        if (titleEl) titleEl.textContent = '新規案件の追加（複製）';
+        
+        const iconEl = document.getElementById('edit-title-icon');
+        if (iconEl) iconEl.textContent = ''; 
 
-  // 3. ボタンの非表示（配列とオプショナルチェーン「?.」で短く書く）
-  ['btn-delete-task', 'btn-duplicate-task'].forEach(id => {
-    document.getElementById(id)?.classList.add('hidden');
-  });
+        ['btn-delete-task', 'btn-duplicate-task'].forEach(id => {
+          document.getElementById(id)?.classList.add('hidden');
+        });
 
-  // 4. 特定の入力欄を初期値に戻す（forEachを使ってより関数的に）
-  const fieldsToReset = {
-    'fm-date': '', 
-    'fm-status': '予定', 
-    'fm-type': '', 
-    'fm-equipment': '', 
-    'fm-dips': ''
-  };
-  
-  Object.entries(fieldsToReset).forEach(([id, value]) => {
-    const element = document.getElementById(id);
-    if (element) element.value = value;
-  });
+        const fieldsToReset = {
+          'fm-date': '', 
+          'fm-status': '予定', 
+          'fm-type': '', 
+          'fm-equipment': '', 
+          'fm-dips': ''
+        };
+        
+        Object.entries(fieldsToReset).forEach(([id, value]) => {
+          const element = document.getElementById(id);
+          if (element) element.value = value;
+        });
 
-  // 5. ユーザーに通知
-  showToast('案件のデータをコピーしました。内容を修正して保存してください。');
-};
+        showToast('案件のデータをコピーしました。内容を修正して保存してください。');
+      };
 
-// 詳細画面から編集モーダルを開く処理（復旧）
-window.openEditFromDetail = function() {
-  const idToEdit = window.currentOpenTaskId; 
-  closeDetailModal(); 
-  window.openTaskModal(idToEdit);
-}
+      window.openEditFromDetail = function() {
+        const idToEdit = window.currentOpenTaskId; 
+        closeDetailModal(); 
+        window.openTaskModal(idToEdit);
+      };
